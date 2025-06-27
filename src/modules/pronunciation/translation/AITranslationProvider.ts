@@ -26,7 +26,7 @@ import {
 } from '../types';
 import { ApiConfig } from '../../types';
 import { API_CONSTANTS } from '../config';
-import { cleanMarkdownFromResponse } from '@/src/utils';
+import { cleanMarkdownFromResponse, getApiTimeout } from '@/src/utils';
 import { rateLimitManager } from '../../rateLimit';
 
 /**
@@ -70,6 +70,9 @@ export class AITranslationProvider implements IPhoneticProvider {
   /** AI API配置信息 */
   private apiConfig: ApiConfig;
 
+  /** API请求超时时间（毫秒） */
+  private timeout: number = 30000;
+
   /** 内存缓存，存储翻译结果以减少API调用 */
   private cache = new Map<string, CacheEntry<AITranslationEntry>>();
 
@@ -80,9 +83,11 @@ export class AITranslationProvider implements IPhoneticProvider {
    * 构造函数
    *
    * @param apiConfig - AI API配置对象，包含端点URL、密钥等信息
+   * @param timeout - API请求超时时间（毫秒），默认30秒
    */
-  constructor(apiConfig: ApiConfig) {
+  constructor(apiConfig: ApiConfig, timeout: number = 30000) {
     this.apiConfig = apiConfig;
+    this.timeout = timeout;
   }
 
   /**
@@ -179,15 +184,7 @@ export class AITranslationProvider implements IPhoneticProvider {
 
       // 将API调用包装为函数，通过executeBatch执行以确保串行
       const apiRequestFunction = async () => {
-        return fetch(this.apiConfig.apiEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiConfig.apiKey}`,
-          },
-          body: JSON.stringify(requestBody),
-          signal: AbortSignal.timeout(10000), // 10秒超时
-        });
+        return this.sendApiRequest(requestBody);
       };
 
       // 通过executeBatch执行单个请求，确保串行
@@ -305,15 +302,7 @@ export class AITranslationProvider implements IPhoneticProvider {
       );
 
       const testRequestFunction = async () => {
-        return fetch(this.apiConfig.apiEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiConfig.apiKey}`,
-          },
-          body: JSON.stringify(testRequestBody),
-          signal: AbortSignal.timeout(5000), // 5秒超时
-        });
+        return this.sendApiRequest(testRequestBody);
       };
 
       // 通过executeBatch执行测试请求
@@ -341,10 +330,86 @@ export class AITranslationProvider implements IPhoneticProvider {
   }
 
   /**
-   * 更新API配置
+   * 更新API配置和超时时间
    */
-  updateApiConfig(apiConfig: ApiConfig): void {
+  updateApiConfig(apiConfig: ApiConfig, timeout?: number): void {
     this.apiConfig = apiConfig;
+    if (timeout !== undefined) {
+      this.timeout = timeout;
+    }
+  }
+
+  /**
+   * 统一API请求方法 - 根据配置选择请求方式
+   * @param requestBody 请求体
+   * @returns Promise<Response>
+   */
+  private async sendApiRequest(requestBody: any): Promise<Response> {
+    const timeout = getApiTimeout(this.timeout);
+
+    if (this.apiConfig.useBackgroundProxy) {
+      return this.sendViaBackground(requestBody, timeout || 0);
+    } else {
+      const fetchOptions: RequestInit = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiConfig.apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+      };
+
+      // 只有在timeout不为undefined时才设置AbortSignal
+      if (timeout !== undefined) {
+        fetchOptions.signal = AbortSignal.timeout(timeout);
+      }
+
+      return fetch(this.apiConfig.apiEndpoint, fetchOptions);
+    }
+  }
+
+  /**
+   * 通过background脚本发送API请求
+   * @param requestBody 请求体
+   * @returns Promise<Response>
+   */
+  private async sendViaBackground(requestBody: any, timeout: number = 10000): Promise<Response> {
+    return new Promise((resolve) => {
+      browser.runtime.sendMessage(
+        {
+          type: 'api-request',
+          data: {
+            url: this.apiConfig.apiEndpoint,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${this.apiConfig.apiKey}`,
+            },
+            body: JSON.stringify(requestBody),
+            timeout: timeout,
+          },
+        },
+        (response) => {
+          if (response.success) {
+            const mockResponse = {
+              ok: true,
+              status: 200,
+              statusText: 'OK',
+              json: async () => response.data,
+            } as Response;
+            resolve(mockResponse);
+          } else {
+            const mockResponse = {
+              ok: false,
+              status: response.error?.status || 500,
+              statusText: response.error?.statusText || 'Internal Server Error',
+              json: async () => ({ error: response.error }),
+            } as Response;
+            resolve(mockResponse);
+          }
+        }
+      );
+    });
   }
 
   /**

@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-6">
+
     <!-- 当前配置选择 -->
     <Card>
       <CardHeader>
@@ -8,6 +9,53 @@
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-4">
+        <!-- API超时时间配置 -->
+        <div class="bg-muted/50 rounded-lg p-4 border border-border/50">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <svg class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-foreground">API请求设置</h3>
+          </div>
+
+          <div class="space-y-3">
+            <div class="space-y-2">
+              <Label for="api-timeout" class="text-sm font-medium flex items-center gap-2">
+                超时时间（秒）
+                <span
+                  class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  全局设置
+                </span>
+              </Label>
+              <p class="text-xs text-muted-foreground leading-relaxed">
+                设置所有API请求的最大等待时间。填写 <code class="px-1 py-0.5 bg-muted rounded text-xs">0</code> 表示不做任何超时限制。
+              </p>
+              <div class="relative">
+                <Input id="api-timeout" type="number" :model-value="Math.round(settings.apiRequestTimeout / 1000)"
+                  @update:model-value="settings.apiRequestTimeout = Number($event || 0) * 1000"
+                  placeholder="输入超时时间（秒），0表示无限制" min="0" class="pr-12" />
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <span class="text-sm text-muted-foreground">秒</span>
+                </div>
+              </div>
+
+              <!-- 快速设置选项 -->
+              <div class="flex flex-wrap gap-2 mt-2">
+                <button v-for="preset in [10, 30, 60, 120, 0]" :key="preset"
+                  @click="settings.apiRequestTimeout = preset * 1000" type="button"
+                  class="inline-flex items-center rounded-md bg-background border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                  :class="{ 'bg-primary/10 border-primary/20 text-primary': Math.round(settings.apiRequestTimeout / 1000) === preset }">
+                  {{ preset === 0 ? '无限制' : `${preset}秒` }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
         <div class="space-y-2">
           <Label>当前活跃配置</Label>
           <Select v-model="settings.activeApiConfigId" @update:model-value="handleActiveConfigChange">
@@ -286,6 +334,16 @@
             <Switch v-model="configForm.config.includeThinkingParam" />
           </div>
 
+          <div class="flex items-center justify-between">
+            <div class="space-y-1">
+              <Label>通过扩展后台发送请求</Label>
+              <p class="text-xs text-muted-foreground">
+                启用此选项可绕过CORS限制，适用于无法访问的API服务。如果遇到跨域错误，建议启用此选项
+              </p>
+            </div>
+            <Switch v-model="configForm.config.useBackgroundProxy" />
+          </div>
+
           <!-- 自定义API参数 -->
           <div class="space-y-3">
             <div class="space-y-1">
@@ -410,7 +468,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
 import { StorageManager } from '@/src/modules/storageManager';
 import {
   testApiConnection as performApiTest,
@@ -520,6 +578,7 @@ const configForm = ref<{
     customParams: '',
     phraseEnabled: true,
     requestsPerSecond: 0,
+    useBackgroundProxy: false,
   },
 });
 
@@ -709,7 +768,7 @@ const testApiConnection = async () => {
   testResult.value = null;
 
   try {
-    testResult.value = await performApiTest(configForm.value.config);
+    testResult.value = await performApiTest(configForm.value.config, settings.value.apiRequestTimeout);
   } finally {
     isTestingConnection.value = false;
   }
@@ -731,7 +790,7 @@ const testCardApiConnection = async (config: ApiConfigItem) => {
   delete cardTestResults.value[config.id];
 
   try {
-    cardTestResults.value[config.id] = await performApiTest(config.config);
+    cardTestResults.value[config.id] = await performApiTest(config.config, settings.value.apiRequestTimeout);
 
     // 设置5秒后自动清除结果
     cardTestTimers.value[config.id] = setTimeout(() => {
@@ -805,6 +864,22 @@ const clearAllTestTimers = () => {
 onMounted(async () => {
   await loadSettings();
 });
+
+// 监听settings变化，实现实时保存
+watch(
+  settings,
+  async (newSettings) => {
+    try {
+      await storageManager.saveUserSettings(newSettings);
+      emit('saveMessage', '设置已保存');
+      notifyConfigChange();
+    } catch (error) {
+      console.error('保存设置失败:', error);
+      emit('saveMessage', '保存设置失败');
+    }
+  },
+  { deep: true }
+);
 
 // 组件卸载时清理定时器
 onUnmounted(() => {

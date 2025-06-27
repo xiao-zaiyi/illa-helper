@@ -37,6 +37,7 @@ export interface ApiConfig {
   customParams?: string;
   phraseEnabled?: boolean;
   requestsPerSecond?: number; // 每秒最大请求数
+  useBackgroundProxy?: boolean; // 是否通过background script发送请求以绕过CORS
 }
 
 // 新增：API配置项接口，包含配置的元数据
@@ -108,6 +109,7 @@ export const DEFAULT_API_CONFIG: ApiConfig = {
   customParams: '',
   phraseEnabled: true,
   requestsPerSecond: 0, // 默认无限制，0表示不限制
+  useBackgroundProxy: false, // 默认不使用background代理，保持向后兼容
 };
 
 export enum UserLevel {
@@ -180,6 +182,8 @@ export interface UserSettings {
   translationPosition: TranslationPosition;
   // 新增：是否显示括号
   showParentheses: boolean;
+  // 新增：API请求超时时间配置
+  apiRequestTimeout: number; // 以毫秒为单位
 }
 
 // 简化：默认多语言配置
@@ -229,4 +233,5 @@ export const DEFAULT_SETTINGS: UserSettings = {
   floatingBall: DEFAULT_FLOATING_BALL_CONFIG,
   translationPosition: TranslationPosition.AFTER,
   showParentheses: true,
+  apiRequestTimeout: 0, // 默认不超时
 };

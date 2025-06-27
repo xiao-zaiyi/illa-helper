@@ -460,6 +460,22 @@ export class FloatingBallManager {
     this.bindEventListener(this.menuContainer, 'mouseleave', () => {
       this.hideMenuOnLeave();
     });
+
+    // 为触摸设备添加点击切换菜单的能力
+    if (this.isTouchDevice) {
+      this.bindEventListener(this.ballElement, 'click', (e) => {
+        if (!this.state.isDragging) {
+          e.preventDefault();
+          e.stopPropagation();
+          // 在触摸设备上，点击切换菜单的显示/隐藏状态
+          if (this.state.isMenuExpanded) {
+            this.hideMenuOnLeave();
+          } else {
+            this.showMenuOnHover();
+          }
+        }
+      });
+    }
   }
 
   /**
@@ -483,62 +499,43 @@ export class FloatingBallManager {
       }
     });
 
-    // 根据设备类型选择性注册事件监听器，避免冲突
-    if (this.isTouchDevice) {
-      // 触摸设备：优先使用触摸事件
-      this.bindEventListener(
-        this.ballElement,
-        'touchstart',
-        this.handleTouchStart.bind(this),
-        { passive: false },
-      );
-      this.bindEventListener(
-        document,
-        'touchmove',
-        this.handleTouchMove.bind(this),
-        { passive: false },
-      );
-      this.bindEventListener(
-        document,
-        'touchend',
-        this.handleTouchEnd.bind(this),
-        { passive: false },
-      );
+    // 触摸事件处理 - 使用 passive: false 允许我们在需要时阻止默认行为
+    // 但仅当真正需要时才阻止默认行为，以确保页面其他区域能正常滚动
+    this.bindEventListener(
+      this.ballElement,
+      'touchstart',
+      this.handleTouchStart.bind(this),
+      { passive: false },
+    );
+    this.bindEventListener(
+      document,
+      'touchmove',
+      this.handleTouchMove.bind(this),
+      { passive: false },
+    );
+    this.bindEventListener(
+      document,
+      'touchend',
+      this.handleTouchEnd.bind(this),
+      { passive: false },
+    );
 
-      // 同时注册鼠标事件作为后备（但加入设备检测）
-      this.bindEventListener(
-        this.ballElement,
-        'mousedown',
-        this.handleMouseDown.bind(this),
-      );
-      this.bindEventListener(
-        document,
-        'mousemove',
-        this.handleMouseMove.bind(this),
-      );
-      this.bindEventListener(
-        document,
-        'mouseup',
-        this.handleMouseUp.bind(this),
-      );
-    } else {
-      // 非触摸设备：只使用鼠标事件
-      this.bindEventListener(
-        this.ballElement,
-        'mousedown',
-        this.handleMouseDown.bind(this),
-      );
-      this.bindEventListener(
-        document,
-        'mousemove',
-        this.handleMouseMove.bind(this),
-      );
-      this.bindEventListener(
-        document,
-        'mouseup',
-        this.handleMouseUp.bind(this),
-      );
-    }
+    // 同时注册鼠标事件作为后备（但加入设备检测）
+    this.bindEventListener(
+      this.ballElement,
+      'mousedown',
+      this.handleMouseDown.bind(this),
+    );
+    this.bindEventListener(
+      document,
+      'mousemove',
+      this.handleMouseMove.bind(this),
+    );
+    this.bindEventListener(
+      document,
+      'mouseup',
+      this.handleMouseUp.bind(this),
+    );
   }
 
   /**
@@ -757,51 +754,79 @@ export class FloatingBallManager {
   }
 
   /**
-   * 触摸开始处理（独立实现，避免与鼠标事件冲突）
-   */
+ * 触摸开始处理（独立实现，避免与鼠标事件冲突）
+ */
   private handleTouchStart(e: TouchEvent): void {
-    // 防止触摸事件与鼠标事件同时触发
-    if (!this.isTouchDevice || e.touches.length !== 1) return;
+    // 确保是触摸设备并且只有一个触摸点
+    if (e.touches.length !== 1) return;
 
-    e.preventDefault();
-    e.stopPropagation();
-
-    const touch = e.touches[0];
-    this.state.isDragging = false;
-    this.dragStartY = touch.clientY;
-
-    // 记录当前实际位置（像素值）
+    // 检查触摸点是否在悬浮球上
     if (this.ballElement) {
-      const rect = this.ballElement.getBoundingClientRect();
-      this.ballStartY = rect.top + rect.height / 2; // 球心的实际Y坐标
-    }
+      const touch = e.touches[0];
+      const ballRect = this.ballElement.getBoundingClientRect();
 
-    // 禁用过渡动画，防止拖拽时的干扰
-    if (this.ballElement) {
-      this.ballElement.style.transition = 'none';
+      // 判断触摸点是否在悬浮球范围内
+      const isTouchOnBall =
+        touch.clientX >= ballRect.left &&
+        touch.clientX <= ballRect.right &&
+        touch.clientY >= ballRect.top &&
+        touch.clientY <= ballRect.bottom;
+
+      // 只有当触摸点确实在悬浮球上时，才处理触摸事件
+      if (isTouchOnBall) {
+        // 阻止默认行为，但仅在悬浮球范围内
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 记录起始位置，用于判断是点击还是拖动
+        this.state.isDragging = false;
+        this.dragStartY = touch.clientY;
+        this.lastClickTime = Date.now(); // 更新点击时间，用于检测点击事件
+
+        // 记录当前实际位置（像素值）
+        const rect = this.ballElement.getBoundingClientRect();
+        this.ballStartY = rect.top + rect.height / 2; // 球心的实际Y坐标
+
+        // 添加视觉反馈，表示可拖动状态
+        this.ballElement.style.transform = 'translateY(-50%) scale(1.05)';
+
+        // 禁用过渡动画，防止拖拽时的干扰
+        this.ballElement.style.transition = 'none';
+
+        // 显示菜单（在触摸设备上，让菜单在点击时显示）
+        this.showMenuOnHover();
+      } else {
+        // 如果触摸点不在悬浮球上，确保重置状态
+        this.dragStartY = 0;
+        this.ballStartY = 0;
+      }
     }
   }
 
   /**
-   * 触摸移动处理（独立实现）
-   */
+ * 触摸移动处理（独立实现）
+ */
   private handleTouchMove(e: TouchEvent): void {
-    if (!this.isTouchDevice || !this.ballElement || e.touches.length !== 1)
-      return;
+    if (!this.ballElement || e.touches.length !== 1) return;
 
-    const touch = e.touches[0];
+    // 只有当我们确认是在拖动悬浮球时才阻止默认行为
+    // 这样可以让页面其他区域正常滚动
+    if (this.dragStartY !== 0) {
+      const touch = e.touches[0];
 
-    // 计算移动距离，如果超过阈值则开始拖拽
-    const deltaY = Math.abs(touch.clientY - this.dragStartY);
-    if (deltaY > DRAG_CONFIG.threshold) {
-      this.state.isDragging = true;
-    }
+      // 如果已经开始拖拽或者移动距离超过阈值，则设置拖拽状态
+      const deltaY = Math.abs(touch.clientY - this.dragStartY);
+      // 使用更小的阈值，使拖动更灵敏
+      const dragThreshold = Math.min(DRAG_CONFIG.threshold, 5);
 
-    // 如果正在拖拽，则更新位置
-    if (this.state.isDragging) {
-      e.preventDefault();
-      e.stopPropagation();
+      if (deltaY > dragThreshold) {
+        // 只有确认是悬浮球拖动时才阻止页面默认行为
+        e.preventDefault();
+        e.stopPropagation();
+        this.state.isDragging = true;
+      }
 
+      // 一旦开始拖拽，持续更新位置
       // 使用与鼠标事件相同的位置计算逻辑
       const currentY = touch.clientY;
       const windowHeight = window.innerHeight;
@@ -835,29 +860,50 @@ export class FloatingBallManager {
   }
 
   /**
-   * 触摸结束处理（独立实现）
-   */
+ * 触摸结束处理（独立实现）
+ */
   private handleTouchEnd(e: TouchEvent): void {
-    if (!this.isTouchDevice) return;
+    // 检查是否是悬浮球上的点击/拖动
+    const touchOnBall = this.dragStartY !== 0;
 
-    e.preventDefault();
-    e.stopPropagation();
+    if (touchOnBall) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    // 恢复过渡动画
-    if (this.ballElement) {
-      this.ballElement.style.transition = FLOATING_BALL_STYLES.transition;
+      // 恢复过渡动画
+      if (this.ballElement) {
+        this.ballElement.style.transition = FLOATING_BALL_STYLES.transition;
+
+        // 恢复正常大小
+        this.ballElement.style.transform = 'translateY(-50%) scale(1)';
+      }
+
+      const wasDragging = this.state.isDragging;
+
+      // 如果确实拖动了悬浮球，保存新位置
+      if (wasDragging) {
+        // 最终校准位置
+        this.calibratePosition();
+
+        // 防抖保存位置到存储
+        this.debouncedSavePosition();
+      } else {
+        // 如果没有拖动（即只是点击），则触发翻译
+        const currentTime = Date.now();
+        const timeDiff = currentTime - this.lastClickTime;
+
+        // 短触摸时间视为点击，触发翻译
+        if (timeDiff < 300) {
+          // 模拟点击事件
+          this.handleTranslate();
+        }
+      }
     }
 
-    if (this.state.isDragging) {
-      // 最终校准位置
-      this.calibratePosition();
-
-      // 防抖保存位置到存储
-      this.debouncedSavePosition();
-    }
-
-    // 立即重置拖拽状态（触摸事件不需要延迟）
+    // 无论如何都重置拖拽状态，确保干净的状态机
     this.state.isDragging = false;
+    this.dragStartY = 0;
+    this.ballStartY = 0;
   }
 
   /**
@@ -889,7 +935,7 @@ export class FloatingBallManager {
   }
 
   /**
-   * 鼠标悬停时显示菜单
+   * 鼠标悬停或触摸时显示菜单
    */
   private showMenuOnHover(): void {
     // 清除隐藏定时器
@@ -901,12 +947,22 @@ export class FloatingBallManager {
     // 立即显示菜单
     if (!this.state.isMenuExpanded) {
       this.state.isMenuExpanded = true;
+
+      // 确保菜单位置正确
       this.updateMenuStyle();
 
       // 只在第一次显示时绑定事件监听器
       if (!this.menuItemsEventsBound) {
         this.bindMenuItemListeners();
         this.menuItemsEventsBound = true;
+      }
+
+      // 在触摸设备上，延迟自动关闭菜单
+      if (this.isTouchDevice) {
+        this.menuHoverTimer = window.setTimeout(() => {
+          this.hideMenuOnLeave();
+          this.menuHoverTimer = null;
+        }, 3000); // 3秒后自动关闭
       }
     }
   }

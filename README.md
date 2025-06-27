@@ -469,6 +469,8 @@ This project is open-sourced under the [MIT License](./LICENSE). You are free to
 
 ---
 
+## 🌟 Star History [![Star History Chart](https://api.star-history.com/svg?repos=xiao-zaiyi/illa-helper&type=Date)](https://star-history.com/#xiao-zaiyi/illa-helper&Date)
+
 <div align="center">
   <p>⭐ If this project helps you, please give us a Star!</p>
   <p>🔄 Welcome to Fork and contribute your improvements!</p>

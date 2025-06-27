@@ -10,11 +10,7 @@
       </CardHeader>
       <CardContent class="space-y-4">
         <div class="flex items-center space-x-4">
-          <img
-            src="/assets/logo.png"
-            alt="ILLA Helper Logo"
-            class="w-16 h-16"
-          />
+          <img src="/assets/logo.png" alt="浸入式学语言助手 ILLA Helper Logo" class="w-16 h-16" />
           <div>
             <h3 class="text-lg font-semibold">
               浸入式学语言助手 (ILLA Helper)
@@ -76,16 +72,10 @@
           <a href="https://github.com/xiao-zaiyi/illa-helper" target="_blank">
             <Button>⭐ Star on GitHub</Button>
           </a>
-          <a
-            href="https://github.com/xiao-zaiyi/illa-helper/issues"
-            target="_blank"
-          >
+          <a href="https://github.com/xiao-zaiyi/illa-helper/issues" target="_blank">
             <Button variant="outline">报告问题</Button>
           </a>
-          <a
-            href="https://github.com/xiao-zaiyi/illa-helper/pulls"
-            target="_blank"
-          >
+          <a href="https://github.com/xiao-zaiyi/illa-helper/pulls" target="_blank">
             <Button variant="outline">参与贡献</Button>
           </a>
         </div>

@@ -419,8 +419,6 @@ export class PronunciationService {
       const accent = accentMap[lang];
       // 首先尝试主TTS提供者（有道TTS支持口音）
       if (accent && this.ttsProvider.name === 'youdao') {
-        console.log(`[DEBUG] 使用有道TTS，口音: ${accent}`);
-
         const youdaoConfig = {
           accent: accent,
           rate: this.config.ttsConfig.rate,

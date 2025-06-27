@@ -469,6 +469,9 @@ Safari需要额外的步骤将Web扩展打包为Safari扩展。请参考[Apple�
 
 ---
 
+## 🌟 Star History [![Star History Chart](https://api.star-history.com/svg?repos=xiao-zaiyi/illa-helper&type=Date)](https://star-history.com/#xiao-zaiyi/illa-helper&Date)
+
+
 <div align="center">
   <p>⭐ 如果这个项目对您有帮助，请给我们一个Star！</p>
   <p>🔄 欢迎Fork并贡献您的改进！</p>

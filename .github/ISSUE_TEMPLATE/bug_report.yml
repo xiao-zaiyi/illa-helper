@@ -1,0 +1,24 @@
+name: Bug Report
+description: Report a bug to help us improve
+title: "[Bug] "
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Describe the Bug
+      description: A brief description of what the bug is.
+      placeholder: Tell us what went wrong...
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any steps to reproduce, expected behavior, screenshots, or other details.
+      placeholder: Optional details like steps, OS, browser, or screenshots...
+    validations:
+      required: false

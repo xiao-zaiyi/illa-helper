@@ -302,6 +302,11 @@ export class StorageManager {
       }
     }
 
+    // 确保API请求超时时间为数字类型，无需范围验证
+    if (typeof fixedSettings.apiRequestTimeout !== 'number') {
+      fixedSettings.apiRequestTimeout = DEFAULT_SETTINGS.apiRequestTimeout;
+    }
+
     return fixedSettings;
   }
 

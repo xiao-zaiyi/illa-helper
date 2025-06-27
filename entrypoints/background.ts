@@ -96,5 +96,77 @@ export default defineBackground(() => {
       browser.tabs.create({ url: optionsUrl });
       return;
     }
+
+    // API请求代理 - 绕过CORS限制
+    if (message.type === 'api-request') {
+      (async () => {
+        try {
+          const { url, method, headers, body, timeout } = message.data;
+
+          // 创建AbortController用于超时控制
+          const controller = new AbortController();
+          let timeoutId: NodeJS.Timeout | undefined;
+
+          // 只有在timeout大于0时才设置超时
+          if (timeout && timeout > 0) {
+            timeoutId = setTimeout(() => controller.abort(), timeout);
+          }
+
+          const response = await fetch(url, {
+            method,
+            headers,
+            body,
+            signal: controller.signal,
+          });
+
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+
+          // 读取响应数据
+          const responseData = await response.text();
+          let parsedData;
+
+          try {
+            parsedData = JSON.parse(responseData);
+          } catch {
+            parsedData = responseData;
+          }
+
+          if (response.ok) {
+            sendResponse({
+              success: true,
+              data: parsedData,
+            });
+          } else {
+            sendResponse({
+              success: false,
+              error: {
+                message: `HTTP ${response.status}: ${response.statusText}`,
+                status: response.status,
+                statusText: response.statusText,
+              },
+            });
+          }
+        } catch (error: any) {
+          console.error('Background API请求失败:', error);
+
+          let errorMessage = '请求失败';
+          if (error.name === 'AbortError') {
+            errorMessage = '请求超时';
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+
+          sendResponse({
+            success: false,
+            error: {
+              message: errorMessage,
+            },
+          });
+        }
+      })();
+      return true; // 保持消息通道开放用于异步响应
+    }
   });
 });

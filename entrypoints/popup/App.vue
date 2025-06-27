@@ -86,7 +86,7 @@ const testActiveApiConnection = async () => {
   testResult.value = null;
 
   try {
-    testResult.value = await testApiConnection(activeConfig.value.config);
+    testResult.value = await testApiConnection(activeConfig.value.config, settings.value.apiRequestTimeout);
     // 5秒后自动清除结果
     testResultTimer = window.setTimeout(() => {
       testResult.value = null;
@@ -268,23 +268,15 @@ const openOptionsPage = () => {
     <header>
       <div class="header-content">
         <div class="logo">
-          <img
-            src="/assets/vue.svg"
-            alt="logo"
-            style="width: 40px; height: 40px"
-          />
+          <img src="/assets/vue.svg" alt="logo" style="width: 40px; height: 40px" />
         </div>
         <div class="title-container">
           <h1>浸入式学语言助手</h1>
         </div>
       </div>
       <div class="header-actions">
-        <button
-          v-if="settings.triggerMode === 'manual'"
-          @click="manualTranslate"
-          class="manual-translate-btn"
-          title="翻译"
-        >
+        <button v-if="settings.triggerMode === 'manual'" @click="manualTranslate" class="manual-translate-btn"
+          title="翻译">
           翻译
         </button>
       </div>
@@ -297,46 +289,29 @@ const openOptionsPage = () => {
             <div class="setting-group">
               <label>翻译模式</label>
               <select v-model="settings.translationDirection">
-                <option
-                  v-for="option in directionOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
+                <option v-for="option in directionOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
             </div>
 
             <Transition name="slide-down" mode="out-in">
-              <div
-                v-if="intelligentModeEnabled && settings.multilingualConfig"
-                class="setting-group target-language-group"
-              >
+              <div v-if="intelligentModeEnabled && settings.multilingualConfig"
+                class="setting-group target-language-group">
                 <label>目标语言</label>
-                <select
-                  :value="settings.multilingualConfig.targetLanguage"
-                  @change="onTargetLanguageChange"
-                >
+                <select :value="settings.multilingualConfig.targetLanguage" @change="onTargetLanguageChange">
                   <option value="" disabled>请选择目标语言</option>
                   <optgroup label="常用语言">
-                    <option
-                      v-for="option in targetLanguageOptions.filter(
-                        (opt) => opt.isPopular,
-                      )"
-                      :key="option.code"
-                      :value="option.code"
-                    >
+                    <option v-for="option in targetLanguageOptions.filter(
+                      (opt) => opt.isPopular,
+                    )" :key="option.code" :value="option.code">
                       {{ option.nativeName }}
                     </option>
                   </optgroup>
                   <optgroup label="其他语言">
-                    <option
-                      v-for="option in targetLanguageOptions.filter(
-                        (opt) => !opt.isPopular,
-                      )"
-                      :key="option.code"
-                      :value="option.code"
-                    >
+                    <option v-for="option in targetLanguageOptions.filter(
+                      (opt) => !opt.isPopular,
+                    )" :key="option.code" :value="option.code">
                       {{ option.nativeName }}
                     </option>
                   </optgroup>
@@ -347,11 +322,7 @@ const openOptionsPage = () => {
             <div class="setting-group">
               <label>语言水平</label>
               <select v-model="settings.userLevel">
-                <option
-                  v-for="option in levelOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
+                <option v-for="option in levelOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
@@ -360,11 +331,7 @@ const openOptionsPage = () => {
             <div class="setting-group">
               <label>翻译样式</label>
               <select v-model="settings.translationStyle">
-                <option
-                  v-for="option in styleOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
+                <option v-for="option in styleOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
@@ -373,11 +340,7 @@ const openOptionsPage = () => {
             <div class="setting-group">
               <label>触发模式</label>
               <select v-model="settings.triggerMode">
-                <option
-                  v-for="option in triggerOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
+                <option v-for="option in triggerOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
@@ -386,11 +349,7 @@ const openOptionsPage = () => {
             <div class="setting-group">
               <label>原文显示</label>
               <select v-model="settings.originalWordDisplayMode">
-                <option
-                  v-for="option in originalWordDisplayOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
+                <option v-for="option in originalWordDisplayOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
@@ -400,24 +359,12 @@ const openOptionsPage = () => {
               <label>
                 替换比例: {{ Math.round(settings.replacementRate * 100) }}%
               </label>
-              <input
-                type="range"
-                v-model.number="settings.replacementRate"
-                min="0.01"
-                max="1"
-                step="0.01"
-              />
+              <input type="range" v-model.number="settings.replacementRate" min="0.01" max="1" step="0.01" />
             </div>
 
             <div class="setting-group full-width">
               <label>段落最大长度: {{ settings.maxLength }}</label>
-              <input
-                type="range"
-                v-model.number="settings.maxLength"
-                min="10"
-                max="2000"
-                step="10"
-              />
+              <input type="range" v-model.number="settings.maxLength" min="10" max="2000" step="10" />
               <p class="setting-note" style="margin-top: 2px">
                 段落越短AI响应越快。
               </p>
@@ -427,12 +374,8 @@ const openOptionsPage = () => {
               <div class="setting-group">
                 <label>悬浮框</label>
                 <div class="toggle-container">
-                  <input
-                    type="checkbox"
-                    v-model="settings.enablePronunciationTooltip"
-                    id="tooltip-toggle"
-                    class="toggle-input"
-                  />
+                  <input type="checkbox" v-model="settings.enablePronunciationTooltip" id="tooltip-toggle"
+                    class="toggle-input" />
                   <label for="tooltip-toggle" class="toggle-label">
                     <span class="toggle-slider"></span>
                   </label>
@@ -440,17 +383,10 @@ const openOptionsPage = () => {
               </div>
 
               <!-- 快捷键设置 -->
-              <div
-                v-if="settings.enablePronunciationTooltip"
-                class="setting-group"
-              >
+              <div v-if="settings.enablePronunciationTooltip" class="setting-group">
                 <label>Ctrl+鼠标悬停</label>
-                <input
-                  type="checkbox"
-                  v-model="settings.pronunciationHotkey.enabled"
-                  id="hotkey-enabled-toggle"
-                  class="toggle-input"
-                />
+                <input type="checkbox" v-model="settings.pronunciationHotkey.enabled" id="hotkey-enabled-toggle"
+                  class="toggle-input" />
                 <label for="hotkey-enabled-toggle" class="toggle-label">
                   <span class="toggle-slider"></span>
                 </label>
@@ -462,12 +398,8 @@ const openOptionsPage = () => {
               <div class="setting-group">
                 <label>悬浮翻译球</label>
                 <div class="toggle-container">
-                  <input
-                    type="checkbox"
-                    v-model="settings.floatingBall.enabled"
-                    id="floating-ball-toggle"
-                    class="toggle-input"
-                  />
+                  <input type="checkbox" v-model="settings.floatingBall.enabled" id="floating-ball-toggle"
+                    class="toggle-input" />
                   <label for="floating-ball-toggle" class="toggle-label">
                     <span class="toggle-slider"></span>
                   </label>
@@ -481,13 +413,7 @@ const openOptionsPage = () => {
                     透明度:
                     {{ Math.round(settings.floatingBall.opacity * 100) }}%
                   </label>
-                  <input
-                    type="range"
-                    v-model.number="settings.floatingBall.opacity"
-                    min="0.1"
-                    max="1"
-                    step="0.05"
-                  />
+                  <input type="range" v-model.number="settings.floatingBall.opacity" min="0.1" max="1" step="0.05" />
                 </div>
               </div>
             </div>
@@ -498,26 +424,12 @@ const openOptionsPage = () => {
           <div class="api-header" @click="toggleApiSettings">
             <div class="api-header-left">
               <span>模型 API 设置</span>
-              <button
-                @click.stop="openOptionsPage"
-                class="options-link-btn"
-                title="打开详细设置"
-              >
+              <button @click.stop="openOptionsPage" class="options-link-btn" title="打开详细设置">
                 <ExternalLink class="w-4 h-4" />
               </button>
             </div>
-            <svg
-              class="toggle-icon"
-              :class="{ 'is-open': showApiSettings }"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
+            <svg class="toggle-icon" :class="{ 'is-open': showApiSettings }" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="m6 9 6 6 6-6" />
             </svg>
           </div>
@@ -527,15 +439,8 @@ const openOptionsPage = () => {
               <!-- 配置选择下拉框 -->
               <div class="sub-setting-group">
                 <label class="text-sm mt-2 mb-1">当前配置</label>
-                <select
-                  v-model="settings.activeApiConfigId"
-                  @change="handleActiveConfigChange"
-                >
-                  <option
-                    v-for="config in settings.apiConfigs"
-                    :key="config.id"
-                    :value="config.id"
-                  >
+                <select v-model="settings.activeApiConfigId" @change="handleActiveConfigChange">
+                  <option v-for="config in settings.apiConfigs" :key="config.id" :value="config.id">
                     {{ config.name }} ({{ config.provider }})
                   </option>
                 </select>
@@ -559,12 +464,8 @@ const openOptionsPage = () => {
                 </div>
                 <div class="config-info-item">
                   <span class="info-label">状态:</span>
-                  <span
-                    class="info-value"
-                    :class="
-                      activeConfig.config.apiKey ? 'status-ok' : 'status-error'
-                    "
-                  >
+                  <span class="info-value" :class="activeConfig.config.apiKey ? 'status-ok' : 'status-error'
+                    ">
                     {{
                       activeConfig.config.apiKey ? '已配置' : '未配置API密钥'
                     }}
@@ -574,34 +475,19 @@ const openOptionsPage = () => {
                 <!-- API 连接测试 -->
                 <div class="api-test-section">
                   <Transition name="fade">
-                    <div
-                      v-if="testResult"
-                      class="test-result"
-                      :class="{
-                        success: testResult.success,
-                        error: !testResult.success,
-                      }"
-                    >
-                      <CheckCircle2Icon
-                        v-if="testResult.success"
-                        class="w-4 h-4"
-                      />
+                    <div v-if="testResult" class="test-result" :class="{
+                      success: testResult.success,
+                      error: !testResult.success,
+                    }">
+                      <CheckCircle2Icon v-if="testResult.success" class="w-4 h-4" />
                       <XCircle v-else class="w-4 h-4" />
-                      <span
-                        class="test-result-message"
-                        :title="testResult.message"
-                      >
+                      <span class="test-result-message" :title="testResult.message">
                         {{ testResult.message }}
                       </span>
                     </div>
                   </Transition>
-                  <button
-                    @click="testActiveApiConnection"
-                    :disabled="
-                      isTestingConnection || !activeConfig?.config.apiKey
-                    "
-                    class="test-connection-btn"
-                  >
+                  <button @click="testActiveApiConnection" :disabled="isTestingConnection || !activeConfig?.config.apiKey
+                    " class="test-connection-btn">
                     <div v-if="isTestingConnection" class="spinner"></div>
                     <ZapIcon v-else class="w-3 h-3" />
                     <span>{{ isTestingConnection ? '测试中' : '测试' }}</span>
@@ -631,28 +517,12 @@ const openOptionsPage = () => {
             <span class="text-gray-500 ml-2">v{{ extensionVersion }}</span>
           </p>
         </div>
-        <button
-          class="footer-settings-btn"
-          @click="openAdvancedSettings"
-          title="设置中心"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M12 15a3 3 0 100-6 3 3 0 000 6z"
-              stroke="currentColor"
-              stroke-width="2"
-            />
+        <button class="footer-settings-btn" @click="openAdvancedSettings" title="设置中心">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2" />
             <path
               d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
-              stroke="currentColor"
-              stroke-width="2"
-            />
+              stroke="currentColor" stroke-width="2" />
           </svg>
           <span class="footer-settings-text">设置</span>
         </button>
@@ -928,16 +798,16 @@ header {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.toggle-input:checked + .toggle-label {
+.toggle-input:checked+.toggle-label {
   background-color: var(--primary-color);
 }
 
-.toggle-input:checked + .toggle-label .toggle-slider {
+.toggle-input:checked+.toggle-label .toggle-slider {
   transform: translateX(20px);
   box-shadow: 0 2px 6px rgba(106, 136, 224, 0.4);
 }
 
-.toggle-input:focus + .toggle-label {
+.toggle-input:focus+.toggle-label {
   box-shadow: 0 0 0 2px rgba(106, 136, 224, 0.3);
 }
 
@@ -1246,11 +1116,9 @@ footer p {
   width: 100%;
   height: 16px;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(240, 244, 248, 0.7) 0%,
-    rgba(240, 244, 248, 0) 100%
-  );
+  background: linear-gradient(to bottom,
+      rgba(240, 244, 248, 0.7) 0%,
+      rgba(240, 244, 248, 0) 100%);
   border-radius: 8px 8px 0 0;
   z-index: -1;
 }
@@ -1263,11 +1131,9 @@ footer p {
   }
 
   .floating-footer::before {
-    background: linear-gradient(
-      to bottom,
-      rgba(30, 30, 30, 0.7) 0%,
-      rgba(30, 30, 30, 0) 100%
-    );
+    background: linear-gradient(to bottom,
+        rgba(30, 30, 30, 0.7) 0%,
+        rgba(30, 30, 30, 0) 100%);
   }
 }
 

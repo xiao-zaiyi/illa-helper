@@ -1,0 +1,24 @@
+name: Feature Request
+description: Suggest an idea to improve the project
+title: "[Feature] "
+labels: ["enhancement"]
+assignees: []
+
+body:
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Describe the Feature
+      description: A brief description of the feature or idea.
+      placeholder: Tell us what you want to add or improve...
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any details, such as the problem this solves, solutions considered, or screenshots.
+      placeholder: Optional details like use cases or alternatives...
+    validations:
+      required: false

@@ -71,8 +71,18 @@ export interface ApiTestResult {
  * @param apiConfig API配置对象
  * @returns Promise<ApiTestResult> 测试结果
  */
+/**
+ * 获取API超时时间
+ * @param baseTimeout 基础超时时间（毫秒）
+ * @returns 超时时间（毫秒），如果为0则返回undefined表示无超时限制
+ */
+export function getApiTimeout(baseTimeout: number): number | undefined {
+  return baseTimeout === 0 ? undefined : baseTimeout;
+}
+
 export async function testApiConnection(
   apiConfig: ApiConfig,
+  baseTimeout?: number,
 ): Promise<ApiTestResult> {
   if (!apiConfig.apiKey || !apiConfig.apiEndpoint) {
     throw new Error('API密钥或端点未配置');
@@ -101,14 +111,66 @@ export async function testApiConnection(
     // 合并自定义参数
     requestBody = mergeCustomParams(requestBody, apiConfig.customParams);
 
-    const response = await fetch(apiConfig.apiEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiConfig.apiKey}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
+    let response: Response;
+
+    if (apiConfig.useBackgroundProxy) {
+      // 通过background代理发送请求
+      response = await new Promise<Response>((resolve, reject) => {
+        browser.runtime.sendMessage(
+          {
+            type: 'api-request',
+            data: {
+              url: apiConfig.apiEndpoint,
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${apiConfig.apiKey}`,
+              },
+              body: JSON.stringify(requestBody),
+              timeout: getApiTimeout(baseTimeout || 30000) || 0,
+            },
+          },
+          (response) => {
+            if (response.success) {
+              // 创建模拟Response对象
+              const mockResponse = {
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: async () => response.data,
+              } as Response;
+              resolve(mockResponse);
+            } else {
+              const mockResponse = {
+                ok: false,
+                status: response.error?.status || 500,
+                statusText: response.error?.statusText || 'Internal Server Error',
+                json: async () => ({ error: response.error }),
+              } as Response;
+              resolve(mockResponse);
+            }
+          }
+        );
+      });
+    } else {
+      // 直接发送请求，处理超时设置
+      const timeout = getApiTimeout(baseTimeout || 30000);
+      const fetchOptions: RequestInit = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiConfig.apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+      };
+
+      // 只有在timeout不为undefined时才设置AbortSignal
+      if (timeout !== undefined) {
+        fetchOptions.signal = AbortSignal.timeout(timeout);
+      }
+
+      response = await fetch(apiConfig.apiEndpoint, fetchOptions);
+    }
 
     if (response.ok) {
       const data = await response.json();
@@ -188,10 +250,10 @@ export function safeSetInnerHTML(
   try {
     const parser = new DOMParser();
     const parsed = parser.parseFromString(htmlContent, 'text/html');
-    
+
     // 清空目标元素
     element.textContent = '';
-    
+
     // 将解析后的内容移动到目标元素
     const bodyContent = parsed.body;
     if (bodyContent) {

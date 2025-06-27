@@ -11,7 +11,7 @@ import {
   ApiConfig,
   DEFAULT_API_CONFIG,
 } from './types';
-import { cleanMarkdownFromResponse } from '@/src/utils';
+import { cleanMarkdownFromResponse, getApiTimeout } from '@/src/utils';
 import { rateLimitManager } from './rateLimit';
 
 /**
@@ -78,6 +78,84 @@ export class ApiService {
    */
   setModel(model: string): void {
     this.config.model = model;
+  }
+
+  /**
+   * 统一API请求方法 - 根据配置选择请求方式
+   * @param requestBody 请求体
+   * @param apiConfig API配置
+   * @param timeout 超时时间（毫秒）
+   * @returns Promise<Response>
+   */
+  private async sendApiRequest(requestBody: any, apiConfig: ApiConfig, timeout: number | undefined = 30000): Promise<Response> {
+    if (apiConfig.useBackgroundProxy) {
+      return this.sendViaBackground(requestBody, apiConfig, timeout || 0);
+    } else {
+      // 直接请求方式，处理超时设置
+      const fetchOptions: RequestInit = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiConfig.apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+      };
+
+      // 只有在timeout不为undefined时才设置AbortSignal
+      if (timeout !== undefined) {
+        fetchOptions.signal = AbortSignal.timeout(timeout);
+      }
+
+      return fetch(apiConfig.apiEndpoint, fetchOptions);
+    }
+  }
+
+  /**
+   * 通过background脚本发送API请求
+   * @param requestBody 请求体
+   * @param apiConfig API配置
+   * @param timeout 超时时间（毫秒）
+   * @returns Promise<Response>
+   */
+  private async sendViaBackground(requestBody: any, apiConfig: ApiConfig, timeout: number = 30000): Promise<Response> {
+    return new Promise((resolve, reject) => {
+      browser.runtime.sendMessage(
+        {
+          type: 'api-request',
+          data: {
+            url: apiConfig.apiEndpoint,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiConfig.apiKey}`,
+            },
+            body: JSON.stringify(requestBody),
+            timeout: timeout,
+          },
+        },
+        (response) => {
+          if (response.success) {
+            // 创建一个模拟的Response对象
+            const mockResponse = {
+              ok: true,
+              status: 200,
+              statusText: 'OK',
+              json: async () => response.data,
+            } as Response;
+            resolve(mockResponse);
+          } else {
+            // 创建一个失败的Response对象
+            const mockResponse = {
+              ok: false,
+              status: response.error?.status || 500,
+              statusText: response.error?.statusText || 'Internal Server Error',
+              json: async () => ({ error: response.error }),
+            } as Response;
+            resolve(mockResponse);
+          }
+        }
+      );
+    });
   }
 
   /**
@@ -179,21 +257,15 @@ export class ApiService {
       );
 
       const apiRequestFunction = async () => {
-        return fetch(activeConfig.config.apiEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${activeConfig.config.apiKey}`,
-          },
-          body: JSON.stringify(requestBody),
-        });
+        const timeout = getApiTimeout(settings.apiRequestTimeout || 30000);
+        return this.sendApiRequest(requestBody, activeConfig.config, timeout);
       };
 
       // 通过executeBatch执行单个请求，确保串行
       const [response] = await rateLimiter.executeBatch([apiRequestFunction]);
 
       if (!response.ok) {
-        console.error(`API 请求失败: ${response.status}`);
+        console.error(`API 请求失败: ${response.status} ${response.statusText}`);
         return {
           original: originalText,
           processed: originalText,
@@ -212,8 +284,8 @@ export class ApiService {
       } else {
         return this.extractReplacements(data, originalText, settings);
       }
-    } catch (error) {
-      console.error('API 请求或解析失败:', error);
+    } catch (error: any) {
+      console.error('API请求失败:', error);
       return {
         original: originalText,
         processed: originalText,

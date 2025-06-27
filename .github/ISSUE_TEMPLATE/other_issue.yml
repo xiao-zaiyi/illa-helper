@@ -1,0 +1,24 @@
+name: Other Issue
+description: Share feedback, questions, or other ideas
+title: "[Other] "
+labels: ["feedback"]
+assignees: []
+
+body:
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Describe the Issue
+      description: A brief description of your feedback, question, or idea.
+      placeholder: Tell us what's on your mind...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any details, screenshots, or relevant information.
+      placeholder: Optional details like use cases or screenshots...
+    validations:
+      required: false

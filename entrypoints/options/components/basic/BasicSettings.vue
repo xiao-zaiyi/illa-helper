@@ -162,9 +162,6 @@
             替换率 (Replacement Rate:
             {{ Math.round(settings.replacementRate * 100) }}%)
           </Label>
-          <p class="text-xs text-muted-foreground mb-2">
-            控制翻译内容的比例。较低的替换率（如10%以下）会更保守地选择翻译词汇。
-          </p>
           <Slider
             id="replacement-rate"
             :model-value="[settings.replacementRate]"
@@ -172,23 +169,6 @@
             :min="0"
             :max="1"
             :step="0.01"
-          />
-          <div class="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>0% (不翻译)</span>
-            <span>50% (平衡)</span>
-            <span>100% (全部翻译)</span>
-          </div>
-        </div>
-        <div
-          class="border-t border-border pt-6 flex items-center justify-between"
-        >
-          <div class="space-y-1">
-            <Label for="enable-pronunciation">启用悬浮框</Label>
-          </div>
-          <Switch
-            id="enable-pronunciation"
-            :model-value="settings.enablePronunciationTooltip"
-            @update:model-value="settings.enablePronunciationTooltip = $event"
           />
         </div>
         <div

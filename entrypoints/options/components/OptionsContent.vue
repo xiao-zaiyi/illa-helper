@@ -1,19 +1,11 @@
 <template>
   <div class="flex-1 overflow-y-auto bg-background">
     <!-- 内容区域 -->
-    <div class="p-6">
+    <div :class="['p-4 md:p-6', { 'pt-20': isMobile }]">
       <div class="max-w-4xl mx-auto">
         <Transition name="fade" mode="out-in">
-          <div
-            v-if="currentSection"
-            :id="currentSection"
-            class="anchor-section"
-          >
-            <component
-              :is="currentComponent"
-              :key="currentSection"
-              @save-message="handleSaveMessage"
-            />
+          <div v-if="currentSection" :id="currentSection" class="anchor-section">
+            <component :is="currentComponent" :key="currentSection" @save-message="handleSaveMessage" />
           </div>
         </Transition>
       </div>
@@ -22,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import BlacklistManagement from './blacklist/BlacklistManagement.vue';
 import BasicSettings from './basic/BasicSettings.vue';
 import TranslationSettings from './translation/TranslationSettings.vue';
@@ -35,6 +27,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const isMobile = ref(false);
 
 const emit = defineEmits<{
   saveMessage: [message: string];
@@ -57,6 +50,20 @@ const currentComponent = computed(() => {
 const handleSaveMessage = (message: string) => {
   emit('saveMessage', message);
 };
+
+// 检查设备是否为移动端
+const checkIfMobile = () => {
+  isMobile.value = window.innerWidth < 768;
+};
+
+onMounted(() => {
+  checkIfMobile();
+  window.addEventListener('resize', checkIfMobile);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkIfMobile);
+});
 </script>
 
 <style scoped>
@@ -73,5 +80,12 @@ const handleSaveMessage = (message: string) => {
 .anchor-section {
   scroll-margin-top: 80px;
   /* 考虑顶部导航栏高度 */
+}
+
+/* 移动端适配样式 */
+@media (max-width: 767px) {
+  .anchor-section {
+    scroll-margin-top: 60px;
+  }
 }
 </style>
