@@ -210,6 +210,8 @@
                 <SelectItem value="deepseek">DeepSeek</SelectItem>
                 <SelectItem value="silicon-flow">Silicon Flow</SelectItem>
                 <SelectItem value="anthropic">Anthropic</SelectItem>
+                <SelectItem value="gemini">Google Gemini</SelectItem>
+                <SelectItem value="proxy-gemini">Proxy-Gemini</SelectItem>
                 <SelectItem value="custom">自定义</SelectItem>
               </SelectContent>
             </Select>
@@ -496,7 +498,17 @@ const providerConfigs = {
   anthropic: {
     name: 'Anthropic',
     apiEndpoint: 'https://api.anthropic.com/v1/messages',
-    defaultModel: 'claude-3-5-sonnet-20241022',
+    defaultModel: 'claude-3-5-sonnet-20240620',
+  },
+  gemini: {
+    name: 'Google Gemini',
+    apiEndpoint: 'https://generativelanguage.googleapis.com',
+    defaultModel: 'gemini-2.5-flash-lite-preview-06-17',
+  },
+  'proxy-gemini': {
+    name: 'Proxy-Gemini',
+    apiEndpoint: 'https://api-proxy.me/gemini',
+    defaultModel: 'gemini-2.5-flash-lite-preview-06-17',
   },
 };
 
@@ -642,6 +654,7 @@ const handleProviderChange = (provider: any) => {
     const config =
       providerConfigs[providerValue as keyof typeof providerConfigs];
     configForm.value.config.apiEndpoint = config.apiEndpoint;
+    configForm.value.config.model = config.defaultModel; // 添加这一行来设置默认模型
     // 如果配置名称为空，自动设置为服务商名称
     if (!configForm.value.name) {
       configForm.value.name = config.name;
@@ -709,37 +722,39 @@ const testApiConnection = async () => {
   testResult.value = null;
 
   try {
-    testResult.value = await performApiTest(configForm.value.config);
+    // 传入 configForm.value.provider 作为第二个参数
+    testResult.value = await performApiTest(configForm.value.config, configForm.value.provider);
   } finally {
     isTestingConnection.value = false;
   }
 };
 
 // 测试卡片配置的API连接
-const testCardApiConnection = async (config: ApiConfigItem) => {
-  if (!config.config.apiKey || !config.config.apiEndpoint) {
+const testCardApiConnection = async (configItem: ApiConfigItem) => { // 将参数名改为 configItem 以避免与内部变量冲突
+  if (!configItem.config.apiKey || !configItem.config.apiEndpoint) {
     return;
   }
 
   // 清除之前的定时器
-  if (cardTestTimers.value[config.id]) {
-    clearTimeout(cardTestTimers.value[config.id]);
-    delete cardTestTimers.value[config.id];
+  if (cardTestTimers.value[configItem.id]) {
+    clearTimeout(cardTestTimers.value[configItem.id]);
+    delete cardTestTimers.value[configItem.id];
   }
 
-  cardTestingStates.value[config.id] = true;
-  delete cardTestResults.value[config.id];
+  cardTestingStates.value[configItem.id] = true;
+  delete cardTestResults.value[configItem.id];
 
   try {
-    cardTestResults.value[config.id] = await performApiTest(config.config);
+    // 传入 configItem.provider 作为第二个参数
+    cardTestResults.value[configItem.id] = await performApiTest(configItem.config, configItem.provider);
 
     // 设置5秒后自动清除结果
-    cardTestTimers.value[config.id] = setTimeout(() => {
-      delete cardTestResults.value[config.id];
-      delete cardTestTimers.value[config.id];
+    cardTestTimers.value[configItem.id] = setTimeout(() => {
+      delete cardTestResults.value[configItem.id];
+      delete cardTestTimers.value[configItem.id];
     }, 5000);
   } finally {
-    cardTestingStates.value[config.id] = false;
+    cardTestingStates.value[configItem.id] = false;
   }
 };
 

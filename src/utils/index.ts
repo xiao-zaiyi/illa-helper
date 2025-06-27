@@ -3,6 +3,7 @@
  * 提供 UserLevel 相关的工具函数
  */
 
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { UserLevel, USER_LEVEL_OPTIONS, ApiConfig } from '@/src/modules/types';
 
 /**
@@ -73,67 +74,113 @@ export interface ApiTestResult {
  */
 export async function testApiConnection(
   apiConfig: ApiConfig,
+  provider: string, // 新增 provider 参数
 ): Promise<ApiTestResult> {
   if (!apiConfig.apiKey || !apiConfig.apiEndpoint) {
-    throw new Error('API密钥或端点未配置');
+    return {
+      success: false,
+      message: 'API密钥或端点未配置',
+    };
   }
 
   try {
-    let requestBody: any = {
-      model: apiConfig.model,
-      temperature: apiConfig.temperature,
-      messages: [
-        {
-          role: 'user',
-          content:
-            'Hello, this is a connection test. Please respond with "OK" and output JSON format.',
-        },
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: 10,
-    };
+    if (provider === 'gemini' || provider === 'proxy-gemini') {
+      // Gemini API 测试逻辑
+      const genAI = new GoogleGenerativeAI(apiConfig.apiKey);
+      const model = genAI.getGenerativeModel(
+        { model: apiConfig.model },
+        { baseUrl: apiConfig.apiEndpoint },
+      );
 
-    // 只有当配置允许传递思考参数时，才添加enable_thinking字段
-    if (apiConfig.includeThinkingParam) {
-      requestBody.enable_thinking = apiConfig.enable_thinking;
-    }
+      const contents = [
+        { role: 'user', parts: [{ text: 'Hello, this is a connection test. Please respond with "OK" and output JSON format.' }] },
+      ];
 
-    // 合并自定义参数
-    requestBody = mergeCustomParams(requestBody, apiConfig.customParams);
-
-    const response = await fetch(apiConfig.apiEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiConfig.apiKey}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-
-      return {
-        success: true,
-        message: `状态码: ${response.status}`,
-        model: data.model || apiConfig.model,
+      const generationConfig: any = {
+        temperature: apiConfig.temperature,
+        responseMimeType: 'application/json',
+        maxOutputTokens: 10, // 限制输出，加快测试
       };
-    } else {
-      const errorData = await response.json().catch(() => null);
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
 
-      if (errorData?.error?.message) {
-        errorMessage = errorData.error.message;
-      } else if (errorData?.message) {
-        errorMessage = errorData.message;
+      // 合并自定义参数
+      const mergedGenerationConfig = mergeCustomParams(
+        generationConfig,
+        apiConfig.customParams,
+      );
+
+      const result = await model.generateContent({
+        contents,
+        generationConfig: mergedGenerationConfig,
+      });
+
+      if (result?.response?.text()) {
+        return {
+          success: true,
+          message: '连接成功',
+          model: apiConfig.model,
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Gemini API 连接失败: 无有效响应',
+        };
+      }
+    } else {
+      // OpenAI 兼容 API 测试逻辑 (现有逻辑)
+      let requestBody: any = {
+        model: apiConfig.model,
+        temperature: apiConfig.temperature,
+        messages: [
+          {
+            role: 'user',
+            content:
+              'Hello, this is a connection test. Please respond with "OK" and output JSON format.',
+          },
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 10,
+      };
+
+      if (apiConfig.includeThinkingParam) {
+        requestBody.enable_thinking = apiConfig.enable_thinking;
       }
 
-      return {
-        success: false,
-        message: errorMessage,
-      };
+      requestBody = mergeCustomParams(requestBody, apiConfig.customParams);
+
+      const response = await fetch(apiConfig.apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiConfig.apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          success: true,
+          message: `状态码: ${response.status}`,
+          model: data.model || apiConfig.model,
+        };
+      } else {
+        const errorData = await response.json().catch(() => null);
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+        if (errorData?.error?.message) {
+          errorMessage = errorData.error.message;
+        } else if (errorData?.message) {
+          errorMessage = errorData.message;
+        }
+
+        return {
+          success: false,
+          message: errorMessage,
+        };
+      }
     }
   } catch (error: any) {
+    console.error('API 连接测试失败:', error);
     return {
       success: false,
       message: error.message || '网络连接错误',
