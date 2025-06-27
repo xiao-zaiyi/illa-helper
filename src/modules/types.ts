@@ -43,7 +43,7 @@ export interface ApiConfig {
 export interface ApiConfigItem {
   id: string;
   name: string;
-  provider: string; // 服务提供商：openai、deepseek、silicon-flow等
+  provider: 'openai' | 'deepseek' | 'silicon-flow' | 'gemini' | 'proxy-gemini' | string; // 服务提供商：openai、deepseek、silicon-flow、gemini、proxy-gemini等
   config: ApiConfig;
   isDefault?: boolean;
   createdAt: number;

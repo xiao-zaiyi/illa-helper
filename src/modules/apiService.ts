@@ -3,6 +3,7 @@
  * 负责调用 GPT 大模型 API 进行文本分析和翻译
  */
 
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSystemPrompt, getSystemPromptByConfig } from './promptManager';
 import {
   UserSettings,
@@ -10,6 +11,7 @@ import {
   Replacement,
   ApiConfig,
   DEFAULT_API_CONFIG,
+  ApiConfigItem,
 } from './types';
 import { cleanMarkdownFromResponse } from '@/src/utils';
 import { rateLimitManager } from './rateLimit';
@@ -93,13 +95,12 @@ export class ApiService {
   ): Promise<FullTextAnalysisResponse> {
     const originalText = text || '';
 
-    // 获取当前活跃的API配置
-    const activeConfig = settings.apiConfigs.find(
+    const activeConfigItem = settings.apiConfigs.find(
       (config) => config.id === settings.activeApiConfigId,
     );
 
-    // 验证输入
-    if (!originalText.trim() || !activeConfig?.config.apiKey) {
+    if (!originalText.trim() || !activeConfigItem?.config.apiKey) {
+      console.error('API 密钥未设置或文本为空');
       return {
         original: originalText,
         processed: originalText,
@@ -107,93 +108,212 @@ export class ApiService {
       };
     }
 
-    if (!activeConfig.config.apiKey) {
-      console.error('API 密钥未设置');
+    const { config: activeConfig, provider } = activeConfigItem;
+
+    // 判断是否使用智能模式
+    const useIntelligentMode =
+      settings.multilingualConfig?.intelligentMode ||
+      settings.translationDirection === 'intelligent';
+
+    let systemPrompt: string;
+    if (useIntelligentMode) {
+      const targetLanguage = settings.multilingualConfig?.targetLanguage;
+      if (!targetLanguage) {
+        console.error('智能模式下未找到目标语言配置');
+        return {
+          original: originalText,
+          processed: originalText,
+          replacements: [],
+        };
+      }
+      systemPrompt = getSystemPromptByConfig({
+        translationDirection: 'intelligent',
+        targetLanguage: targetLanguage,
+        userLevel: settings.userLevel,
+        replacementRate: settings.replacementRate,
+        intelligentMode: true,
+      });
+    } else {
+      systemPrompt = getSystemPrompt(
+        settings.translationDirection,
+        settings.userLevel,
+        settings.replacementRate,
+      );
     }
+
     try {
-      // 判断是否使用智能模式
-      const useIntelligentMode =
-        settings.multilingualConfig?.intelligentMode ||
-        settings.translationDirection === 'intelligent';
-
-      let systemPrompt: string;
-
-      if (useIntelligentMode) {
-        // 使用智能模式提示词，直接使用用户选择的目标语言
-        const targetLanguage = settings.multilingualConfig?.targetLanguage;
-
-        if (!targetLanguage) {
-          console.error('智能模式下未找到目标语言配置');
-          return {
-            original: originalText,
-            processed: originalText,
-            replacements: [],
-          };
-        }
-
-        systemPrompt = getSystemPromptByConfig({
-          translationDirection: 'intelligent',
-          targetLanguage: targetLanguage,
-          userLevel: settings.userLevel,
-          replacementRate: settings.replacementRate,
-          intelligentMode: true,
-        });
-      } else {
-        // 使用传统模式提示词
-        systemPrompt = getSystemPrompt(
-          settings.translationDirection,
-          settings.userLevel,
-          settings.replacementRate,
+      let data: any;
+      if (provider === 'gemini') {
+        data = await this._callGeminiApi(
+          originalText,
+          systemPrompt,
+          activeConfig,
         );
+        return this._parseGeminiResponse(data, originalText, useIntelligentMode);
+      } else {
+        // 默认或OpenAI/DeepSeek/SiliconFlow等
+        data = await this._callOpenAIApi(
+          originalText,
+          systemPrompt,
+          activeConfig,
+          provider,
+        );
+        if (useIntelligentMode) {
+          return this.extractIntelligentReplacements(
+            data,
+            originalText,
+            settings,
+          );
+        } else {
+          return this.extractReplacements(data, originalText);
+        }
       }
-
-      let requestBody: any = {
-        model: activeConfig.config.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `{{ ${originalText} }}`,
-          },
-        ],
-        temperature: activeConfig.config.temperature,
-        response_format: { type: 'json_object' },
+    } catch (error) {
+      console.error('API 请求或解析失败:', error);
+      return {
+        original: originalText,
+        processed: originalText,
+        replacements: [],
       };
+    }
+  }
 
-      // 只有当配置允许传递思考参数时，才添加enable_thinking字段
-      if (activeConfig.config.includeThinkingParam) {
-        requestBody.enable_thinking = activeConfig.config.enable_thinking;
-      }
+  /**
+   * 调用 OpenAI 兼容 API (包括 OpenAI, DeepSeek, SiliconFlow)
+   * @param text 原始文本
+   * @param systemPrompt 系统提示词
+   * @param config API 配置
+   * @param provider 服务提供商
+   * @returns API 响应数据
+   */
+  private async _callOpenAIApi(
+    text: string,
+    systemPrompt: string,
+    config: ApiConfig,
+    provider: string,
+  ): Promise<any> {
+    let requestBody: any = {
+      model: config.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: `{{ ${text} }}`,
+        },
+      ],
+      temperature: config.temperature,
+      response_format: { type: 'json_object' },
+    };
 
-      // 合并自定义参数
-      requestBody = mergeCustomParams(
-        requestBody,
-        activeConfig.config.customParams,
+    if (config.includeThinkingParam) {
+      requestBody.enable_thinking = config.enable_thinking;
+    }
+
+    requestBody = mergeCustomParams(requestBody, config.customParams);
+
+    const rateLimiter = rateLimitManager.getLimiter(
+      config.apiEndpoint,
+      config.requestsPerSecond || 0,
+      true,
+    );
+
+    const apiRequestFunction = async () => {
+      return fetch(config.apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+    };
+
+    const [response] = await rateLimiter.executeBatch([apiRequestFunction]);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `OpenAI 兼容 API 请求失败 (${provider}): ${response.status} - ${errorText}`,
       );
-
-      // 通过速率限制器执行API请求
-      const rateLimiter = rateLimitManager.getLimiter(
-        activeConfig.config.apiEndpoint,
-        activeConfig.config.requestsPerSecond || 0,
-        true,
+      throw new Error(
+        `OpenAI 兼容 API 请求失败 (${provider}): ${response.status}`,
       );
+    }
 
-      const apiRequestFunction = async () => {
-        return fetch(activeConfig.config.apiEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${activeConfig.config.apiKey}`,
-          },
-          body: JSON.stringify(requestBody),
-        });
-      };
+    return response.json();
+  }
 
-      // 通过executeBatch执行单个请求，确保串行
-      const [response] = await rateLimiter.executeBatch([apiRequestFunction]);
+  /**
+   * 调用 Google Gemini API
+   * @param text 原始文本
+   * @param systemPrompt 系统提示词
+   * @param config API 配置
+   * @returns API 响应数据
+   */
+  private async _callGeminiApi(
+    text: string,
+    systemPrompt: string,
+    config: ApiConfig,
+  ): Promise<any> {
+    const genAI = new GoogleGenerativeAI(config.apiKey);
+    const model = genAI.getGenerativeModel({ model: config.model }, { baseUrl: config.apiEndpoint });
 
-      if (!response.ok) {
-        console.error(`API 请求失败: ${response.status}`);
+    const contents = [
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      { role: 'model', parts: [{ text: '好的，我明白了。' }] }, // Gemini 通常需要一个模型回复来模拟对话
+      { role: 'user', parts: [{ text: `{{ ${text} }}` }] },
+    ];
+
+    const generationConfig: any = {
+      temperature: config.temperature,
+      responseMimeType: 'application/json', // 强制JSON输出
+    };
+
+    // 合并自定义参数
+    const mergedGenerationConfig = mergeCustomParams(
+      generationConfig,
+      config.customParams,
+    );
+
+    const rateLimiter = rateLimitManager.getLimiter(
+      'gemini-api', // Gemini API 不需要具体的endpoint进行限流，使用一个固定名称
+      config.requestsPerSecond || 0,
+      true,
+    );
+
+    const apiRequestFunction = async () => {
+      return model.generateContent({
+        contents,
+        generationConfig: mergedGenerationConfig,
+      });
+    };
+
+    const [result] = await rateLimiter.executeBatch([apiRequestFunction]);
+
+    if (!result || !result.response) {
+      console.error('Gemini API 请求失败: 无有效响应');
+      throw new Error('Gemini API 请求失败: 无有效响应');
+    }
+
+    return result.response;
+  }
+
+  /**
+   * 解析 Google Gemini API 的响应
+   * @param response Gemini API 原始响应
+   * @param originalText 原始文本
+   * @param useIntelligentMode 是否使用智能模式
+   * @returns FullTextAnalysisResponse
+   */
+  private _parseGeminiResponse(
+    response: any,
+    originalText: string,
+    useIntelligentMode: boolean,
+  ): FullTextAnalysisResponse {
+    try {
+      const textContent = response.text();
+      if (!textContent) {
+        console.warn('Gemini 响应中未找到文本内容');
         return {
           original: originalText,
           processed: originalText,
@@ -201,19 +321,43 @@ export class ApiService {
         };
       }
 
-      const data = await response.json();
-
-      if (useIntelligentMode) {
-        return this.extractIntelligentReplacements(
-          data,
-          originalText,
-          settings,
-        );
-      } else {
-        return this.extractReplacements(data, originalText);
+      let content;
+      try {
+        // Gemini API 返回的文本内容可能包含Markdown，需要清理
+        const cleanedContent = cleanMarkdownFromResponse(textContent);
+        content = JSON.parse(cleanedContent);
+      } catch (parseError) {
+        console.error('解析 Gemini API 响应 JSON 失败:', parseError);
+        console.error('原始 Gemini 响应内容:', textContent);
+        // 如果JSON解析失败，尝试作为普通文本处理或返回空
+        return {
+          original: originalText,
+          processed: originalText,
+          replacements: [],
+        };
       }
+
+      if (!content || !Array.isArray(content.replacements)) {
+        console.warn('Gemini 响应中未找到有效的 replacements 数组');
+        return {
+          original: originalText,
+          processed: originalText,
+          replacements: [],
+        };
+      }
+
+      const replacements = this.addPositionsToReplacements(
+        originalText,
+        content.replacements,
+      );
+
+      return {
+        original: originalText,
+        processed: '',
+        replacements,
+      };
     } catch (error) {
-      console.error('API 请求或解析失败:', error);
+      console.error('解析 Gemini 响应失败:', error);
       return {
         original: originalText,
         processed: originalText,

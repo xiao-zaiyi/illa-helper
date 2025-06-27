@@ -19,6 +19,8 @@
     "check": "npm run lint  && npm run format"
   },
   "dependencies": {
+    "@google/genai": "^1.7.0",
+    "@google/generative-ai": "^0.24.1",
     "@tailwindcss/vite": "^4.1.10",
     "@vueuse/core": "^13.4.0",
     "class-variance-authority": "^0.7.1",
