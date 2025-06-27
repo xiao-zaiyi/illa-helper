@@ -54,7 +54,14 @@ function generateRateAdjustment(replacementRate: number): string {
   }
 
   const percentage = Math.round(replacementRate * 100);
-  return `This is a strict rule: you must translate a portion of the text that corresponds to ${percentage}% of the total character count. First, identify all words/phrases suitable for the user's level. Then, from that list, select a subset for translation ensuring the total character length of the *original* words/phrases is as close as possible to the target percentage. For example, for a 1000-character text and a 10% rate, the total length of the words you choose to translate should be very close to 100 characters.`;
+
+  if (percentage <= 10) {
+    return `CRITICAL REPLACEMENT RATE CONTROL: You must be extremely selective and translate only ${percentage}% of the text by character count. For very low rates like ${percentage}%, this means translating only 1-2 key words in a typical sentence. Be very conservative in your selection. If in doubt, translate fewer words rather than more.`;
+  } else if (percentage <= 30) {
+    return `STRICT REPLACEMENT RATE CONTROL: You must translate exactly ${percentage}% of the text by character count. First, identify all words/phrases suitable for the user's level. Then, from that list, select a conservative subset ensuring the total character length of the *original* words/phrases matches the target percentage as closely as possible.`;
+  } else {
+    return `REPLACEMENT RATE CONTROL: You must translate a portion of the text that corresponds to ${percentage}% of the total character count. First, identify all words/phrases suitable for the user's level. Then, from that list, select a subset for translation ensuring the total character length of the *original* words/phrases is as close as possible to the target percentage. For example, for a 1000-character text and a ${percentage}% rate, the total length of the words you choose to translate should be very close to ${Math.round(1000 * replacementRate)} characters.`;
+  }
 }
 
 /**

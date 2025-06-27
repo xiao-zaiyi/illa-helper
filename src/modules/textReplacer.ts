@@ -65,7 +65,22 @@ export class TextReplacer {
    * @param config 替换配置
    */
   setConfig(config: Partial<ReplacementConfig>): void {
+    // 检查替换率是否发生变化，如果变化则清除缓存
+    const oldReplacementRate = this.config.replacementRate;
+
     this.config = { ...this.config, ...config };
+
+    // 如果替换率发生变化，清除缓存以确保新设置生效
+    if (
+      config.replacementRate !== undefined &&
+      config.replacementRate !== oldReplacementRate
+    ) {
+      console.log(
+        `替换率从 ${oldReplacementRate} 更改为 ${config.replacementRate}，清除缓存`,
+      );
+      this.clearAllCache();
+    }
+
     if (this.config.translationStyle) {
       this.styleManager.setTranslationStyle(this.config.translationStyle);
     }

@@ -162,6 +162,9 @@
             替换率 (Replacement Rate:
             {{ Math.round(settings.replacementRate * 100) }}%)
           </Label>
+          <p class="text-xs text-muted-foreground mb-2">
+            控制翻译内容的比例。较低的替换率（如10%以下）会更保守地选择翻译词汇。
+          </p>
           <Slider
             id="replacement-rate"
             :model-value="[settings.replacementRate]"
@@ -170,6 +173,11 @@
             :max="1"
             :step="0.01"
           />
+          <div class="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>0% (不翻译)</span>
+            <span>50% (平衡)</span>
+            <span>100% (全部翻译)</span>
+          </div>
         </div>
         <div
           class="border-t border-border pt-6 flex items-center justify-between"
@@ -182,6 +190,24 @@
             :model-value="settings.enablePronunciationTooltip"
             @update:model-value="settings.enablePronunciationTooltip = $event"
           />
+        </div>
+        <div
+          class="border-t border-border pt-6 flex items-center justify-between"
+        >
+          <div class="space-y-1">
+            <Label>清除翻译缓存</Label>
+            <p class="text-xs text-muted-foreground">
+              如果发现替换率调整后没有生效，可以尝试清除缓存。
+            </p>
+          </div>
+          <Button
+            @click="clearCache"
+            variant="outline"
+            size="sm"
+            :disabled="isClearing"
+          >
+            {{ isClearing ? '清除中...' : '清除缓存' }}
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -212,10 +238,12 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
 
 const settings = ref<UserSettings>(DEFAULT_SETTINGS);
 const storageManager = new StorageManager();
 const styleManager = new StyleManager();
+const isClearing = ref(false);
 
 const emit = defineEmits<{
   saveMessage: [message: string];
@@ -237,6 +265,24 @@ const currentStyleClass = computed(() => {
   styleManager.setTranslationStyle(settings.value.translationStyle);
   return styleManager.getCurrentStyleClass();
 });
+
+const clearCache = async () => {
+  try {
+    isClearing.value = true;
+
+    // 发送消息给content script清除缓存
+    await browser.runtime.sendMessage({
+      type: 'clear_cache',
+    });
+
+    emit('saveMessage', '翻译缓存已清除');
+  } catch (error) {
+    console.error('清除缓存失败:', error);
+    emit('saveMessage', '清除缓存失败');
+  } finally {
+    isClearing.value = false;
+  }
+};
 
 watch(
   settings,

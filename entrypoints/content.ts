@@ -207,6 +207,10 @@ function setupListeners(
 
       // 更新悬浮球配置
       floatingBallManager.updateConfig(settings.floatingBall);
+    } else if (message.type === 'clear_cache') {
+      // 清除翻译缓存
+      textReplacer.clearAllCache();
+      console.log('翻译缓存已清除');
     } else if (message.type === 'MANUAL_TRANSLATE') {
       // 收到手动翻译请求
       if (settings.triggerMode === TriggerMode.MANUAL) {

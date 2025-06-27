@@ -210,7 +210,7 @@ export class ApiService {
           settings,
         );
       } else {
-        return this.extractReplacements(data, originalText);
+        return this.extractReplacements(data, originalText, settings);
       }
     } catch (error) {
       console.error('API 请求或解析失败:', error);
@@ -255,13 +255,14 @@ export class ApiService {
         console.error('解析智能模式API响应JSON失败:', parseError);
         console.error('原始响应内容:', data.choices[0].message.content);
         // 降级到传统模式处理
-        return this.extractReplacements(data, originalText);
+        return this.extractReplacements(data, originalText, settings);
       }
 
       // 只处理replacements数组
       const replacements = this.addPositionsToReplacements(
         originalText,
         content.replacements || [],
+        settings,
       );
 
       return {
@@ -272,7 +273,7 @@ export class ApiService {
     } catch (error) {
       console.error('提取智能替换信息失败:', error);
       // 降级处理
-      return this.extractReplacements(data, originalText);
+      return this.extractReplacements(data, originalText, settings);
     }
   }
 
@@ -280,11 +281,13 @@ export class ApiService {
    * 保持向后兼容：从传统模式API响应中提取替换信息
    * @param data API返回的数据
    * @param originalText 原始文本
+   * @param settings 用户设置（可选）
    * @returns 分析结果，包含替换信息
    */
   private extractReplacements(
     data: any,
     originalText: string,
+    settings?: UserSettings,
   ): FullTextAnalysisResponse {
     try {
       if (!data?.choices?.[0]?.message?.content) {
@@ -323,6 +326,7 @@ export class ApiService {
       const replacementsWithPositions = this.addPositionsToReplacements(
         originalText,
         content.replacements,
+        settings,
       );
 
       return {
@@ -341,14 +345,16 @@ export class ApiService {
   }
 
   /**
-   * 为替换项添加位置信息
+   * 为替换项添加位置信息并验证替换率
    * @param originalText 原始文本
    * @param replacements 从API获取的替换项
+   * @param settings 用户设置（包含替换率）
    * @returns 带位置信息的替换项数组
    */
   private addPositionsToReplacements(
     originalText: string,
     replacements: Array<{ original: string; translation: string }>,
+    settings?: UserSettings,
   ): Replacement[] {
     const result: Replacement[] = [];
     let lastIndex = 0;
@@ -403,6 +409,77 @@ export class ApiService {
     // 按位置排序确保处理顺序正确
     result.sort((a, b) => a.position.start - b.position.start);
 
+    // 如果提供了用户设置，验证替换率
+    if (settings) {
+      const actualReplacementRate = this.validateReplacementRate(
+        originalText,
+        result,
+        settings.replacementRate,
+      );
+
+      // 如果实际替换率过高，进行过滤
+      if (actualReplacementRate > settings.replacementRate * 1.5) {
+        console.warn(
+          `实际替换率 ${(actualReplacementRate * 100).toFixed(1)}% 超出预期 ${(settings.replacementRate * 100).toFixed(1)}%，进行过滤`,
+        );
+        return this.filterByReplacementRate(
+          originalText,
+          result,
+          settings.replacementRate,
+        );
+      }
+    }
+
     return result;
+  }
+
+  /**
+   * 验证实际替换率
+   * @param originalText 原始文本
+   * @param replacements 替换项
+   * @param targetRate 目标替换率
+   * @returns 实际替换率
+   */
+  private validateReplacementRate(
+    originalText: string,
+    replacements: Replacement[],
+    targetRate: number,
+  ): number {
+    const totalOriginalChars = replacements.reduce(
+      (sum, rep) => sum + rep.original.length,
+      0,
+    );
+    return totalOriginalChars / originalText.length;
+  }
+
+  /**
+   * 根据替换率过滤替换项
+   * @param originalText 原始文本
+   * @param replacements 替换项
+   * @param targetRate 目标替换率
+   * @returns 过滤后的替换项
+   */
+  private filterByReplacementRate(
+    originalText: string,
+    replacements: Replacement[],
+    targetRate: number,
+  ): Replacement[] {
+    const targetChars = Math.floor(originalText.length * targetRate);
+    const filtered: Replacement[] = [];
+    let currentChars = 0;
+
+    // 按位置顺序优先选择替换项
+    for (const replacement of replacements) {
+      if (currentChars + replacement.original.length <= targetChars) {
+        filtered.push(replacement);
+        currentChars += replacement.original.length;
+      }
+    }
+
+    console.log(
+      `替换率过滤：从 ${replacements.length} 个词汇筛选出 ${filtered.length} 个，实际替换率 ${((currentChars / originalText.length) * 100).toFixed(1)}%`,
+    );
+
+    return filtered;
   }
 }
