@@ -71,12 +71,26 @@ export class ProcessingStateManager {
   generateContentFingerprint(textContent: string, domPath: string): string {
     const normalizedText = textContent.trim().replace(/\s+/g, ' ');
 
+    // 规范化DOM路径，移除不稳定的nth-child选择器末尾部分
+    const normalizedDomPath = domPath
+      .replace(/:nth-child\(\d+\)/g, '') // 移除nth-child选择器
+      .replace(/\s+>\s+/g, ' > ') // 规范化空格
+      .replace(/\.+/g, '.') // 合并连续的点
+      .replace(/\s+/g, ' ')
+      .trim();
+
     // 对于较短的内容或动态加载的内容，添加时间戳避免冲突
-    const isDynamic =
-      domPath.includes(':nth-child') || normalizedText.length < 100;
+    const isDynamic = normalizedText.length < 100;
     const timeComponent = isDynamic ? Math.floor(Date.now() / 30000) : 0; // 30秒时间窗口
 
-    const combinedString = `${normalizedText}|${domPath}|${timeComponent}`;
+    // 使用文本长度和内容摘要作为主要标识
+    const textSignature =
+      normalizedText.length > 50
+        ? normalizedText.substring(0, 25) +
+          normalizedText.substring(normalizedText.length - 25)
+        : normalizedText;
+
+    const combinedString = `${textSignature}|${normalizedDomPath}|${normalizedText.length}|${timeComponent}`;
 
     // 使用简单但有效的哈希算法
     let hash = 0;
@@ -100,6 +114,13 @@ export class ProcessingStateManager {
     while (current && current !== document.body) {
       let selector = current.tagName.toLowerCase();
 
+      // 添加ID（优先使用ID，因为更稳定）
+      if (current.id && !current.id.startsWith('wxt-')) {
+        selector += '#' + current.id;
+        path.unshift(selector);
+        break; // ID是唯一的，可以停止向上查找
+      }
+
       // 添加类名（如果有且不是处理相关的类）
       const classList = Array.from(current.classList)
         .filter((cls) => !cls.startsWith('wxt-'))
@@ -109,15 +130,27 @@ export class ProcessingStateManager {
         selector += '.' + classList.join('.');
       }
 
-      // 添加位置信息（如果有多个同类型兄弟元素）
+      // 只在必要时添加位置信息（当有多个相同选择器的兄弟元素）
       const siblings = current.parentElement?.children;
       if (siblings && siblings.length > 1) {
-        const index = Array.from(siblings).indexOf(current);
-        selector += `:nth-child(${index + 1})`;
+        const sameTypeElements = Array.from(siblings).filter(
+          (sibling) => sibling.tagName === current!.tagName,
+        );
+        if (sameTypeElements.length > 1) {
+          const index = sameTypeElements.indexOf(current);
+          if (index > 0) {
+            selector += `:nth-of-type(${index + 1})`;
+          }
+        }
       }
 
       path.unshift(selector);
       current = current.parentElement;
+
+      // 限制路径深度，避免过长的路径
+      if (path.length >= 5) {
+        break;
+      }
     }
 
     return path.join(' > ');

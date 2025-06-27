@@ -62,12 +62,15 @@ export class ContentSegmenter {
       segments.push(...containerSegments);
     }
 
-    // 第三步：合并小段落（如果启用）
+    // 第三步：去除重复的段落
+    const deduplicatedSegments = this.deduplicateSegments(segments);
+
+    // 第四步：合并小段落（如果启用）
     if (this.config.mergeSmallSegments) {
-      return this.mergeSmallSegments(segments);
+      return this.mergeSmallSegments(deduplicatedSegments);
     }
 
-    return segments;
+    return deduplicatedSegments;
   }
 
   /**
@@ -112,6 +115,20 @@ export class ContentSegmenter {
       return false;
     }
 
+    // 检查是否有父元素已经被识别为内容容器
+    // 如果有，则跳过此元素以避免重复处理
+    let parent = element.parentElement;
+    while (parent && parent !== document.body) {
+      // 如果父元素也是叶子容器且包含当前元素的所有文本，则跳过当前元素
+      if (this.couldBeLeafContainer(parent)) {
+        const parentText = this.getTextContent(parent);
+        if (parentText.includes(textContent)) {
+          return false;
+        }
+      }
+      parent = parent.parentElement;
+    }
+
     // 不能包含块级子元素
     const blockChildren = element.querySelectorAll(
       Array.from(BLOCK_TAGS)
@@ -128,6 +145,34 @@ export class ContentSegmenter {
     for (const child of blockChildren) {
       if (this.getTextContent(child).length > 100) {
         return false; // 子块级元素包含大量文本，不是叶子容器
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * 快速检查元素是否可能是叶子容器（不进行父元素检查，避免循环）
+   */
+  private couldBeLeafContainer(element: Element): boolean {
+    const textContent = this.getTextContent(element);
+    if (!textContent || textContent.length < this.config.minSegmentLength) {
+      return false;
+    }
+
+    const blockChildren = element.querySelectorAll(
+      Array.from(BLOCK_TAGS)
+        .map((tag) => tag.toLowerCase())
+        .join(', '),
+    );
+
+    if (blockChildren.length > 3) {
+      return false;
+    }
+
+    for (const child of blockChildren) {
+      if (this.getTextContent(child).length > 100) {
+        return false;
       }
     }
 
@@ -382,6 +427,28 @@ export class ContentSegmenter {
       return true;
     }
 
+    // 检查是否包含翻译相关的元素（避免重复处理已翻译的内容）
+    if (
+      element.querySelector('.wxt-translation-term') ||
+      element.querySelector('.wxt-original-word') ||
+      element.classList.contains('wxt-translation-term') ||
+      element.classList.contains('wxt-original-word')
+    ) {
+      return true;
+    }
+
+    // 检查元素是否在已翻译的父容器内
+    let parent = element.parentElement;
+    while (parent && parent !== document.body) {
+      if (
+        parent.hasAttribute('data-wxt-text-processed') ||
+        parent.hasAttribute('data-wxt-word-processed')
+      ) {
+        return true;
+      }
+      parent = parent.parentElement;
+    }
+
     return false;
   }
 
@@ -397,5 +464,85 @@ export class ContentSegmenter {
    */
   getConfig(): SegmenterConfig {
     return { ...this.config };
+  }
+
+  /**
+   * 去除重复的段落
+   * 确保没有重叠或重复的内容段落
+   */
+  private deduplicateSegments(segments: ContentSegment[]): ContentSegment[] {
+    const uniqueSegments: ContentSegment[] = [];
+    const processedTexts = new Set<string>();
+
+    // 按文本长度降序排序，优先保留长段落
+    const sortedSegments = segments.sort(
+      (a, b) => b.textContent.length - a.textContent.length,
+    );
+
+    for (const segment of sortedSegments) {
+      const normalizedText = segment.textContent.trim().replace(/\s+/g, ' ');
+      let isDuplicate = false;
+
+      // 检查是否与已添加的段落重复
+      for (const existingText of processedTexts) {
+        // 如果当前段落是已存在段落的子集
+        if (existingText.includes(normalizedText)) {
+          isDuplicate = true;
+          break;
+        }
+
+        // 如果当前段落包含已存在的段落，移除较短的
+        if (normalizedText.includes(existingText)) {
+          processedTexts.delete(existingText);
+          // 移除对应的段落
+          const indexToRemove = uniqueSegments.findIndex(
+            (s) => s.textContent.trim().replace(/\s+/g, ' ') === existingText,
+          );
+          if (indexToRemove !== -1) {
+            uniqueSegments.splice(indexToRemove, 1);
+          }
+        }
+      }
+
+      // 检查DOM元素重叠
+      if (!isDuplicate) {
+        for (const existingSegment of uniqueSegments) {
+          const hasOverlap = segment.elements.some((element) =>
+            existingSegment.elements.some(
+              (existingElement) =>
+                element === existingElement ||
+                element.contains(existingElement) ||
+                existingElement.contains(element),
+            ),
+          );
+
+          if (hasOverlap) {
+            // 保留文本更长的段落
+            if (
+              segment.textContent.length <= existingSegment.textContent.length
+            ) {
+              isDuplicate = true;
+              break;
+            } else {
+              // 移除较短的现有段落
+              const indexToRemove = uniqueSegments.indexOf(existingSegment);
+              if (indexToRemove !== -1) {
+                uniqueSegments.splice(indexToRemove, 1);
+                processedTexts.delete(
+                  existingSegment.textContent.trim().replace(/\s+/g, ' '),
+                );
+              }
+            }
+          }
+        }
+      }
+
+      if (!isDuplicate) {
+        uniqueSegments.push(segment);
+        processedTexts.add(normalizedText);
+      }
+    }
+
+    return uniqueSegments;
   }
 }

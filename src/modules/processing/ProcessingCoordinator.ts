@@ -109,7 +109,7 @@ export class ProcessingCoordinator {
     const errors: string[] = [];
 
     // 过滤已处理和正在处理的段落
-    const segmentsToProcess = segments.filter((segment) => {
+    const initialFilteredSegments = segments.filter((segment) => {
       const isProcessed = globalProcessingState.isContentProcessed(
         segment.fingerprint,
       );
@@ -122,6 +122,45 @@ export class ProcessingCoordinator {
         return false;
       }
 
+      // 额外检查：是否包含已翻译的内容
+      const hasTranslatedContent = segment.elements.some((element) =>
+        element.querySelector('.wxt-translation-term, .wxt-original-word'),
+      );
+
+      if (hasTranslatedContent) {
+        skippedCount++;
+        return false;
+      }
+
+      // 检查文本节点是否在已处理的元素内
+      const hasProcessedParent = segment.textNodes.some((textNode) => {
+        let parent = textNode.parentElement;
+        while (parent && parent !== document.body) {
+          if (
+            parent.hasAttribute('data-wxt-text-processed') ||
+            parent.hasAttribute('data-wxt-word-processed')
+          ) {
+            return true;
+          }
+          parent = parent.parentElement;
+        }
+        return false;
+      });
+
+      if (hasProcessedParent) {
+        skippedCount++;
+        return false;
+      }
+
+      return true;
+    });
+
+    // 进一步过滤重复的段落
+    const segmentsToProcess = initialFilteredSegments.filter((segment) => {
+      if (this.isDuplicateSegment(segment, initialFilteredSegments)) {
+        skippedCount++;
+        return false;
+      }
       return true;
     });
 
@@ -481,10 +520,27 @@ export class ProcessingCoordinator {
    */
   private markTextNodesProcessed(textNodes: Text[]): void {
     const timestamp = Date.now().toString();
+    const processedElements = new Set<Element>();
+
     textNodes.forEach((node) => {
-      if (node.parentElement) {
+      // 标记直接父元素
+      if (node.parentElement && !processedElements.has(node.parentElement)) {
         node.parentElement.setAttribute('data-wxt-text-processed', 'true');
         node.parentElement.setAttribute('data-wxt-processed-time', timestamp);
+        processedElements.add(node.parentElement);
+      }
+
+      // 标记祖先元素（但不超过3层）
+      let ancestor = node.parentElement?.parentElement;
+      let depth = 0;
+      while (ancestor && ancestor !== document.body && depth < 3) {
+        if (!processedElements.has(ancestor)) {
+          ancestor.setAttribute('data-wxt-text-processed', 'true');
+          ancestor.setAttribute('data-wxt-processed-time', timestamp);
+          processedElements.add(ancestor);
+        }
+        ancestor = ancestor.parentElement;
+        depth++;
       }
     });
   }
@@ -609,5 +665,52 @@ export class ProcessingCoordinator {
     } catch (_) {
       // 静默处理错误
     }
+  }
+
+  /**
+   * 检查段落是否与其他段落重叠或重复
+   */
+  private isDuplicateSegment(
+    segment: ContentSegment,
+    allSegments: ContentSegment[],
+  ): boolean {
+    const currentText = segment.textContent.trim();
+
+    // 检查是否有其他段落包含相同的文本内容
+    for (const otherSegment of allSegments) {
+      if (otherSegment.id === segment.id) continue;
+
+      const otherText = otherSegment.textContent.trim();
+
+      // 如果文本内容完全相同
+      if (currentText === otherText) {
+        return true;
+      }
+
+      // 如果当前段落的文本是另一个段落的子集
+      if (
+        currentText.length < otherText.length &&
+        otherText.includes(currentText)
+      ) {
+        return true;
+      }
+
+      // 如果两个段落的DOM元素有重叠
+      const hasOverlappingElements = segment.elements.some((element) =>
+        otherSegment.elements.some(
+          (otherElement) =>
+            element === otherElement ||
+            element.contains(otherElement) ||
+            otherElement.contains(element),
+        ),
+      );
+
+      if (hasOverlappingElements) {
+        // 保留文本内容更长的段落
+        return currentText.length <= otherText.length;
+      }
+    }
+
+    return false;
   }
 }
