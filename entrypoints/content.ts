@@ -247,7 +247,7 @@ function setupListeners(
 
 /**
  * 设置 DOM 观察器以处理动态内容
- * 使用新的状态管理器进行更智能的重复处理检测
+ * 使用健壮的观察器管理器，处理页面切换和异常恢复
  */
 function setupDomObserver(
   textProcessor: TextProcessor,
@@ -257,92 +257,27 @@ function setupDomObserver(
   translationPosition: TranslationPosition,
   showParentheses: boolean,
 ) {
-  let debounceTimer: number;
-  const nodesToProcess = new Set<Node>();
-  const observerConfig = {
-    childList: true,
-    subtree: true,
-    characterData: true,
-  };
+  // 使用健壮的观察器管理器
+  const observerManager = new RobustObserverManager(
+    textProcessor,
+    textReplacer,
+    originalWordDisplayMode,
+    maxLength,
+    translationPosition,
+    showParentheses,
+  );
 
-  const observer = new MutationObserver((mutations) => {
-    let hasValidChanges = false;
+  observerManager.startObserving();
 
-    mutations.forEach((mutation) => {
-      if (mutation.type === 'childList') {
-        mutation.addedNodes.forEach((node) => {
-          // 跳过已知的处理结果元素
-          if (isProcessingResultNode(node)) {
-            return;
-          }
+  // 开发环境下暴露调试方法
+  if (typeof window !== 'undefined') {
+    (window as any).__illa_helper_debug = observerManager;
+  }
 
-          // 对所有新添加的元素节点都进行处理尝试
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const element = node as Element;
-            const textContent = element.textContent?.trim();
-
-            // 只要有足够的文本内容就尝试处理
-            if (textContent && textContent.length > 15) {
-              nodesToProcess.add(node);
-              hasValidChanges = true;
-            }
-          }
-        });
-      } else if (
-        mutation.type === 'characterData' &&
-        mutation.target.parentElement
-      ) {
-        const parentElement = mutation.target.parentElement;
-        if (!isProcessingResultNode(parentElement)) {
-          nodesToProcess.add(parentElement);
-          hasValidChanges = true;
-        }
-      }
-    });
-
-    // 只有在有有效变化时才进行处理
-    if (!hasValidChanges) {
-      return;
-    }
-
-    clearTimeout(debounceTimer);
-    debounceTimer = window.setTimeout(async () => {
-      if (nodesToProcess.size === 0) return;
-
-      const topLevelNodes = new Set<Node>();
-      nodesToProcess.forEach((node) => {
-        if (
-          document.body.contains(node) &&
-          !isDescendant(node, nodesToProcess)
-        ) {
-          topLevelNodes.add(node);
-        }
-      });
-
-      // 暂停观察器避免处理过程中的循环触发
-      observer.disconnect();
-
-      try {
-        for (const node of topLevelNodes) {
-          await textProcessor.processRoot(
-            node,
-            textReplacer,
-            originalWordDisplayMode,
-            maxLength,
-            translationPosition,
-            showParentheses,
-          );
-        }
-      } catch (_) {
-        // 静默处理错误
-      }
-
-      nodesToProcess.clear();
-      observer.observe(document.body, observerConfig);
-    }, 150);
+  // 页面卸载时清理
+  window.addEventListener('beforeunload', () => {
+    observerManager.stopObserving();
   });
-
-  observer.observe(document.body, observerConfig);
 }
 
 /**
@@ -407,5 +342,799 @@ async function detectPageLanguage(): Promise<string> {
     return 'zh-to-en';
   } catch (_) {
     return 'zh-to-en'; // 出错时默认
+  }
+}
+
+/**
+ * 健壮的DOM观察器管理器
+ * 解决页面切换和长时间暂停等问题
+ */
+class RobustObserverManager {
+  private observer: MutationObserver | null = null;
+  private isObserving = false;
+  private lastUrl = location.href;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 3;
+  private pageChangeTimer: number | null = null;
+  private urlCheckInterval: number | null = null;
+  private navigationCheckInterval: number | null = null;
+  private titleObserver: MutationObserver | null = null;
+  private processedPagesCache = new Set<string>(); // 缓存已处理的页面URL
+  private isPageLoading = false; // 页面加载状态
+  private heavyLoadDetected = false; // 重负载检测
+
+  constructor(
+    private textProcessor: TextProcessor,
+    private textReplacer: TextReplacer,
+    private originalWordDisplayMode: OriginalWordDisplayMode,
+    private maxLength: number | undefined,
+    private translationPosition: TranslationPosition,
+    private showParentheses: boolean,
+  ) {
+    // 监听页面切换（包括SPA路由变化）
+    this.setupPageChangeDetection();
+    this.setupAdvancedPageChangeDetection();
+  }
+
+  startObserving() {
+    if (this.isObserving) {
+      return;
+    }
+
+    this.createObserver();
+    this.isObserving = true;
+    this.reconnectAttempts = 0;
+  }
+
+  stopObserving() {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+
+    // 清理定时器
+    if (this.pageChangeTimer) {
+      clearTimeout(this.pageChangeTimer);
+      this.pageChangeTimer = null;
+    }
+
+    if (this.urlCheckInterval) {
+      clearInterval(this.urlCheckInterval);
+      this.urlCheckInterval = null;
+    }
+
+    if (this.navigationCheckInterval) {
+      clearInterval(this.navigationCheckInterval);
+      this.navigationCheckInterval = null;
+    }
+
+    // 清理title观察器
+    if (this.titleObserver) {
+      this.titleObserver.disconnect();
+      this.titleObserver = null;
+    }
+
+    this.isObserving = false;
+  }
+
+  private createObserver() {
+    let debounceTimer: number;
+    const nodesToProcess = new Set<Node>();
+    const observerConfig = {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      // 添加性能优化配置
+      attributeOldValue: false,
+      characterDataOldValue: false,
+    };
+
+    this.observer = new MutationObserver((mutations) => {
+      let hasValidChanges = false;
+      let addedNodesCount = 0;
+
+      // 检测重负载操作
+      if (this.detectHeavyLoad()) {
+        console.log('检测到重负载操作，暂停翻译处理');
+        this.heavyLoadDetected = true;
+        // 清空待处理节点，避免在重负载时处理
+        nodesToProcess.clear();
+        return;
+      } else if (this.heavyLoadDetected) {
+        console.log('重负载操作结束，恢复翻译处理');
+        this.heavyLoadDetected = false;
+      }
+
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach((node) => {
+            addedNodesCount++;
+
+            // 如果单次添加的节点太多，可能是框架重渲染，延长防抖时间
+            if (addedNodesCount > 50) {
+              return; // 跳过过多的节点
+            }
+
+            if (isProcessingResultNode(node)) {
+              return;
+            }
+
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+              const textContent = element.textContent?.trim();
+
+              // 提高文本长度阈值，减少小片段的处理
+              if (textContent && textContent.length > 30) {
+                nodesToProcess.add(node);
+                hasValidChanges = true;
+              }
+            }
+          });
+        } else if (
+          mutation.type === 'characterData' &&
+          mutation.target.parentElement
+        ) {
+          const parentElement = mutation.target.parentElement;
+          if (!isProcessingResultNode(parentElement)) {
+            const textContent = parentElement.textContent?.trim();
+            // 只处理有意义长度的文本变化
+            if (textContent && textContent.length > 20) {
+              nodesToProcess.add(parentElement);
+              hasValidChanges = true;
+            }
+          }
+        }
+      });
+
+      if (!hasValidChanges) {
+        return;
+      }
+
+      clearTimeout(debounceTimer);
+
+      // 根据变化数量动态调整防抖时间
+      const debounceTime = addedNodesCount > 20 ? 500 : 200; // 大量变化时延长防抖时间
+
+      debounceTimer = window.setTimeout(async () => {
+        await this.processNodes(nodesToProcess);
+      }, debounceTime);
+    });
+
+    if (document.body && document.body.isConnected) {
+      this.observer.observe(document.body, observerConfig);
+    }
+  }
+
+  private async processNodes(nodesToProcess: Set<Node>) {
+    if (nodesToProcess.size === 0) return;
+
+    // 检查是否发生页面切换
+    if (this.hasPageChanged()) {
+      console.log('检测到页面切换，重新初始化观察器');
+      this.handlePageChange();
+      return;
+    }
+
+    const topLevelNodes = new Set<Node>();
+    nodesToProcess.forEach((node) => {
+      if (document.body.contains(node) && !isDescendant(node, nodesToProcess)) {
+        topLevelNodes.add(node);
+      }
+    });
+
+    // 如果节点数量过多，限制处理数量
+    if (topLevelNodes.size > 10) {
+      console.log(
+        `节点数量过多 (${topLevelNodes.size})，限制处理数量以提高性能`,
+      );
+      const limitedNodes = Array.from(topLevelNodes).slice(0, 10);
+      topLevelNodes.clear();
+      limitedNodes.forEach((node) => topLevelNodes.add(node));
+    }
+
+    // 临时暂停观察器
+    const wasObserving = this.isObserving;
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+
+    const pauseStartTime = Date.now();
+
+    try {
+      // 使用更小的批次并添加更频繁的中断检查
+      const nodesArray = Array.from(topLevelNodes);
+      const batchSize = 2; // 更小的批次大小
+
+      for (let i = 0; i < nodesArray.length; i += batchSize) {
+        const batch = nodesArray.slice(i, i + batchSize);
+
+        // 检查是否应该中断处理
+        const currentTime = Date.now();
+        if (currentTime - pauseStartTime > 3000) {
+          // 3秒超时
+          console.warn('处理超时，中断剩余节点处理');
+          break;
+        }
+
+        // 检查页面是否发生变化
+        if (this.hasPageChanged()) {
+          console.log('处理过程中检测到页面变化，中断处理');
+          break;
+        }
+
+        for (const node of batch) {
+          // 再次检查节点有效性
+          if (!document.body.contains(node)) {
+            continue;
+          }
+
+          try {
+            await this.textProcessor.processRoot(
+              node,
+              this.textReplacer,
+              this.originalWordDisplayMode,
+              this.maxLength,
+              this.translationPosition,
+              this.showParentheses,
+            );
+          } catch (error) {
+            console.warn('处理单个节点时发生错误:', error, node);
+            // 继续处理其他节点
+          }
+        }
+
+        // 在批次之间让出控制权
+        if (i + batchSize < nodesArray.length) {
+          await new Promise((resolve) => setTimeout(resolve, 1));
+        }
+      }
+    } catch (error) {
+      console.warn('DOM处理过程中发生错误:', error);
+    } finally {
+      nodesToProcess.clear();
+
+      // 恢复观察器
+      if (wasObserving) {
+        this.restoreObserver(pauseStartTime);
+      }
+    }
+  }
+
+  private restoreObserver(pauseStartTime: number) {
+    const pauseDuration = Date.now() - pauseStartTime;
+
+    // 降低警告阈值，更早发现性能问题
+    if (pauseDuration > 2000) {
+      console.warn(`DOM观察器暂停时间过长: ${pauseDuration}ms`);
+
+      // 如果暂停时间超过5秒，考虑这是一个重负载操作
+      if (pauseDuration > 5000) {
+        console.warn('检测到重负载操作，延长观察器恢复时间');
+        // 延长恢复时间，让页面稳定
+        setTimeout(() => {
+          this.tryRestoreObserver();
+        }, 1000);
+        return;
+      }
+    }
+
+    this.tryRestoreObserver();
+  }
+
+  private tryRestoreObserver() {
+    // 检查DOM结构是否仍然有效
+    if (document.body && document.body.isConnected) {
+      try {
+        this.createObserver();
+        this.reconnectAttempts = 0; // 重置重连尝试次数
+      } catch (error) {
+        console.error('恢复DOM观察器失败:', error);
+        this.handleObserverFailure();
+      }
+    } else {
+      console.warn('页面DOM结构已改变，尝试重新初始化');
+      this.handleObserverFailure();
+    }
+  }
+
+  private handleObserverFailure() {
+    this.reconnectAttempts++;
+
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      console.log(
+        `尝试重新连接观察器 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+      );
+
+      // 延迟重试
+      setTimeout(() => {
+        if (document.body && document.body.isConnected) {
+          this.startObserving();
+        }
+      }, 1000 * this.reconnectAttempts);
+    } else {
+      console.error('DOM观察器重连失败次数超过限制，停止自动重连');
+      this.isObserving = false;
+    }
+  }
+
+  private setupPageChangeDetection() {
+    // 监听URL变化（SPA路由）
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = (...args) => {
+      originalPushState.apply(history, args);
+      this.schedulePageChangeHandler();
+    };
+
+    history.replaceState = (...args) => {
+      originalReplaceState.apply(history, args);
+      this.schedulePageChangeHandler();
+    };
+
+    window.addEventListener('popstate', () => {
+      this.schedulePageChangeHandler();
+    });
+
+    // 监听页面可见性变化
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && this.hasPageChanged()) {
+        this.handlePageChange();
+      }
+    });
+
+    // 定期检查URL变化（作为备用机制）
+    this.urlCheckInterval = window.setInterval(() => {
+      if (this.hasPageChanged()) {
+        console.log(
+          '定期检查检测到页面变化:',
+          this.lastUrl,
+          '->',
+          location.href,
+        );
+        this.handlePageChange();
+      }
+    }, 1000);
+
+    // 监听hashchange事件
+    window.addEventListener('hashchange', () => {
+      this.schedulePageChangeHandler();
+    });
+
+    // 设置高级页面变化检测
+    this.setupAdvancedPageChangeDetection();
+  }
+
+  private hasPageChanged(): boolean {
+    const currentUrl = location.href;
+    const hasChanged = this.lastUrl !== currentUrl;
+
+    // 额外检查：确保不是仅仅是hash变化或查询参数变化
+    if (hasChanged) {
+      const lastUrlObj = new URL(this.lastUrl);
+      const currentUrlObj = new URL(currentUrl);
+
+      // 如果路径发生了变化，认为是真正的页面变化
+      const pathChanged = lastUrlObj.pathname !== currentUrlObj.pathname;
+
+      if (pathChanged) {
+        console.log(
+          '检测到路径变化:',
+          lastUrlObj.pathname,
+          '->',
+          currentUrlObj.pathname,
+        );
+        return true;
+      }
+
+      // 如果只是hash或查询参数变化，也可能需要重新处理
+      const hashChanged = lastUrlObj.hash !== currentUrlObj.hash;
+      const searchChanged = lastUrlObj.search !== currentUrlObj.search;
+
+      if (hashChanged || searchChanged) {
+        console.log('检测到hash或查询参数变化');
+        return true;
+      }
+    }
+
+    return hasChanged;
+  }
+
+  private handlePageChange() {
+    this.lastUrl = location.href;
+    this.reconnectAttempts = 0;
+
+    console.log('处理页面变化，新URL:', location.href);
+
+    // 重新初始化观察器
+    this.stopObserving();
+
+    // 延迟处理新页面内容，等待DOM稳定
+    setTimeout(async () => {
+      if (document.body && document.body.isConnected) {
+        // 重新开始观察
+        this.startObserving();
+
+        // 智能处理新页面内容 - 只处理未翻译的部分
+        try {
+          await this.processNewPageContent();
+          console.log('页面变化后的翻译处理完成');
+        } catch (error) {
+          console.warn('页面变化后处理新内容时发生错误:', error);
+        }
+      }
+    }, 300); // 稍微延长等待时间，确保DOM完全稳定
+  }
+
+  private schedulePageChangeHandler() {
+    // 取消之前的定时器
+    if (this.pageChangeTimer) {
+      clearTimeout(this.pageChangeTimer);
+    }
+
+    // 延迟执行页面变化处理，等待DOM更新完成
+    this.pageChangeTimer = window.setTimeout(() => {
+      if (this.hasPageChanged()) {
+        console.log('检测到页面变化:', this.lastUrl, '->', location.href);
+        this.handlePageChange();
+      }
+    }, 100);
+  }
+
+  private setupAdvancedPageChangeDetection() {
+    // 监听document.title变化
+    this.titleObserver = new MutationObserver(() => {
+      if (this.hasPageChanged()) {
+        console.log('通过title变化检测到页面变化');
+        this.schedulePageChangeHandler();
+      }
+    });
+
+    if (document.head) {
+      this.titleObserver.observe(document.head, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+    }
+
+    // 监听focus/blur事件，某些SPA在这些事件中更新内容
+    window.addEventListener('focus', () => {
+      setTimeout(() => {
+        if (this.hasPageChanged()) {
+          console.log('通过focus事件检测到页面变化');
+          this.handlePageChange();
+        }
+      }, 100);
+    });
+
+    // 监听网络请求完成（可能表示新内容加载）
+    let lastNavigationTime = performance.now();
+    const checkForNavigationChanges = () => {
+      const navigationEntries = performance.getEntriesByType('navigation');
+      if (navigationEntries.length > 0) {
+        const latestNavigation = navigationEntries[
+          navigationEntries.length - 1
+        ] as PerformanceNavigationTiming;
+        if (latestNavigation.loadEventEnd > lastNavigationTime) {
+          lastNavigationTime = latestNavigation.loadEventEnd;
+          if (this.hasPageChanged()) {
+            console.log('通过navigation事件检测到页面变化');
+            this.schedulePageChangeHandler();
+          }
+        }
+      }
+    };
+
+    // 定期检查navigation变化
+    this.navigationCheckInterval = window.setInterval(
+      checkForNavigationChanges,
+      2000,
+    );
+  }
+
+  /**
+   * 智能处理新页面内容 - 只处理未翻译的部分
+   * 避免重复处理已翻译的内容，提高性能和缓存效率
+   */
+  private async processNewPageContent() {
+    const currentUrl = location.href;
+
+    // 检查是否已经处理过当前页面
+    if (this.isPageProcessed(currentUrl)) {
+      console.log('页面变化：当前页面已处理过，跳过');
+      return;
+    }
+
+    // 查找未处理的文本节点
+    const unprocessedNodes = this.findUnprocessedNodes(document.body);
+
+    if (unprocessedNodes.length === 0) {
+      console.log('页面变化：未发现需要处理的新内容');
+      this.markPageAsProcessed(currentUrl);
+      return;
+    }
+
+    console.log(`页面变化：发现 ${unprocessedNodes.length} 个未处理的节点`);
+
+    // 批量处理未处理的节点，使用较小的批次以保持响应性
+    const batchSize = 3; // 减少批次大小以提高响应性
+    for (let i = 0; i < unprocessedNodes.length; i += batchSize) {
+      const batch = unprocessedNodes.slice(i, i + batchSize);
+
+      // 处理当前批次
+      await Promise.all(
+        batch.map(async (node) => {
+          try {
+            if (document.body.contains(node)) {
+              await this.textProcessor.processRoot(
+                node,
+                this.textReplacer,
+                this.originalWordDisplayMode,
+                this.maxLength,
+                this.translationPosition,
+                this.showParentheses,
+              );
+            }
+          } catch (error) {
+            console.warn('处理节点时发生错误:', error, node);
+          }
+        }),
+      );
+
+      // 在批次之间添加短暂延迟，避免阻塞UI
+      if (i + batchSize < unprocessedNodes.length) {
+        await new Promise((resolve) => setTimeout(resolve, 5)); // 减少延迟时间
+      }
+    }
+
+    // 标记当前页面为已处理
+    this.markPageAsProcessed(currentUrl);
+  }
+
+  /**
+   * 查找页面中未处理的节点
+   * 只返回包含文本且未被处理过的节点
+   */
+  private findUnprocessedNodes(container: Node): Node[] {
+    const unprocessedNodes: Node[] = [];
+    const walker = document.createTreeWalker(
+      container,
+      NodeFilter.SHOW_ELEMENT,
+      {
+        acceptNode: (node) => {
+          const element = node as Element;
+
+          // 跳过已处理的节点
+          if (isProcessingResultNode(node)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          // 跳过已标记为处理过的节点
+          if (
+            element.hasAttribute('data-wxt-processed') ||
+            element.hasAttribute('data-wxt-word-processed')
+          ) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          // 跳过脚本、样式等不需要翻译的元素
+          const tagName = element.tagName.toLowerCase();
+          if (
+            [
+              'script',
+              'style',
+              'noscript',
+              'svg',
+              'path',
+              'meta',
+              'link',
+              'title',
+            ].includes(tagName)
+          ) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          // 跳过输入元素
+          if (['input', 'textarea', 'select', 'button'].includes(tagName)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          // 检查是否包含有意义的文本内容
+          const textContent = element.textContent?.trim();
+          if (!textContent || textContent.length < 5) {
+            // 提高最小长度要求
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          // 检查是否包含需要翻译的文本（更严格的检查）
+          const hasTranslatableText = /[a-zA-Z\u4e00-\u9fff]{3,}/.test(
+            textContent,
+          );
+          if (!hasTranslatableText) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          // 跳过可能是导航、菜单等重复内容的节点
+          const className = element.className;
+          if (typeof className === 'string') {
+            const skipClasses = [
+              'nav',
+              'menu',
+              'sidebar',
+              'header',
+              'footer',
+              'breadcrumb',
+            ];
+            if (
+              skipClasses.some((cls) => className.toLowerCase().includes(cls))
+            ) {
+              return NodeFilter.FILTER_REJECT;
+            }
+          }
+
+          return NodeFilter.FILTER_ACCEPT;
+        },
+      },
+    );
+
+    let node;
+    while ((node = walker.nextNode())) {
+      // 确保这是一个叶子节点或者包含主要文本内容的节点
+      const element = node as Element;
+      const childElements = Array.from(element.children);
+
+      // 如果有子元素，检查是否大部分文本在当前级别
+      if (childElements.length > 0) {
+        const directText = this.getDirectTextContent(element);
+        if (directText.trim().length < 20) {
+          // 提高直接文本的最小长度要求
+          continue; // 跳过主要文本在子元素中的节点
+        }
+      }
+
+      unprocessedNodes.push(node);
+    }
+
+    // 限制返回的节点数量，避免一次处理过多内容
+    return unprocessedNodes.slice(0, 20);
+  }
+
+  /**
+   * 获取元素的直接文本内容（不包括子元素的文本）
+   */
+  private getDirectTextContent(element: Element): string {
+    let directText = '';
+    for (const child of element.childNodes) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        directText += child.textContent || '';
+      }
+    }
+    return directText;
+  }
+
+  /**
+   * 检查当前页面是否已经被处理过
+   */
+  private isPageProcessed(url: string): boolean {
+    return this.processedPagesCache.has(url);
+  }
+
+  /**
+   * 标记页面为已处理
+   */
+  private markPageAsProcessed(url: string): void {
+    this.processedPagesCache.add(url);
+
+    // 限制缓存大小，避免内存泄漏
+    if (this.processedPagesCache.size > 50) {
+      const firstEntry = this.processedPagesCache.values().next().value;
+      if (firstEntry) {
+        this.processedPagesCache.delete(firstEntry);
+      }
+    }
+  }
+
+  /**
+   * 清理页面缓存（用于调试或重置）
+   */
+  public clearPageCache(): void {
+    this.processedPagesCache.clear();
+    console.log('页面处理缓存已清理');
+  }
+
+  // 调试方法：手动检查页面变化
+  public debugCheckPageChange() {
+    console.log('当前URL:', this.lastUrl);
+    console.log('实际URL:', location.href);
+    console.log('是否发生变化:', this.hasPageChanged());
+    console.log('页面缓存大小:', this.processedPagesCache.size);
+    console.log('已缓存的页面:', Array.from(this.processedPagesCache));
+
+    if (this.hasPageChanged()) {
+      console.log('手动触发页面变化处理');
+      this.handlePageChange();
+    }
+  }
+
+  /**
+   * 检测是否正在进行重负载操作（如框架重渲染）
+   */
+  private detectHeavyLoad(): boolean {
+    // 检查Ember.js是否正在渲染
+    if (this.isEmberRendering()) {
+      return true;
+    }
+
+    // 检查Performance API中的任务数量
+    if ('performance' in window && 'getEntriesByType' in performance) {
+      const measures = performance.getEntriesByType('measure');
+      const marks = performance.getEntriesByType('mark');
+
+      // 如果有大量的性能标记，可能正在进行重渲染
+      if (measures.length > 50 || marks.length > 50) {
+        return true;
+      }
+    }
+
+    // 检查DOM变化频率
+    const now = Date.now();
+    if (!this.lastMutationTime) {
+      this.lastMutationTime = now;
+      return false;
+    }
+
+    const timeSinceLastMutation = now - this.lastMutationTime;
+    this.lastMutationTime = now;
+
+    // 如果DOM变化过于频繁（小于50ms），可能是框架重渲染
+    if (timeSinceLastMutation < 50) {
+      this.rapidMutationCount = (this.rapidMutationCount || 0) + 1;
+
+      // 连续快速变化超过10次，认为是重负载
+      if (this.rapidMutationCount > 10) {
+        this.rapidMutationCount = 0;
+        return true;
+      }
+    } else {
+      this.rapidMutationCount = 0;
+    }
+
+    return false;
+  }
+
+  private lastMutationTime: number | undefined;
+  private rapidMutationCount = 0;
+
+  /**
+   * 检测是否为Ember.js应用并正在渲染
+   */
+  private isEmberRendering(): boolean {
+    // 检查全局Ember对象
+    const ember = (window as any).Ember || (window as any).require?.('ember');
+    if (ember) {
+      // 检查是否有活跃的渲染任务
+      const runLoop = ember.run || ember.RunLoop;
+      if (runLoop?.hasScheduledTimers?.() || runLoop?.currentRunLoop) {
+        return true;
+      }
+    }
+
+    // 检查DOM中是否有Ember特征
+    const emberElements = document.querySelectorAll(
+      '[data-ember-action], .ember-view',
+    );
+    if (emberElements.length > 0) {
+      // 检查最近是否有元素被添加（可能是渲染中）
+      const recentElements = Array.from(emberElements).filter((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+
+      // 如果有大量活跃的Ember元素，可能正在渲染
+      return recentElements.length > 20;
+    }
+
+    return false;
   }
 }
