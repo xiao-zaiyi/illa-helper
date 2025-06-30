@@ -137,7 +137,7 @@ export class ContentSegmenter {
   /**
    * 从容器中提取内容段落
    */
-  private extractSegmentsFromContainer(container: Element): ContentSegment[] {
+  public extractSegmentsFromContainer(container: Element): ContentSegment[] {
     const segments: ContentSegment[] = [];
     const textNodes = this.getTextNodes(container);
 
@@ -251,7 +251,7 @@ export class ContentSegmenter {
   /**
    * 合并小段落
    */
-  private mergeSmallSegments(segments: ContentSegment[]): ContentSegment[] {
+  public mergeSmallSegments(segments: ContentSegment[]): ContentSegment[] {
     if (segments.length <= 1) {
       return segments;
     }
