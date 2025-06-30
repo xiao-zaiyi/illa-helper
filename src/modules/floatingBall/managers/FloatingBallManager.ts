@@ -15,6 +15,9 @@ import {
   MENU_ACTIONS,
 } from '../config';
 import { safeSetInnerHTML } from '@/src/utils';
+// 引入黑名单管理
+import { BlacklistManager } from '@/src/modules/options/blacklist/manager';
+
 
 export class FloatingBallManager {
   private config: FloatingBallConfig;
@@ -39,6 +42,8 @@ export class FloatingBallManager {
   // 菜单悬停相关
   private menuHoverTimer: number | null = null;
   private menuItemsEventsBound = false; // 防止重复绑定菜单项事件
+
+  private blacklistManager = new BlacklistManager();
 
   constructor(config: FloatingBallConfig) {
     this.config = config;
@@ -1047,13 +1052,14 @@ export class FloatingBallManager {
       case 'settings':
         this.openSettings();
         break;
-
       case 'close':
         this.closeBall();
         break;
       case 'options':
         this.openOptions();
         break;
+      case 'blacklist':
+        this.addBlackList();
       default:
         console.warn('未知的菜单操作:', action);
     }
@@ -1079,6 +1085,29 @@ export class FloatingBallManager {
       browser.runtime.sendMessage({ type: 'open-options' });
     } catch (error) {
       console.error('打开选项失败:', error);
+    }
+  }
+
+  /**
+   * 加入黑名单
+   */
+  private async addBlackList(): Promise<void> {
+    try {
+      // 获取当前页面的url
+      const currentUrl = window.location.href;
+      const isBlocked = await this.blacklistManager.isBlacklisted(currentUrl);
+      if (isBlocked) {
+        console.log('当前页面已在黑名单中');
+        alert('当前页面已在黑名单中')
+        return;
+      }
+      // 直接屏蔽整个网站
+      const pattern = '*://' + window.location.host + '/*';
+      this.blacklistManager.addPattern(pattern);
+      alert(pattern + "加入黑名单成功")
+    }
+    catch (error) {
+      console.error('加入黑名单失败:', error);
     }
   }
 
