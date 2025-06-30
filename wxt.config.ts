@@ -20,6 +20,15 @@ export default defineConfig({
         strict_min_version: '88.0',
       },
     },
+    commands: {
+      'quick-translate': {
+        suggested_key: {
+          default: 'Alt+A',
+          mac: 'Command+A',
+        },
+        description: '一键翻译',
+      },
+    },
   },
   imports: {
     eslintrc: {

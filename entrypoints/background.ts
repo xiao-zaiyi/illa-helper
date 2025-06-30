@@ -169,4 +169,23 @@ export default defineBackground(() => {
       return true; // 保持消息通道开放用于异步响应
     }
   });
+
+  browser.commands.onCommand.addListener(async (command) => {
+    console.log(command);
+    if (command === 'quick-translate') {
+      try {
+        const tabs = await browser.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+        if (tabs[0]?.id) {
+          await browser.tabs.sendMessage(tabs[0].id, {
+            type: 'MANUAL_TRANSLATE',
+          });
+        }
+      } catch (error) {
+        console.error('手动翻译失败:', error);
+      }
+    }
+  });
 });
