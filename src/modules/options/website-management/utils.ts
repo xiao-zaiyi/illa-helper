@@ -15,7 +15,7 @@ export function extractDomain(url: string): string {
   } catch (error) {
     console.warn('URL解析失败，使用原URL:', url, error);
     // 降级处理：尝试从字符串中提取域名
-    const match = url.match(/(?:https?:\ /\/)?(?:www\.)?([^\/]+)/);
+    const match = url.match(/(?:https?:\/\/)?(?:www\.)?([^\/]+)/);
     return match ? match[1] : url;
   }
 }
