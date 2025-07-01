@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { DEFAULT_SETTINGS } from '@/src/modules/types';
-const { StorageManager } = await import('@/src/modules/storageManager');
+import { StorageManager } from '@/src/modules/storageManager';
 
 export default defineBackground(() => {
   // 在扩展首次安装时，设置默认值
@@ -8,7 +8,6 @@ export default defineBackground(() => {
     if (details.reason === 'install') {
       try {
         // 使用StorageManager保存默认设置，确保使用序列化格式
-        const { StorageManager } = await import('@/src/modules/storageManager');
         const storageManager = new StorageManager();
         await storageManager.saveUserSettings(DEFAULT_SETTINGS);
         console.log('DEFAULT_SETTINGS', DEFAULT_SETTINGS);
@@ -42,9 +41,6 @@ export default defineBackground(() => {
       (async () => {
         try {
           // 使用StorageManager获取设置
-          const { StorageManager } = await import(
-            '@/src/modules/storageManager'
-          );
           const storageManager = new StorageManager();
           const settings = await storageManager.getUserSettings();
 
