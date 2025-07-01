@@ -18,6 +18,8 @@ export class WebsiteManager {
    * 获取网站状态
    */
   async getWebsiteStatus(url: string): Promise<WebsiteStatus> {
+    // 清除缓存确保获取最新状态
+    this.clearCache();
     const settings = await this.getSettings();
 
     // 先检查黑名单规则（优先级最高）
@@ -73,6 +75,8 @@ export class WebsiteManager {
    * 根据类型获取规则
    */
   async getRulesByType(type: 'blacklist' | 'whitelist'): Promise<WebsiteRule[]> {
+    // 清除缓存确保获取最新规则列表
+    this.clearCache();
     const settings = await this.getSettings();
     return settings.rules.filter(rule => rule.type === type);
   }
@@ -83,15 +87,23 @@ export class WebsiteManager {
   async addRule(pattern: string, type: 'blacklist' | 'whitelist', description?: string): Promise<void> {
     if (!pattern) return;
 
+    // 强制清除缓存，确保获取最新数据，避免使用过期缓存导致已删除数据被恢复
+    this.clearCache();
     const settings = await this.getSettings();
 
-    // 检查是否已存在相同的规则
-    const existingRule = settings.rules.find(
-      rule => rule.pattern === pattern && rule.type === type
-    );
+    // 检查是否已存在相同pattern的规则（不论类型）
+    const existingRule = settings.rules.find(rule => rule.pattern === pattern);
 
     if (existingRule) {
-      return; // 规则已存在，不重复添加
+      if (existingRule.type === type) {
+        return; // 完全相同的规则已存在，不重复添加
+      } else {
+        // 相同pattern但不同type的规则存在，先移除旧规则
+        const ruleIndex = settings.rules.findIndex(rule => rule.id === existingRule.id);
+        if (ruleIndex > -1) {
+          settings.rules.splice(ruleIndex, 1);
+        }
+      }
     }
 
     const newRule: WebsiteRule = {

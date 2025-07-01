@@ -1,8 +1,14 @@
 import { browser } from 'wxt/browser';
 import { DEFAULT_SETTINGS } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
+import { ContextMenuManager } from '@/src/modules/contextMenu';
+import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 
 export default defineBackground(() => {
+  // 初始化右键菜单管理器
+  const websiteManager = new WebsiteManager();
+  const contextMenuManager = new ContextMenuManager(websiteManager);
+
   // 在扩展首次安装时，设置默认值
   browser.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
@@ -16,6 +22,14 @@ export default defineBackground(() => {
         // 回退到旧的保存方式
         browser.storage.sync.set(DEFAULT_SETTINGS);
       }
+    }
+
+    // 初始化右键菜单
+    try {
+      await contextMenuManager.init();
+      console.log('右键菜单初始化完成');
+    } catch (error) {
+      console.error('右键菜单初始化失败:', error);
     }
   });
 

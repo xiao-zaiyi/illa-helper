@@ -243,3 +243,20 @@ export const DEFAULT_SETTINGS: UserSettings = {
   showParentheses: true,
   apiRequestTimeout: 0, // 默认不超时
 };
+
+// 右键菜单相关类型定义
+export type ContextMenuActionType =
+  | 'add-to-blacklist'
+  | 'add-to-whitelist'
+  | 'remove-from-blacklist'
+  | 'remove-from-whitelist';
+
+export type UrlPatternType = 'domain' | 'exact';
+
+export interface ContextMenuMessage {
+  type: ContextMenuActionType;
+  url: string;
+  pattern: string;
+  patternType: UrlPatternType;
+  description?: string;
+}

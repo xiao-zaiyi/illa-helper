@@ -11,8 +11,8 @@ export default defineConfig({
     },
     description:
       '基于"可理解输入"理论的英语学习工具，帮助你在日常浏览中自然学习英语',
-    version: '1.7.3',
-    permissions: ['storage', 'notifications'],
+    version: '1.7.4',
+    permissions: ['storage', 'notifications', 'contextMenus', 'activeTab'],
     host_permissions: ['<all_urls>'],
     browser_specific_settings: {
       gecko: {

@@ -3,7 +3,7 @@
  * Handles communication between different parts of the extension.
  */
 
-import { UserSettings } from './types';
+import { UserSettings, ContextMenuMessage, ContextMenuActionType, UrlPatternType } from './types';
 import { browser } from 'wxt/browser';
 
 /**
@@ -26,5 +26,60 @@ export async function notifySettingsChanged(
     }
   } catch (error) {
     console.error('Failed to send settings_updated message:', error);
+  }
+}
+
+/**
+ * 发送右键菜单操作消息到background脚本
+ * @param action 操作类型
+ * @param url 目标URL
+ * @param pattern URL模式
+ * @param patternType 模式类型
+ * @param description 可选的描述
+ */
+export async function sendContextMenuAction(
+  action: ContextMenuActionType,
+  url: string,
+  pattern: string,
+  patternType: UrlPatternType,
+  description?: string
+): Promise<boolean> {
+  try {
+    const message: ContextMenuMessage = {
+      type: action,
+      url,
+      pattern,
+      patternType,
+      description,
+    };
+
+    const response = await browser.runtime.sendMessage({
+      type: 'context-menu-action',
+      data: message,
+    });
+
+    return response?.success || false;
+  } catch (error) {
+    console.error('Failed to send context menu action:', error);
+    return false;
+  }
+}
+
+/**
+ * 通知网站管理设置已更新
+ */
+export async function notifyWebsiteManagementChanged(): Promise<void> {
+  try {
+    const tabs = await browser.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    if (tabs[0]?.id) {
+      await browser.tabs.sendMessage(tabs[0].id, {
+        type: 'website_management_updated',
+      });
+    }
+  } catch (error) {
+    console.error('Failed to send website_management_updated message:', error);
   }
 }
