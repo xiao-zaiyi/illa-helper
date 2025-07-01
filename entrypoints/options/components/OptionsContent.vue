@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
-import BlacklistManagement from './blacklist/BlacklistManagement.vue';
+import WebsiteManagement from './website-management/WebsiteManagement.vue';
 import BasicSettings from './basic/BasicSettings.vue';
 import TranslationSettings from './translation/TranslationSettings.vue';
 import AppearanceSettings from './appearance/AppearanceSettings.vue';
@@ -46,7 +46,7 @@ const emit = defineEmits<{
 const componentMap: Record<string, any> = {
   basic: BasicSettings,
   translation: TranslationSettings,
-  blacklist: BlacklistManagement,
+  'website-management': WebsiteManagement,
   floating: AppearanceSettings,
   hotkey: HotkeySettings,
   about: About,
@@ -54,7 +54,7 @@ const componentMap: Record<string, any> = {
 };
 
 const currentComponent = computed(() => {
-  return componentMap[props.currentSection] || BlacklistManagement;
+  return componentMap[props.currentSection] || WebsiteManagement;
 });
 
 const handleSaveMessage = (message: string) => {

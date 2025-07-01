@@ -93,18 +93,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 使用提示 -->
-    <div class="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-      <h4 class="font-medium text-blue-900 dark:text-blue-100 mb-2">使用提示</h4>
-      <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-        <li>• 快捷键在所有网页中都可以使用（除了chrome://页面）</li>
-        <li>• 按快捷键后会翻译当前页面的所有文本内容</li>
-        <li>• 翻译前会自动检查API配置是否有效</li>
-        <li>• 如果快捷键冲突，请在系统快捷键管理中重新设置</li>
-        <li>• 翻译需要在扩展功能启用且为手动模式下才能使用</li>
-      </ul>
-    </div>
   </div>
 </template>
 

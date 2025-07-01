@@ -159,10 +159,10 @@ const advancedFeatures: NavigationItem[] = [
 // 管理工具组
 const managementTools: NavigationItem[] = [
   {
-    key: 'blacklist',
-    label: '黑名单',
+    key: 'website-management',
+    label: '网站管理',
     icon: Shield,
-    description: '网站黑名单管理',
+    description: '黑名单和白名单管理',
   },
   {
     key: 'data',

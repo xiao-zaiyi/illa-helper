@@ -10,7 +10,7 @@ import {
 import { StorageManager } from '@/src/modules/storageManager';
 import { TextReplacer } from '@/src/modules/textReplacer';
 import { FloatingBallManager } from '@/src/modules/floatingBall';
-import { BlacklistManager } from '@/src/modules/options/blacklist/manager';
+import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 export default defineContentScript({
   // 匹配所有网站
   matches: ['<all_urls>'],
@@ -20,9 +20,12 @@ export default defineContentScript({
     const storageManager = new StorageManager();
     const settings = await storageManager.getUserSettings();
 
-    // 黑名单检查
-    const blacklistManager = new BlacklistManager();
-    if (await blacklistManager.isBlacklisted(window.location.href)) {
+    // 网站规则检查
+    const websiteManager = new WebsiteManager();
+    const websiteStatus = await websiteManager.getWebsiteStatus(window.location.href);
+
+    // 如果在黑名单中，直接返回
+    if (websiteStatus === 'blacklisted') {
       return;
     }
 
@@ -77,8 +80,8 @@ export default defineContentScript({
       }
     });
 
-    // --- 根据触发模式执行操作 ---
-    if (settings.triggerMode === TriggerMode.AUTOMATIC) {
+    // --- 根据触发模式或白名单执行操作 ---
+    if (websiteStatus === 'whitelisted' || settings.triggerMode === TriggerMode.AUTOMATIC) {
       await processPage(
         textProcessor,
         textReplacer,
@@ -181,7 +184,7 @@ function setupListeners(
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-          newSettings.enablePronunciationTooltip ||
+        newSettings.enablePronunciationTooltip ||
         settings.translationDirection !== newSettings.translationDirection ||
         settings.userLevel !== newSettings.userLevel ||
         settings.useGptApi !== newSettings.useGptApi;

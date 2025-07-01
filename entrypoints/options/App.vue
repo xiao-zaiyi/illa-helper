@@ -79,7 +79,7 @@ const isMobile = ref(false);
 const sectionTitles: Record<string, string> = {
   basic: '基本设置',
   translation: '翻译服务',
-  blacklist: '黑名单',
+  'website-management': '网站管理',
   floating: '悬浮球',
   hotkey: '快捷键',
   data: '导入/导出',
