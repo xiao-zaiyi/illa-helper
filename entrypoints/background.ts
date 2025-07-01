@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { DEFAULT_SETTINGS } from '@/src/modules/types';
+const { StorageManager } = await import('@/src/modules/storageManager');
 
 export default defineBackground(() => {
   // 在扩展首次安装时，设置默认值
@@ -171,8 +172,13 @@ export default defineBackground(() => {
   });
 
   browser.commands.onCommand.addListener(async (command) => {
-    console.log(command);
-    if (command === 'quick-translate') {
+    if (command === 'translate-page') {
+      // 验证API配置
+      const isValid = await validateApiConfiguration();
+      if (!isValid) {
+        return;
+      }
+
       try {
         const tabs = await browser.tabs.query({
           active: true,
@@ -180,12 +186,40 @@ export default defineBackground(() => {
         });
         if (tabs[0]?.id) {
           await browser.tabs.sendMessage(tabs[0].id, {
-            type: 'MANUAL_TRANSLATE',
+            type: 'translate-page-command',
           });
         }
       } catch (error) {
-        console.error('手动翻译失败:', error);
+        console.error('[Background] 翻译整页失败:', error);
       }
     }
   });
+
+  // 独立的API配置验证函数
+  async function validateApiConfiguration(): Promise<boolean> {
+    try {
+      const storageManager = new StorageManager();
+      const settings = await storageManager.getUserSettings();
+
+      const activeConfig = settings.apiConfigs?.find(
+        (config) => config.id === settings.activeApiConfigId,
+      );
+      const isConfigValid = !!activeConfig?.config?.apiKey;
+
+      if (!isConfigValid) {
+        const notificationOptions = {
+          type: 'basic' as const,
+          title: '[浸入式学语言助手] API 配置错误',
+          message: 'API 密钥未设置。请点击扩展图标进入设置页面进行配置。',
+          iconUrl: browser.runtime.getURL('/warning.png'),
+        };
+        browser.notifications.create(notificationOptions);
+      }
+
+      return isConfigValid;
+    } catch (error) {
+      console.error('[Background] 配置验证失败:', error);
+      return false;
+    }
+  }
 });

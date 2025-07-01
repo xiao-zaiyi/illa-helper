@@ -21,7 +21,7 @@ export default defineConfig({
       },
     },
     commands: {
-      'quick-translate': {
+      'translate-page': {
         suggested_key: {
           default: 'Alt+A',
           mac: 'Command+A',

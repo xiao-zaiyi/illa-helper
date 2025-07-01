@@ -98,6 +98,7 @@ import {
   Circle,
   Download,
   Info,
+  Keyboard,
 } from 'lucide-vue-next';
 import NavigationGroup from './NavigationGroup.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
@@ -136,6 +137,12 @@ const basicFeatures: NavigationItem[] = [
     label: '悬浮球',
     icon: Circle,
     description: '悬浮工具球配置',
+  },
+  {
+    key: 'hotkey',
+    label: '快捷键',
+    icon: Keyboard,
+    description: '翻译快捷键设置',
   },
 ];
 

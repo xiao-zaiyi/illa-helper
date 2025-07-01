@@ -29,6 +29,7 @@ import TranslationSettings from './translation/TranslationSettings.vue';
 import AppearanceSettings from './appearance/AppearanceSettings.vue';
 import DataManagement from './data/DataManagement.vue';
 import About from './about/About.vue';
+import HotkeySettings from './basic/HotkeySettings.vue';
 
 interface Props {
   currentSection: string;
@@ -47,6 +48,7 @@ const componentMap: Record<string, any> = {
   translation: TranslationSettings,
   blacklist: BlacklistManagement,
   floating: AppearanceSettings,
+  hotkey: HotkeySettings,
   about: About,
   data: DataManagement,
 };

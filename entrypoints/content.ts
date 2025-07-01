@@ -207,8 +207,22 @@ function setupListeners(
 
       // 更新悬浮球配置
       floatingBallManager.updateConfig(settings.floatingBall);
+    } else if (message.type === 'translate-page-command') {
+      // 收到翻译整页快捷键命令
+      try {
+        await processPage(
+          textProcessor,
+          textReplacer,
+          settings.originalWordDisplayMode,
+          settings.maxLength,
+          settings.translationPosition,
+          settings.showParentheses,
+        );
+      } catch (error) {
+        console.error('[Content] 翻译整页失败:', error);
+      }
     } else if (message.type === 'MANUAL_TRANSLATE') {
-      // 收到手动翻译请求
+      // 保持向后兼容，支持从popup发出的手动翻译请求
       if (settings.triggerMode === TriggerMode.MANUAL) {
         const isConfigValid = await browser.runtime.sendMessage({
           type: 'validate-configuration',

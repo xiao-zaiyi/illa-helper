@@ -81,6 +81,7 @@ const sectionTitles: Record<string, string> = {
   translation: '翻译服务',
   blacklist: '黑名单',
   floating: '悬浮球',
+  hotkey: '快捷键',
   data: '导入/导出',
   about: '关于',
 };
