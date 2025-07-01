@@ -27,7 +27,9 @@
                 />
               </svg>
             </div>
-            <h3 class="text-lg font-semibold text-foreground">翻译整页快捷键</h3>
+            <h3 class="text-lg font-semibold text-foreground">
+              翻译整页快捷键
+            </h3>
           </div>
 
           <div class="space-y-3">
@@ -50,13 +52,23 @@
                   <div class="space-y-1">
                     <div class="font-medium flex items-center space-x-2">
                       <span>翻译整个页面</span>
-                      <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded dark:bg-green-950/30 dark:text-green-300">推荐</span>
+                      <span
+                        class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded dark:bg-green-950/30 dark:text-green-300"
+                      >
+                        推荐
+                      </span>
                     </div>
-                    <div class="text-sm text-muted-foreground">快速翻译当前页面的所有文本</div>
+                    <div class="text-sm text-muted-foreground">
+                      快速翻译当前页面的所有文本
+                    </div>
                   </div>
-                  <div 
-                    class="font-mono text-lg px-4 py-2 bg-muted rounded border min-w-[120px] text-center" 
-                    :class="currentShortcut ? 'text-foreground' : 'text-muted-foreground'"
+                  <div
+                    class="font-mono text-lg px-4 py-2 bg-muted rounded border min-w-[120px] text-center"
+                    :class="
+                      currentShortcut
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
+                    "
                   >
                     {{ currentShortcut || '未设置' }}
                   </div>
@@ -98,10 +110,15 @@
         </div>
 
         <!-- 使用说明 -->
-        <div class="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-          <p class="font-medium text-blue-900 dark:text-blue-100 mb-1">💡 如何修改快捷键：</p>
+        <div
+          class="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800"
+        >
+          <p class="font-medium text-blue-900 dark:text-blue-100 mb-1">
+            💡 如何修改快捷键：
+          </p>
           <p class="text-blue-800 dark:text-blue-200 mb-2">
-            点击上方"管理快捷键"按钮，或访问 chrome://extensions/shortcuts 来自定义快捷键组合
+            点击上方"管理快捷键"按钮，或访问 chrome://extensions/shortcuts
+            来自定义快捷键组合
           </p>
           <p v-if="currentShortcut" class="text-blue-800 dark:text-blue-200">
             当前设置：{{ currentShortcut }}
@@ -118,10 +135,12 @@
       <CardHeader class="pb-3">
         <CardTitle>
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-foreground">快捷键状态检查</h3>
+            <h3 class="text-lg font-semibold text-foreground">
+              快捷键状态检查
+            </h3>
             <Button
               @click="checkHotkeyStatus"
-              variant="outline" 
+              variant="outline"
               size="sm"
               :disabled="isChecking"
               class="flex items-center gap-2"
@@ -152,44 +171,54 @@
       </CardHeader>
       <CardContent class="pt-0">
         <!-- 检查结果显示 -->
-        <div 
-          v-if="hotkeyStatus" 
+        <div
+          v-if="hotkeyStatus"
           class="p-4 rounded-lg border"
-          :class="hotkeyStatus.active 
-            ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800' 
-            : 'bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-800'"
+          :class="
+            hotkeyStatus.active
+              ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
+              : 'bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-800'
+          "
         >
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2">
-                <div 
-                  class="w-3 h-3 rounded-full" 
-                  :class="hotkeyStatus.active ? 'bg-green-500' : 'bg-orange-500'"
+                <div
+                  class="w-3 h-3 rounded-full"
+                  :class="
+                    hotkeyStatus.active ? 'bg-green-500' : 'bg-orange-500'
+                  "
                 ></div>
-                <span 
-                  class="font-medium" 
-                  :class="hotkeyStatus.active 
-                    ? 'text-green-900 dark:text-green-100' 
-                    : 'text-orange-900 dark:text-orange-100'"
+                <span
+                  class="font-medium"
+                  :class="
+                    hotkeyStatus.active
+                      ? 'text-green-900 dark:text-green-100'
+                      : 'text-orange-900 dark:text-orange-100'
+                  "
                 >
                   {{ hotkeyStatus.active ? '快捷键已设置' : '快捷键未设置' }}
                 </span>
               </div>
-              <div 
-                class="font-mono text-sm px-3 py-1 bg-background/50 rounded border" 
-                :class="hotkeyStatus.active 
-                  ? 'text-green-800 dark:text-green-200' 
-                  : 'text-orange-800 dark:text-orange-200'"
+              <div
+                class="font-mono text-sm px-3 py-1 bg-background/50 rounded border"
+                :class="
+                  hotkeyStatus.active
+                    ? 'text-green-800 dark:text-green-200'
+                    : 'text-orange-800 dark:text-orange-200'
+                "
               >
                 {{ hotkeyStatus.shortcut || '未设置' }}
               </div>
             </div>
-            
-            <div 
-              class="text-sm" 
-              :class="hotkeyStatus.active 
-                ? 'text-green-800 dark:text-green-200' 
-                : 'text-orange-800 dark:text-orange-200'"
+
+            <div
+              class="text-sm"
+              :class="
+                hotkeyStatus.active
+                  ? 'text-green-800 dark:text-green-200'
+                  : 'text-orange-800 dark:text-orange-200'
+              "
             >
               <div class="flex justify-between items-center">
                 <span>翻译整个页面</span>
@@ -198,20 +227,21 @@
                 </span>
               </div>
             </div>
-            
-            <div 
-              v-if="!hotkeyStatus.active" 
+
+            <div
+              v-if="!hotkeyStatus.active"
               class="text-xs p-2 bg-orange-100 dark:bg-orange-950/50 rounded border border-orange-200 dark:border-orange-800"
             >
               <div class="text-orange-700 dark:text-orange-300">
-                💡 点击上方"管理快捷键"按钮进行设置，或访问 chrome://extensions/shortcuts
+                💡 点击上方"管理快捷键"按钮进行设置，或访问
+                chrome://extensions/shortcuts
               </div>
             </div>
           </div>
         </div>
 
         <!-- 未检查状态提示 -->
-        <div 
+        <div
           v-else
           class="p-4 bg-muted/50 rounded-lg border border-border/50 text-center"
         >
@@ -241,12 +271,7 @@
 import { ref, onMounted } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const emit = defineEmits<{
   saveMessage: [message: string];
@@ -271,7 +296,9 @@ onMounted(async () => {
 async function loadCurrentShortcut() {
   try {
     const commands = await browser.commands.getAll();
-    const translatePageCommand = commands.find(cmd => cmd.name === 'translate-page');
+    const translatePageCommand = commands.find(
+      (cmd) => cmd.name === 'translate-page',
+    );
     currentShortcut.value = translatePageCommand?.shortcut || '';
   } catch (error) {
     console.error('获取当前快捷键失败:', error);
@@ -287,25 +314,32 @@ function openShortcutsPage() {
 // 检查快捷键状态
 async function checkHotkeyStatus() {
   isChecking.value = true;
-  
+
   try {
     const commands = await browser.commands.getAll();
     console.log('当前注册的命令:', commands);
-    
-    const translatePageCommand = commands.find(cmd => cmd.name === 'translate-page');
+
+    const translatePageCommand = commands.find(
+      (cmd) => cmd.name === 'translate-page',
+    );
     const shortcut = translatePageCommand?.shortcut || '';
-    
+
     // 同时更新当前快捷键显示
     currentShortcut.value = shortcut;
-    
+
     const isActive = shortcut && shortcut.trim() !== '';
-    
+
     hotkeyStatus.value = {
       active: !!isActive,
-      shortcut: shortcut
+      shortcut: shortcut,
     };
-    
-    emit('saveMessage', isActive ? '快捷键已正确设置' : '快捷键未设置，请点击"管理快捷键"进行设置');
+
+    emit(
+      'saveMessage',
+      isActive
+        ? '快捷键已正确设置'
+        : '快捷键未设置，请点击"管理快捷键"进行设置',
+    );
   } catch (error) {
     console.error('检查快捷键状态失败:', error);
     emit('saveMessage', '检查快捷键状态失败');
@@ -319,4 +353,4 @@ async function checkHotkeyStatus() {
 .font-mono {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
 }
-</style> 
+</style>

@@ -325,7 +325,6 @@ export default defineBackground(() => {
         parentId: 'illa-website-management',
         contexts: ['page'],
       });
-
     } catch (error) {
       console.error('创建右键菜单失败:', error);
       throw error;

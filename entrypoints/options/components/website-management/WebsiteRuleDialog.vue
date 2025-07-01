@@ -24,9 +24,7 @@
       <!-- 内容 -->
       <div class="p-6 space-y-6">
         <!-- 规则类型选择 -->
-        <RuleTypeSelector 
-          v-model="formData.type"
-        />
+        <RuleTypeSelector v-model="formData.type" />
 
         <!-- 网站模式输入 -->
         <div class="space-y-2">
@@ -66,15 +64,21 @@
           <div class="text-sm font-medium text-foreground">支持的模式：</div>
           <div class="text-xs text-muted-foreground space-y-1">
             <div>
-              <code class="px-1.5 py-0.5 rounded bg-background">*://example.com/*</code>
+              <code class="px-1.5 py-0.5 rounded bg-background">
+                *://example.com/*
+              </code>
               - 整个域名
             </div>
             <div>
-              <code class="px-1.5 py-0.5 rounded bg-background">https://example.com/path/*</code>
+              <code class="px-1.5 py-0.5 rounded bg-background">
+                https://example.com/path/*
+              </code>
               - 特定路径
             </div>
             <div>
-              <code class="px-1.5 py-0.5 rounded bg-background">*://*.example.com/*</code>
+              <code class="px-1.5 py-0.5 rounded bg-background">
+                *://*.example.com/*
+              </code>
               - 包含子域名
             </div>
             <div>
@@ -121,10 +125,10 @@
           :disabled="!isFormValid"
           class="px-4 py-2 rounded-md transition-colors"
           :class="[
-            formData.type === 'blacklist' 
-              ? 'bg-red-600 hover:bg-red-700 text-white' 
+            formData.type === 'blacklist'
+              ? 'bg-red-600 hover:bg-red-700 text-white'
               : 'bg-green-600 hover:bg-green-700 text-white',
-            !isFormValid && 'opacity-50 cursor-not-allowed'
+            !isFormValid && 'opacity-50 cursor-not-allowed',
           ]"
         >
           {{ isEditing ? '更新' : '添加' }}
@@ -136,7 +140,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, nextTick } from 'vue';
-import { X, Shield, Heart, Globe } from 'lucide-vue-next';
+import { X, Shield, Heart } from 'lucide-vue-next';
 import { WebsiteRule } from '@/src/modules/options/website-management/types';
 import RuleTypeSelector from './RuleTypeSelector.vue';
 
@@ -164,10 +168,14 @@ const formData = reactive({
 const presets = [
   // 黑名单预设
   { name: 'GitHub', pattern: '*://github.com/*', type: 'blacklist' },
-  { name: 'Stack Overflow', pattern: '*://stackoverflow.com/*', type: 'blacklist' },
+  {
+    name: 'Stack Overflow',
+    pattern: '*://stackoverflow.com/*',
+    type: 'blacklist',
+  },
   { name: 'MDN', pattern: '*://developer.mozilla.org/*', type: 'blacklist' },
   { name: 'Google Docs', pattern: '*://docs.google.com/*', type: 'blacklist' },
-  
+
   // 白名单预设
   { name: 'Wikipedia', pattern: '*://*.wikipedia.org/*', type: 'whitelist' },
   { name: 'Reddit', pattern: '*://reddit.com/*', type: 'whitelist' },
@@ -191,7 +199,7 @@ const isFormValid = computed(() => {
 });
 
 const getPresets = () => {
-  return presets.filter(preset => preset.type === formData.type);
+  return presets.filter((preset) => preset.type === formData.type);
 };
 
 const getPresetIcon = (type: string) => {
@@ -246,4 +254,4 @@ const handleSave = () => {
 const handleCancel = () => {
   emit('cancel');
 };
-</script> 
+</script>

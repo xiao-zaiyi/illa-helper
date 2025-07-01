@@ -20,7 +20,7 @@
     "postinstall": "wxt prepare",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"src/**/*.{js,ts,jsx,tsx,vue} && entrypoints/**/*.{js,ts,jsx,tsx,vue}\"",
+    "format": "prettier --write \"src/**/*.{js,ts,jsx,tsx,vue}\" \"entrypoints/**/*.{js,ts,jsx,tsx,vue}\"",
     "check": "npm run format && npm run lint:fix",
     "prepare": "husky install"
   },

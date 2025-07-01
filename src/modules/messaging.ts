@@ -3,7 +3,12 @@
  * Handles communication between different parts of the extension.
  */
 
-import { UserSettings, ContextMenuMessage, ContextMenuActionType, UrlPatternType } from './types';
+import {
+  UserSettings,
+  ContextMenuMessage,
+  ContextMenuActionType,
+  UrlPatternType,
+} from './types';
 import { browser } from 'wxt/browser';
 
 /**
@@ -42,7 +47,7 @@ export async function sendContextMenuAction(
   url: string,
   pattern: string,
   patternType: UrlPatternType,
-  description?: string
+  description?: string,
 ): Promise<boolean> {
   try {
     const message: ContextMenuMessage = {

@@ -22,7 +22,9 @@ export default defineContentScript({
 
     // 网站规则检查
     const websiteManager = new WebsiteManager();
-    const websiteStatus = await websiteManager.getWebsiteStatus(window.location.href);
+    const websiteStatus = await websiteManager.getWebsiteStatus(
+      window.location.href,
+    );
 
     // 如果在黑名单中，直接返回
     if (websiteStatus === 'blacklisted') {
@@ -81,7 +83,10 @@ export default defineContentScript({
     });
 
     // --- 根据触发模式或白名单执行操作 ---
-    if (websiteStatus === 'whitelisted' || settings.triggerMode === TriggerMode.AUTOMATIC) {
+    if (
+      websiteStatus === 'whitelisted' ||
+      settings.triggerMode === TriggerMode.AUTOMATIC
+    ) {
       await processPage(
         textProcessor,
         textReplacer,
@@ -184,7 +189,7 @@ function setupListeners(
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-        newSettings.enablePronunciationTooltip ||
+          newSettings.enablePronunciationTooltip ||
         settings.translationDirection !== newSettings.translationDirection ||
         settings.userLevel !== newSettings.userLevel ||
         settings.useGptApi !== newSettings.useGptApi;

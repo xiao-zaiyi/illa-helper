@@ -11,7 +11,7 @@ import {
   generateDomainPattern,
   generateExactPattern,
   generateRuleDescription,
-  validateUrlForRule
+  validateUrlForRule,
 } from '../options/website-management/utils';
 import type { ContextMenuActionType, UrlPatternType } from '../types';
 
@@ -28,18 +28,22 @@ export class ContextMenuManager {
   async init(): Promise<void> {
     try {
       // 监听菜单点击事件
-      browser.contextMenus.onClicked.addListener(this.handleMenuClick.bind(this));
+      browser.contextMenus.onClicked.addListener(
+        this.handleMenuClick.bind(this),
+      );
 
       // 监听标签页更新事件，动态更新菜单状态
       browser.tabs.onUpdated.addListener(this.handleTabUpdate.bind(this));
       browser.tabs.onActivated.addListener(this.handleTabActivated.bind(this));
 
       // 初始化当前标签页的菜单状态
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      const tabs = await browser.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
       if (tabs[0]?.id && tabs[0]?.url) {
         await this.updateMenuState(tabs[0].id, tabs[0].url);
       }
-
     } catch (error) {
       console.error('菜单管理器初始化失败:', error);
     }
@@ -69,7 +73,6 @@ export class ContextMenuManager {
 
       // 根据网站状态更新菜单可见性
       await this.updateMenuVisibility(url, domain, websiteStatus);
-
     } catch (error) {
       console.error('更新菜单状态失败:', error);
       await this.hideAllDynamicMenus();
@@ -86,13 +89,14 @@ export class ContextMenuManager {
       'illa-remove-blacklist',
       'illa-add-whitelist-domain',
       'illa-add-whitelist-exact',
-      'illa-remove-whitelist'
+      'illa-remove-whitelist',
     ];
 
     for (const menuId of dynamicMenuIds) {
       try {
         await browser.contextMenus.update(menuId, { visible: false });
       } catch (error) {
+        console.error('更新菜单可见性失败:', error);
         // 忽略更新失败的错误
       }
     }
@@ -104,7 +108,7 @@ export class ContextMenuManager {
   private async updateMenuVisibility(
     url: string,
     domain: string,
-    websiteStatus: 'blacklisted' | 'whitelisted' | 'normal'
+    websiteStatus: 'blacklisted' | 'whitelisted' | 'normal',
   ): Promise<void> {
     // 先隐藏所有动态菜单项
     await this.hideAllDynamicMenus();
@@ -115,47 +119,47 @@ export class ContextMenuManager {
         // 当前在黑名单中，显示移除选项和添加到白名单选项
         await browser.contextMenus.update('illa-remove-blacklist', {
           visible: true,
-          title: `从黑名单中移除 ${domain}`
+          title: `从黑名单中移除 ${domain}`,
         });
         await browser.contextMenus.update('illa-add-whitelist-domain', {
           visible: true,
-          title: `添加 ${domain} 到白名单`
+          title: `添加 ${domain} 到白名单`,
         });
         await browser.contextMenus.update('illa-add-whitelist-exact', {
           visible: true,
-          title: '添加当前页面到白名单'
+          title: '添加当前页面到白名单',
         });
       } else if (websiteStatus === 'whitelisted') {
         // 当前在白名单中，显示移除选项和添加到黑名单选项
         await browser.contextMenus.update('illa-remove-whitelist', {
           visible: true,
-          title: `从白名单中移除 ${domain}`
+          title: `从白名单中移除 ${domain}`,
         });
         await browser.contextMenus.update('illa-add-blacklist-domain', {
           visible: true,
-          title: `添加 ${domain} 到黑名单`
+          title: `添加 ${domain} 到黑名单`,
         });
         await browser.contextMenus.update('illa-add-blacklist-exact', {
           visible: true,
-          title: '添加当前页面到黑名单'
+          title: '添加当前页面到黑名单',
         });
       } else {
         // 正常状态，显示添加选项
         await browser.contextMenus.update('illa-add-blacklist-domain', {
           visible: true,
-          title: `添加 ${domain} 到黑名单`
+          title: `添加 ${domain} 到黑名单`,
         });
         await browser.contextMenus.update('illa-add-blacklist-exact', {
           visible: true,
-          title: '添加当前页面到黑名单'
+          title: '添加当前页面到黑名单',
         });
         await browser.contextMenus.update('illa-add-whitelist-domain', {
           visible: true,
-          title: `添加 ${domain} 到白名单`
+          title: `添加 ${domain} 到白名单`,
         });
         await browser.contextMenus.update('illa-add-whitelist-exact', {
           visible: true,
-          title: '添加当前页面到白名单'
+          title: '添加当前页面到白名单',
         });
       }
     } catch (error) {
@@ -166,10 +170,7 @@ export class ContextMenuManager {
   /**
    * 处理菜单点击事件
    */
-  private async handleMenuClick(
-    info: any,
-    tab: any
-  ): Promise<void> {
+  private async handleMenuClick(info: any, tab: any): Promise<void> {
     if (!tab?.url) return;
 
     try {
@@ -179,7 +180,9 @@ export class ContextMenuManager {
       // 解析菜单ID
       if (info.menuItemId === 'illa-open-settings') {
         // 打开设置页面
-        const optionsUrl = browser.runtime.getURL('/options.html#website-management');
+        const optionsUrl = browser.runtime.getURL(
+          '/options.html#website-management',
+        );
         await browser.tabs.create({ url: optionsUrl });
         return;
       }
@@ -188,7 +191,6 @@ export class ContextMenuManager {
       if (typeof info.menuItemId === 'string') {
         await this.processMenuAction(info.menuItemId, url, domain);
       }
-
     } catch (error) {
       console.error('处理菜单点击失败:', error);
       this.showNotification('操作失败', '处理菜单操作时发生错误');
@@ -198,7 +200,11 @@ export class ContextMenuManager {
   /**
    * 处理菜单操作
    */
-  private async processMenuAction(menuItemId: string, url: string, domain: string): Promise<void> {
+  private async processMenuAction(
+    menuItemId: string,
+    url: string,
+    domain: string,
+  ): Promise<void> {
     let action: ContextMenuActionType;
     let patternType: UrlPatternType;
     let pattern: string;
@@ -243,7 +249,7 @@ export class ContextMenuManager {
     action: ContextMenuActionType,
     pattern: string,
     patternType: UrlPatternType,
-    url: string
+    url: string,
   ): Promise<void> {
     try {
       const type = action.includes('blacklist') ? 'blacklist' : 'whitelist';
@@ -257,7 +263,7 @@ export class ContextMenuManager {
         const patternText = patternType === 'domain' ? '网站' : '页面';
         this.showNotification(
           '规则添加成功',
-          `已将${patternText}添加到${actionText}`
+          `已将${patternText}添加到${actionText}`,
         );
       } else if (action.startsWith('remove-from-')) {
         // 移除规则 - 查找匹配的规则并删除
@@ -266,7 +272,7 @@ export class ContextMenuManager {
         const domainPattern = generateDomainPattern(domain);
 
         // 查找匹配的规则：可能是域名模式或者其他匹配当前URL的模式
-        const matchingRules = rules.filter(rule => {
+        const matchingRules = rules.filter((rule) => {
           // 直接匹配
           if (rule.pattern === pattern || rule.pattern === domainPattern) {
             return true;
@@ -287,16 +293,18 @@ export class ContextMenuManager {
         const patternText = matchingRules.length > 0 ? '相关规则' : '匹配规则';
         this.showNotification(
           '规则移除成功',
-          `已从${actionText}中移除${patternText}`
+          `已从${actionText}中移除${patternText}`,
         );
       }
 
       // 操作完成后，刷新菜单状态
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      const tabs = await browser.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
       if (tabs[0]?.id && tabs[0]?.url) {
         await this.updateMenuState(tabs[0].id, tabs[0].url);
       }
-
     } catch (error) {
       console.error('执行操作失败:', error);
       this.showNotification('操作失败', '执行操作时发生错误');
@@ -321,7 +329,7 @@ export class ContextMenuManager {
   private async handleTabUpdate(
     tabId: number,
     changeInfo: any,
-    tab: any
+    tab: any,
   ): Promise<void> {
     // 只在URL变化或加载完成时更新菜单
     if (changeInfo.url || (changeInfo.status === 'complete' && tab.url)) {
@@ -340,6 +348,7 @@ export class ContextMenuManager {
       }
     } catch (error) {
       // 忽略获取标签页信息失败的错误
+      console.error('处理标签页激活事件失败:', error);
     }
   }
 }

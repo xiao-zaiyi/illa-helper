@@ -15,7 +15,7 @@ export function extractDomain(url: string): string {
   } catch (error) {
     console.warn('URL解析失败，使用原URL:', url, error);
     // 降级处理：尝试从字符串中提取域名
-    const match = url.match(/(?:https?:\/\/)?(?:www\.)?([^\/]+)/);
+    const match = url.match(/(?:https?:\ /\/)?(?:www\.)?([^\/]+)/);
     return match ? match[1] : url;
   }
 }
@@ -40,7 +40,9 @@ export function generateExactPattern(url: string): string {
   try {
     const urlObj = new URL(url);
     // 移除可能的查询参数和片段，保留路径，并添加通配符以匹配该路径下的所有内容
-    const basePath = urlObj.pathname.endsWith('/') ? urlObj.pathname : `${urlObj.pathname}*`;
+    const basePath = urlObj.pathname.endsWith('/')
+      ? urlObj.pathname
+      : `${urlObj.pathname}*`;
     return `${urlObj.protocol}//${urlObj.host}${basePath}`;
   } catch (error) {
     console.warn('URL解析失败，使用原URL:', url, error);
@@ -54,7 +56,10 @@ export function generateExactPattern(url: string): string {
  * @param type 规则类型
  * @returns 描述字符串
  */
-export function generateRuleDescription(pattern: string, type: 'blacklist' | 'whitelist'): string {
+export function generateRuleDescription(
+  pattern: string,
+  type: 'blacklist' | 'whitelist',
+): string {
   const typeText = type === 'blacklist' ? '黑名单' : '白名单';
 
   if (pattern.includes('*://') && pattern.endsWith('/*')) {
@@ -72,9 +77,17 @@ export function generateRuleDescription(pattern: string, type: 'blacklist' | 'wh
  * @returns 是否为特殊地址
  */
 export function isSpecialUrl(url: string): boolean {
-  const specialProtocols = ['chrome:', 'chrome-extension:', 'moz-extension:', 'edge:', 'about:'];
+  const specialProtocols = [
+    'chrome:',
+    'chrome-extension:',
+    'moz-extension:',
+    'edge:',
+    'about:',
+  ];
   const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
-  const hasSpecialProtocol = specialProtocols.some(protocol => url.startsWith(protocol));
+  const hasSpecialProtocol = specialProtocols.some((protocol) =>
+    url.startsWith(protocol),
+  );
 
   return isLocalhost || hasSpecialProtocol;
 }
@@ -84,7 +97,10 @@ export function isSpecialUrl(url: string): boolean {
  * @param url URL字符串
  * @returns 验证结果和错误信息
  */
-export function validateUrlForRule(url: string): { valid: boolean; error?: string } {
+export function validateUrlForRule(url: string): {
+  valid: boolean;
+  error?: string;
+} {
   if (!url || url.trim() === '') {
     return { valid: false, error: 'URL不能为空' };
   }
@@ -96,7 +112,7 @@ export function validateUrlForRule(url: string): { valid: boolean; error?: strin
   try {
     new URL(url);
     return { valid: true };
-  } catch (error) {
+  } catch (_) {
     return { valid: false, error: 'URL格式无效' };
   }
 }

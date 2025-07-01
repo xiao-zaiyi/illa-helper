@@ -14,7 +14,7 @@
           selectedType === option.value
             ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
             : 'border-border hover:bg-accent/50',
-          option.color
+          option.color,
         ]"
       >
         <!-- 选中指示器 -->
@@ -28,10 +28,14 @@
         <!-- 图标和标题 -->
         <div class="flex items-start space-x-3">
           <div class="flex-shrink-0 mt-0.5">
-            <component 
-              :is="getIcon(option.icon)" 
-              class="w-5 h-5" 
-              :class="selectedType === option.value ? 'text-primary' : 'text-muted-foreground'"
+            <component
+              :is="getIcon(option.icon)"
+              class="w-5 h-5"
+              :class="
+                selectedType === option.value
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              "
             />
           </div>
           <div class="flex-1">
@@ -73,7 +77,7 @@ const emit = defineEmits<{
 
 const selectedType = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 });
 
 const ruleTypeOptions: RuleTypeOption[] = [
@@ -82,15 +86,15 @@ const ruleTypeOptions: RuleTypeOption[] = [
     label: '黑名单',
     description: '禁用翻译功能的网站',
     icon: 'Shield',
-    color: 'hover:border-red-200 focus:border-red-300'
+    color: 'hover:border-red-200 focus:border-red-300',
   },
   {
     value: 'whitelist',
     label: '白名单',
     description: '强制自动翻译的网站',
     icon: 'Heart',
-    color: 'hover:border-green-200 focus:border-green-300'
-  }
+    color: 'hover:border-green-200 focus:border-green-300',
+  },
 ];
 
 const selectType = (type: 'blacklist' | 'whitelist') => {
@@ -100,8 +104,8 @@ const selectType = (type: 'blacklist' | 'whitelist') => {
 const getIcon = (iconName: string) => {
   const icons: Record<string, any> = {
     Shield,
-    Heart
+    Heart,
   };
   return icons[iconName] || Shield;
 };
-</script> 
+</script>

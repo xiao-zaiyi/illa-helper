@@ -63,16 +63,16 @@ const exportSettings = async () => {
   try {
     const settings = await storageManager.getUserSettings();
     const websiteRules = await websiteManager.getRules();
-    
+
     const exportData = {
       exportTime: new Date().toISOString(),
       version: '2.0', // 增加版本号以区分包含网站管理数据的新格式
       userSettings: settings,
       websiteManagement: {
-        rules: websiteRules
-      }
+        rules: websiteRules,
+      },
     };
-    
+
     const settingsJson = JSON.stringify(exportData, null, 2);
     const blob = new Blob([settingsJson], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -83,7 +83,11 @@ const exportSettings = async () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    emit('saveMessage', `设置已成功导出！包含 ${websiteRules.length} 个网站规则。`, 'success');
+    emit(
+      'saveMessage',
+      `设置已成功导出！包含 ${websiteRules.length} 个网站规则。`,
+      'success',
+    );
   } catch (error) {
     console.error('Failed to export settings:', error);
     emit('saveMessage', '导出失败，请查看控制台获取详情。', 'error');
@@ -112,42 +116,49 @@ const importSettings = async () => {
       if (typeof result !== 'string') {
         throw new Error('无法读取文件内容。');
       }
-      
+
       const importedData = JSON.parse(result);
       let importStats = { settings: false, websiteRules: 0 };
-      
+
       // 检查数据格式并导入
       if (importedData.version === '2.0' && importedData.userSettings) {
         // 新格式：包含完整数据
         await storageManager.saveUserSettings(importedData.userSettings);
         importStats.settings = true;
-        
+
         // 导入网站管理数据
         if (importedData.websiteManagement?.rules) {
           // 清除现有缓存
           websiteManager.clearCache();
-          
+
           // 导入网站规则
           for (const rule of importedData.websiteManagement.rules) {
             if (rule.pattern && rule.type) {
-              await websiteManager.addRule(rule.pattern, rule.type, rule.description);
+              await websiteManager.addRule(
+                rule.pattern,
+                rule.type,
+                rule.description,
+              );
               importStats.websiteRules++;
             }
           }
         }
-        
+
         const message = `导入完成！`;
         emit('saveMessage', message, 'success');
-      } else if (importedData.isEnabled !== undefined || importedData.apiConfigs !== undefined) {
+      } else if (
+        importedData.isEnabled !== undefined ||
+        importedData.apiConfigs !== undefined
+      ) {
         // 旧格式：只有用户设置
         await storageManager.saveUserSettings(importedData);
         importStats.settings = true;
-        
+
         emit('saveMessage', '用户设置已成功导入！', 'success');
       } else {
         throw new Error('无法识别的文件格式');
       }
-      
+
       // 重新加载页面以应用更改
       setTimeout(() => {
         location.reload();

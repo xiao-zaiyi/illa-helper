@@ -24,7 +24,7 @@ export class WebsiteManager {
 
     // 先检查黑名单规则（优先级最高）
     const blacklistRules = settings.rules.filter(
-      rule => rule.type === 'blacklist' && rule.enabled
+      (rule) => rule.type === 'blacklist' && rule.enabled,
     );
 
     for (const rule of blacklistRules) {
@@ -35,7 +35,7 @@ export class WebsiteManager {
 
     // 再检查白名单规则
     const whitelistRules = settings.rules.filter(
-      rule => rule.type === 'whitelist' && rule.enabled
+      (rule) => rule.type === 'whitelist' && rule.enabled,
     );
 
     for (const rule of whitelistRules) {
@@ -74,17 +74,23 @@ export class WebsiteManager {
   /**
    * 根据类型获取规则
    */
-  async getRulesByType(type: 'blacklist' | 'whitelist'): Promise<WebsiteRule[]> {
+  async getRulesByType(
+    type: 'blacklist' | 'whitelist',
+  ): Promise<WebsiteRule[]> {
     // 清除缓存确保获取最新规则列表
     this.clearCache();
     const settings = await this.getSettings();
-    return settings.rules.filter(rule => rule.type === type);
+    return settings.rules.filter((rule) => rule.type === type);
   }
 
   /**
    * 添加规则
    */
-  async addRule(pattern: string, type: 'blacklist' | 'whitelist', description?: string): Promise<void> {
+  async addRule(
+    pattern: string,
+    type: 'blacklist' | 'whitelist',
+    description?: string,
+  ): Promise<void> {
     if (!pattern) return;
 
     // 强制清除缓存，确保获取最新数据，避免使用过期缓存导致已删除数据被恢复
@@ -92,14 +98,18 @@ export class WebsiteManager {
     const settings = await this.getSettings();
 
     // 检查是否已存在相同pattern的规则（不论类型）
-    const existingRule = settings.rules.find(rule => rule.pattern === pattern);
+    const existingRule = settings.rules.find(
+      (rule) => rule.pattern === pattern,
+    );
 
     if (existingRule) {
       if (existingRule.type === type) {
         return; // 完全相同的规则已存在，不重复添加
       } else {
         // 相同pattern但不同type的规则存在，先移除旧规则
-        const ruleIndex = settings.rules.findIndex(rule => rule.id === existingRule.id);
+        const ruleIndex = settings.rules.findIndex(
+          (rule) => rule.id === existingRule.id,
+        );
         if (ruleIndex > -1) {
           settings.rules.splice(ruleIndex, 1);
         }
@@ -125,7 +135,7 @@ export class WebsiteManager {
    */
   async updateRule(id: string, updates: Partial<WebsiteRule>): Promise<void> {
     const settings = await this.getSettings();
-    const ruleIndex = settings.rules.findIndex(rule => rule.id === id);
+    const ruleIndex = settings.rules.findIndex((rule) => rule.id === id);
 
     if (ruleIndex === -1) {
       throw new Error('规则不存在');
@@ -145,7 +155,7 @@ export class WebsiteManager {
    */
   async removeRule(id: string): Promise<void> {
     const settings = await this.getSettings();
-    const ruleIndex = settings.rules.findIndex(rule => rule.id === id);
+    const ruleIndex = settings.rules.findIndex((rule) => rule.id === id);
 
     if (ruleIndex > -1) {
       settings.rules.splice(ruleIndex, 1);
@@ -159,7 +169,7 @@ export class WebsiteManager {
    */
   async removeRules(ids: string[]): Promise<void> {
     const settings = await this.getSettings();
-    settings.rules = settings.rules.filter(rule => !ids.includes(rule.id));
+    settings.rules = settings.rules.filter((rule) => !ids.includes(rule.id));
     await this.saveSettings(settings);
     this.clearCache(); // 清除缓存确保数据是最新的
   }
@@ -169,7 +179,7 @@ export class WebsiteManager {
    */
   async toggleRule(id: string): Promise<void> {
     const settings = await this.getSettings();
-    const rule = settings.rules.find(rule => rule.id === id);
+    const rule = settings.rules.find((rule) => rule.id === id);
 
     if (rule) {
       rule.enabled = !rule.enabled;
@@ -195,7 +205,7 @@ export class WebsiteManager {
         if (settings.rules) {
           settings.rules = settings.rules.map((rule: any) => ({
             ...rule,
-            createdAt: new Date(rule.createdAt)
+            createdAt: new Date(rule.createdAt),
           }));
         }
         this.settingsCache = settings;
@@ -205,7 +215,9 @@ export class WebsiteManager {
       // 如果没有新设置，尝试迁移旧的黑名单数据
       const legacyResult = await browser.storage.sync.get(LEGACY_BLACKLIST_KEY);
       if (legacyResult && legacyResult[LEGACY_BLACKLIST_KEY]) {
-        const legacySettings: BlacklistSettings = JSON.parse(legacyResult[LEGACY_BLACKLIST_KEY]);
+        const legacySettings: BlacklistSettings = JSON.parse(
+          legacyResult[LEGACY_BLACKLIST_KEY],
+        );
         const migratedSettings = await this.migrateLegacyData(legacySettings);
         this.settingsCache = migratedSettings;
         return migratedSettings;
@@ -223,15 +235,19 @@ export class WebsiteManager {
   /**
    * 迁移旧的黑名单数据
    */
-  private async migrateLegacyData(legacySettings: BlacklistSettings): Promise<WebsiteManagementSettings> {
-    const migratedRules: WebsiteRule[] = legacySettings.patterns.map(pattern => ({
-      id: this.generateId(),
-      pattern,
-      type: 'blacklist' as const,
-      enabled: true,
-      createdAt: new Date(),
-      description: '从黑名单迁移',
-    }));
+  private async migrateLegacyData(
+    legacySettings: BlacklistSettings,
+  ): Promise<WebsiteManagementSettings> {
+    const migratedRules: WebsiteRule[] = legacySettings.patterns.map(
+      (pattern) => ({
+        id: this.generateId(),
+        pattern,
+        type: 'blacklist' as const,
+        enabled: true,
+        createdAt: new Date(),
+        description: '从黑名单迁移',
+      }),
+    );
 
     const newSettings: WebsiteManagementSettings = {
       rules: migratedRules,
@@ -240,15 +256,15 @@ export class WebsiteManager {
     // 保存迁移后的数据
     await this.saveSettings(newSettings);
 
-
-
     return newSettings;
   }
 
   /**
    * 保存设置
    */
-  private async saveSettings(settings: WebsiteManagementSettings): Promise<void> {
+  private async saveSettings(
+    settings: WebsiteManagementSettings,
+  ): Promise<void> {
     try {
       const serializedSettings = JSON.stringify(settings);
       await browser.storage.sync.set({ [STORAGE_KEY]: serializedSettings });

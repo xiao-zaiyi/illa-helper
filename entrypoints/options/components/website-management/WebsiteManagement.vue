@@ -1,5 +1,5 @@
 <template>
-  <div class=" mx-auto space-y-6">
+  <div class="mx-auto space-y-6">
     <!-- 页面标题和描述 -->
     <Card>
       <CardHeader>
@@ -16,12 +16,16 @@
 
         <!-- 操作工具栏 -->
         <div class="bg-card rounded-lg border border-border p-4">
-          <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          <div
+            class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between"
+          >
             <!-- 左侧：搜索和筛选 -->
             <div class="flex flex-col sm:flex-row gap-3 flex-1">
               <!-- 搜索框 -->
               <div class="relative flex-1 max-w-md">
-                <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search
+                  class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground"
+                />
                 <input
                   v-model="searchQuery"
                   type="text"
@@ -38,7 +42,7 @@
                     'px-3 py-2 rounded-md text-sm transition-colors',
                     filterType === 'all'
                       ? 'bg-primary text-primary-foreground'
-                      : 'border border-border hover:bg-accent hover:text-accent-foreground'
+                      : 'border border-border hover:bg-accent hover:text-accent-foreground',
                   ]"
                 >
                   全部 ({{ allRules.length }})
@@ -49,7 +53,7 @@
                     'px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-1',
                     filterType === 'blacklist'
                       ? 'bg-red-600 text-white'
-                      : 'border border-border hover:bg-accent hover:text-accent-foreground'
+                      : 'border border-border hover:bg-accent hover:text-accent-foreground',
                   ]"
                 >
                   <Shield class="w-3 h-3" />
@@ -61,7 +65,7 @@
                     'px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-1',
                     filterType === 'whitelist'
                       ? 'bg-green-600 text-white'
-                      : 'border border-border hover:bg-accent hover:text-accent-foreground'
+                      : 'border border-border hover:bg-accent hover:text-accent-foreground',
                   ]"
                 >
                   <Heart class="w-3 h-3" />
@@ -80,19 +84,19 @@
                 添加规则
               </button>
 
-                              <button
-                  v-if="selectedRules.length > 0"
-                  @click="bulkDeleteRules"
-                  class="inline-flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
-                >
-                  <Trash2 class="w-4 h-4" />
-                  删除选中 ({{ selectedRules.length }})
-                </button>
+              <button
+                v-if="selectedRules.length > 0"
+                @click="bulkDeleteRules"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
+              >
+                <Trash2 class="w-4 h-4" />
+                删除选中 ({{ selectedRules.length }})
+              </button>
             </div>
           </div>
         </div>
 
-                <!-- 规则表格 -->
+        <!-- 规则表格 -->
         <div class="bg-card rounded-lg border border-border">
           <Table>
             <TableHeader>
@@ -131,12 +135,15 @@
                     <div
                       :class="[
                         'p-1 rounded-full',
-                        rule.type === 'blacklist' 
+                        rule.type === 'blacklist'
                           ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                          : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                          : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400',
                       ]"
                     >
-                      <Shield v-if="rule.type === 'blacklist'" class="w-3 h-3" />
+                      <Shield
+                        v-if="rule.type === 'blacklist'"
+                        class="w-3 h-3"
+                      />
                       <Heart v-else class="w-3 h-3" />
                     </div>
                     <span class="text-xs font-medium">
@@ -146,10 +153,12 @@
                 </TableCell>
                 <TableCell>
                   <div class="group relative">
-                    <code 
-                      class="px-2 py-1 bg-muted rounded text-sm font-mono block truncate pr-8" 
+                    <code
+                      class="px-2 py-1 bg-muted rounded text-sm font-mono block truncate pr-8"
                       :title="rule.pattern"
-                    >{{ rule.pattern }}</code>
+                    >
+                      {{ rule.pattern }}
+                    </code>
                     <button
                       @click="copyToClipboard(rule.pattern)"
                       class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-background rounded text-xs"
@@ -160,8 +169,8 @@
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span 
-                    class="text-sm text-muted-foreground block truncate" 
+                  <span
+                    class="text-sm text-muted-foreground block truncate"
                     :title="rule.description || '-'"
                   >
                     {{ rule.description || '-' }}
@@ -174,13 +183,13 @@
                       'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors',
                       rule.enabled
                         ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-400'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-900/20 dark:text-gray-400'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-900/20 dark:text-gray-400',
                     ]"
                   >
                     <div
                       :class="[
                         'w-1.5 h-1.5 rounded-full',
-                        rule.enabled ? 'bg-green-500' : 'bg-gray-400'
+                        rule.enabled ? 'bg-green-500' : 'bg-gray-400',
                       ]"
                     />
                     {{ rule.enabled ? '启用' : '禁用' }}
@@ -191,8 +200,14 @@
                     <DropdownMenuTrigger as-child>
                       <Button variant="ghost" class="h-8 w-8 p-0">
                         <span class="sr-only">打开菜单</span>
-                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                        <svg
+                          class="h-4 w-4"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
+                          />
                         </svg>
                       </Button>
                     </DropdownMenuTrigger>
@@ -201,7 +216,10 @@
                         <Edit3 class="mr-2 h-4 w-4" />
                         编辑
                       </DropdownMenuItem>
-                      <DropdownMenuItem @click="removeRule(rule.id)" class="text-destructive">
+                      <DropdownMenuItem
+                        @click="removeRule(rule.id)"
+                        class="text-destructive"
+                      >
                         <Trash2 class="mr-2 h-4 w-4" />
                         删除
                       </DropdownMenuItem>
@@ -219,7 +237,11 @@
               {{ searchQuery ? '未找到匹配的规则' : '暂无网站规则' }}
             </h3>
             <p class="text-muted-foreground mb-4">
-              {{ searchQuery ? '试试其他搜索关键词' : '开始添加网站规则来管理翻译行为' }}
+              {{
+                searchQuery
+                  ? '试试其他搜索关键词'
+                  : '开始添加网站规则来管理翻译行为'
+              }}
             </p>
             <button
               v-if="!searchQuery"
@@ -300,11 +322,11 @@ const editingRule = ref<WebsiteRule | null>(null);
 
 // 计算属性
 const blacklistCount = computed(() => {
-  return allRules.value.filter(rule => rule.type === 'blacklist').length;
+  return allRules.value.filter((rule) => rule.type === 'blacklist').length;
 });
 
 const whitelistCount = computed(() => {
-  return allRules.value.filter(rule => rule.type === 'whitelist').length;
+  return allRules.value.filter((rule) => rule.type === 'whitelist').length;
 });
 
 const filteredRules = computed(() => {
@@ -312,15 +334,16 @@ const filteredRules = computed(() => {
 
   // 按类型筛选
   if (filterType.value !== 'all') {
-    rules = rules.filter(rule => rule.type === filterType.value);
+    rules = rules.filter((rule) => rule.type === filterType.value);
   }
 
   // 按搜索关键词筛选
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    rules = rules.filter(rule => 
-      rule.pattern.toLowerCase().includes(query) ||
-      rule.description?.toLowerCase().includes(query)
+    rules = rules.filter(
+      (rule) =>
+        rule.pattern.toLowerCase().includes(query) ||
+        rule.description?.toLowerCase().includes(query),
     );
   }
 
@@ -343,7 +366,7 @@ const loadRules = async () => {
 
 const handleSelectAll = () => {
   if (selectAll.value) {
-    selectedRules.value = filteredRules.value.map(rule => rule.id);
+    selectedRules.value = filteredRules.value.map((rule) => rule.id);
   } else {
     selectedRules.value = [];
   }
@@ -354,16 +377,22 @@ const editRule = (rule: WebsiteRule) => {
   showAddDialog.value = true;
 };
 
-const handleSaveRule = async (ruleData: Omit<WebsiteRule, 'id' | 'createdAt'>) => {
+const handleSaveRule = async (
+  ruleData: Omit<WebsiteRule, 'id' | 'createdAt'>,
+) => {
   try {
     if (editingRule.value) {
       // 编辑现有规则
       await manager.updateRule(editingRule.value.id, ruleData);
     } else {
       // 添加新规则
-      await manager.addRule(ruleData.pattern, ruleData.type, ruleData.description);
+      await manager.addRule(
+        ruleData.pattern,
+        ruleData.type,
+        ruleData.description,
+      );
     }
-    
+
     await loadRules();
     handleCancelEdit();
   } catch (error) {
@@ -381,7 +410,9 @@ const removeRule = async (id: string) => {
     try {
       await manager.removeRule(id);
       await loadRules();
-      selectedRules.value = selectedRules.value.filter(ruleId => ruleId !== id);
+      selectedRules.value = selectedRules.value.filter(
+        (ruleId) => ruleId !== id,
+      );
     } catch (error) {
       console.error('删除规则失败:', error);
     }
@@ -410,8 +441,6 @@ const toggleRule = async (id: string) => {
   }
 };
 
-
-
 const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text);
@@ -428,4 +457,4 @@ const copyToClipboard = async (text: string) => {
     document.body.removeChild(textArea);
   }
 };
-</script> 
+</script>
