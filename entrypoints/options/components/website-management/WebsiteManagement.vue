@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-6xl mx-auto space-y-6">
+  <div class=" mx-auto space-y-6">
     <!-- 页面标题和描述 -->
     <Card>
       <CardHeader>
@@ -92,110 +92,125 @@
           </div>
         </div>
 
-        <!-- 规则表格 -->
-        <div class="bg-card rounded-lg border border-border overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead class="bg-muted/50">
-                <tr>
-                  <th class="w-12 p-4">
-                    <input
-                      v-model="selectAll"
-                      @change="handleSelectAll"
-                      type="checkbox"
-                      class="rounded border-border focus:ring-ring"
-                    />
-                  </th>
-                  <th class="text-left p-4 font-medium text-foreground">类型</th>
-                  <th class="text-left p-4 font-medium text-foreground">网站模式</th>
-                  <th class="text-left p-4 font-medium text-foreground">描述</th>
-                  <th class="text-left p-4 font-medium text-foreground">状态</th>
-                  <th class="text-right p-4 font-medium text-foreground">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="rule in filteredRules"
-                  :key="rule.id"
-                  class="border-t border-border hover:bg-muted/25 transition-colors"
-                >
-                  <td class="p-4">
-                    <input
-                      v-model="selectedRules"
-                      :value="rule.id"
-                      type="checkbox"
-                      class="rounded border-border focus:ring-ring"
-                    />
-                  </td>
-                  <td class="p-4">
-                    <div class="flex items-center gap-2">
-                      <div
-                        :class="[
-                          'p-1.5 rounded-full',
-                          rule.type === 'blacklist' 
-                            ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                            : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-                        ]"
-                      >
-                        <Shield v-if="rule.type === 'blacklist'" class="w-3 h-3" />
-                        <Heart v-else class="w-3 h-3" />
-                      </div>
-                      <span class="text-sm font-medium">
-                        {{ rule.type === 'blacklist' ? '黑名单' : '白名单' }}
-                      </span>
-                    </div>
-                  </td>
-                  <td class="p-4">
-                    <code class="px-2 py-1 bg-muted rounded text-sm font-mono">
-                      {{ rule.pattern }}
-                    </code>
-                  </td>
-                  <td class="p-4 max-w-xs">
-                    <span class="text-sm text-muted-foreground truncate block">
-                      {{ rule.description || '-' }}
-                    </span>
-                  </td>
-                  <td class="p-4">
-                    <button
-                      @click="toggleRule(rule.id)"
+                <!-- 规则表格 -->
+        <div class="bg-card rounded-lg border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead class="w-12">
+                  <input
+                    v-model="selectAll"
+                    @change="handleSelectAll"
+                    type="checkbox"
+                    class="rounded border-border focus:ring-ring"
+                  />
+                </TableHead>
+                <TableHead class="w-24">类型</TableHead>
+                <TableHead class="w-96">网站模式</TableHead>
+                <TableHead class="w-64">描述</TableHead>
+                <TableHead class="w-20">状态</TableHead>
+                <TableHead class="w-12 text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow
+                v-for="rule in filteredRules"
+                :key="rule.id"
+                class="hover:bg-muted/25"
+              >
+                <TableCell>
+                  <input
+                    v-model="selectedRules"
+                    :value="rule.id"
+                    type="checkbox"
+                    class="rounded border-border focus:ring-ring"
+                  />
+                </TableCell>
+                <TableCell>
+                  <div class="flex items-center gap-1">
+                    <div
                       :class="[
-                        'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors',
-                        rule.enabled
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-400'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-900/20 dark:text-gray-400'
+                        'p-1 rounded-full',
+                        rule.type === 'blacklist' 
+                          ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                          : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
                       ]"
                     >
-                      <div
-                        :class="[
-                          'w-1.5 h-1.5 rounded-full',
-                          rule.enabled ? 'bg-green-500' : 'bg-gray-400'
-                        ]"
-                      />
-                      {{ rule.enabled ? '启用' : '禁用' }}
-                    </button>
-                  </td>
-                  <td class="p-4 text-right">
-                    <div class="flex items-center justify-end gap-2">
-                      <button
-                        @click="editRule(rule)"
-                        class="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-                        title="编辑"
-                      >
-                        <Edit3 class="w-4 h-4" />
-                      </button>
-                      <button
-                        @click="removeRule(rule.id)"
-                        class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                        title="删除"
-                      >
-                        <Trash2 class="w-4 h-4" />
-                      </button>
+                      <Shield v-if="rule.type === 'blacklist'" class="w-3 h-3" />
+                      <Heart v-else class="w-3 h-3" />
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                    <span class="text-xs font-medium">
+                      {{ rule.type === 'blacklist' ? '黑名单' : '白名单' }}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div class="group relative">
+                    <code 
+                      class="px-2 py-1 bg-muted rounded text-sm font-mono block truncate pr-8" 
+                      :title="rule.pattern"
+                    >{{ rule.pattern }}</code>
+                    <button
+                      @click="copyToClipboard(rule.pattern)"
+                      class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-background rounded text-xs"
+                      title="复制"
+                    >
+                      📋
+                    </button>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span 
+                    class="text-sm text-muted-foreground block truncate" 
+                    :title="rule.description || '-'"
+                  >
+                    {{ rule.description || '-' }}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <button
+                    @click="toggleRule(rule.id)"
+                    :class="[
+                      'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-colors',
+                      rule.enabled
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/20 dark:text-green-400'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-900/20 dark:text-gray-400'
+                    ]"
+                  >
+                    <div
+                      :class="[
+                        'w-1.5 h-1.5 rounded-full',
+                        rule.enabled ? 'bg-green-500' : 'bg-gray-400'
+                      ]"
+                    />
+                    {{ rule.enabled ? '启用' : '禁用' }}
+                  </button>
+                </TableCell>
+                <TableCell class="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                      <Button variant="ghost" class="h-8 w-8 p-0">
+                        <span class="sr-only">打开菜单</span>
+                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                        </svg>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem @click="editRule(rule)">
+                        <Edit3 class="mr-2 h-4 w-4" />
+                        编辑
+                      </DropdownMenuItem>
+                      <DropdownMenuItem @click="removeRule(rule.id)" class="text-destructive">
+                        <Trash2 class="mr-2 h-4 w-4" />
+                        删除
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
 
           <!-- 空状态 -->
           <div v-if="filteredRules.length === 0" class="text-center py-12">
@@ -253,6 +268,21 @@ import {
   Globe,
 } from 'lucide-vue-next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 import { WebsiteRule } from '@/src/modules/options/website-management/types';
 import WebsiteRuleDialog from './WebsiteRuleDialog.vue';
@@ -377,6 +407,25 @@ const toggleRule = async (id: string) => {
     await loadRules();
   } catch (error) {
     console.error('切换规则状态失败:', error);
+  }
+};
+
+
+
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    // 这里可以添加一个toast提示
+    console.log('已复制到剪贴板:', text);
+  } catch (error) {
+    console.error('复制失败:', error);
+    // 降级方案
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
   }
 };
 </script> 

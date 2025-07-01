@@ -15,7 +15,7 @@
     "zip:firefox:dev": "wxt zip -b firefox --mode development",
     "zip:safari": "wxt zip -b safari --mode production",
     "zip:safari:dev": "wxt zip -b safari --mode development",
-    "zip:all": "wxt zip -b safari --mode production && wxt zip -b firefox --mode production && wxt zip -b chrome --mode production",
+    "zip:all": "wxt zip -b chrome --mode production && wxt zip -b safari --mode production && wxt zip -b firefox --mode production",
     "compile": "vue-tsc --noEmit",
     "postinstall": "wxt prepare",
     "lint": "eslint .",
@@ -27,6 +27,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@tailwindcss/vite": "^4.1.10",
+    "@tanstack/vue-table": "^8.21.3",
     "@vueuse/core": "^13.4.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

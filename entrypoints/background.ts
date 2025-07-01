@@ -24,12 +24,19 @@ export default defineBackground(() => {
       }
     }
 
-    // 初始化右键菜单
+    // 创建静态右键菜单结构
     try {
-      await contextMenuManager.init();
+      await createContextMenus();
       console.log('右键菜单初始化完成');
     } catch (error) {
       console.error('右键菜单初始化失败:', error);
+    }
+
+    // 初始化菜单管理器
+    try {
+      await contextMenuManager.init();
+    } catch (error) {
+      console.error('菜单管理器初始化失败:', error);
     }
   });
 
@@ -230,6 +237,98 @@ export default defineBackground(() => {
     } catch (error) {
       console.error('[Background] 配置验证失败:', error);
       return false;
+    }
+  }
+
+  // 创建静态右键菜单结构 (V3兼容)
+  async function createContextMenus(): Promise<void> {
+    try {
+      // 清除可能存在的旧菜单项
+      await browser.contextMenus.removeAll();
+
+      // 主菜单项
+      await browser.contextMenus.create({
+        id: 'illa-website-management',
+        title: '浸入式学语言助手',
+        contexts: ['page'],
+      });
+
+      // 分隔符
+      await browser.contextMenus.create({
+        id: 'illa-separator',
+        type: 'separator',
+        parentId: 'illa-website-management',
+        contexts: ['page'],
+      });
+
+      // 黑名单相关菜单项
+      await browser.contextMenus.create({
+        id: 'illa-add-blacklist-domain',
+        title: '添加域名到黑名单',
+        parentId: 'illa-website-management',
+        contexts: ['page'],
+        visible: false,
+      });
+
+      await browser.contextMenus.create({
+        id: 'illa-add-blacklist-exact',
+        title: '添加当前页面到黑名单',
+        parentId: 'illa-website-management',
+        contexts: ['page'],
+        visible: false,
+      });
+
+      await browser.contextMenus.create({
+        id: 'illa-remove-blacklist',
+        title: '从黑名单中移除',
+        parentId: 'illa-website-management',
+        contexts: ['page'],
+        visible: false,
+      });
+
+      // 白名单相关菜单项
+      await browser.contextMenus.create({
+        id: 'illa-add-whitelist-domain',
+        title: '添加域名到白名单',
+        parentId: 'illa-website-management',
+        contexts: ['page'],
+        visible: false,
+      });
+
+      await browser.contextMenus.create({
+        id: 'illa-add-whitelist-exact',
+        title: '添加当前页面到白名单',
+        parentId: 'illa-website-management',
+        contexts: ['page'],
+        visible: false,
+      });
+
+      await browser.contextMenus.create({
+        id: 'illa-remove-whitelist',
+        title: '从白名单中移除',
+        parentId: 'illa-website-management',
+        contexts: ['page'],
+        visible: false,
+      });
+
+      // 设置相关菜单项
+      await browser.contextMenus.create({
+        id: 'illa-settings-separator',
+        type: 'separator',
+        parentId: 'illa-website-management',
+        contexts: ['page'],
+      });
+
+      await browser.contextMenus.create({
+        id: 'illa-open-settings',
+        title: '网站管理设置',
+        parentId: 'illa-website-management',
+        contexts: ['page'],
+      });
+
+    } catch (error) {
+      console.error('创建右键菜单失败:', error);
+      throw error;
     }
   }
 });
