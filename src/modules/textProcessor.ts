@@ -19,6 +19,7 @@ export class TextProcessor {
   private pronunciationService: PronunciationService;
   private contentSegmenter: ContentSegmenter;
   private processingCoordinator: ProcessingCoordinator;
+  private observer?: IntersectionObserver;
 
   constructor(
     enablePronunciationTooltip: boolean = true,
@@ -157,15 +158,37 @@ export class TextProcessor {
         return;
       }
 
-      // 第三步：使用处理协调器进行统一处理
+      // 第三步：使用处理协调器进行统一处理，判断内容是否进入可视区域进行处理
       // 发音功能现在会在每个段落处理完成后立即添加
-      await this.processingCoordinator.processSegments(
-        segments,
-        textReplacer,
-        originalWordDisplayMode,
-        translationPosition,
-        showParentheses,
-      );
+      if (!this.observer) {
+        this.observer = new IntersectionObserver(
+          async (entries, obs) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                const targetElement = entry.target as Element;
+                const segment = segments.find(
+                  (seg) => seg.element === targetElement,
+                );
+                if (segment) {
+                  await this.processingCoordinator.processSegments(
+                    [segment],
+                    textReplacer,
+                    originalWordDisplayMode,
+                    translationPosition,
+                    showParentheses,
+                  );
+                  obs.unobserve(targetElement);
+                }
+              }
+            }
+          },
+          { threshold: 0.1 },
+        );
+      }
+
+      for (const segment of segments) {
+        this.observer.observe(segment.element);
+      }
     } catch (_) {
       // 静默处理错误
     }
