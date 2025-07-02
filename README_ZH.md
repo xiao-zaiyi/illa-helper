@@ -11,6 +11,8 @@
 ![Status](https://img.shields.io/badge/status-stable-green)
 ![Built with WXT](https://img.shields.io/badge/built%20with-WXT-blue)
 ![Firefox Compatible](https://img.shields.io/badge/Firefox-compatible-orange)
+<br/>
+<a href="https://hellogithub.com/repository/52653c92268d4024878a1a6781df9dd8" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=52653c92268d4024878a1a6781df9dd8&claim_uid=RfJtwvgkBr3MUGy&theme=small" alt="Featured｜HelloGitHub" /></a>
 </div>
 
 > 一款基于"可理解输入"理论的浏览器扩展，帮助你在日常网页浏览中自然地学习语言。
