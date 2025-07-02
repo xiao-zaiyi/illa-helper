@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   modules: ['@wxt-dev/module-vue'],
   manifest: {
-    name: '浸入式学语言助手',
+    name: '浸入式学语言助手(illa-helper)',
     author: {
       email: 'xiao1932794922@gmail.com',
     },

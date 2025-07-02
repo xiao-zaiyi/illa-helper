@@ -4,7 +4,7 @@
       <CardHeader>
         <CardTitle>
           <h2 class="text-2xl font-bold text-foreground">
-            关于 浸入式学语言助手 (ILLA Helper)
+            关于 浸入式学语言助手 (illa-helper)
           </h2>
         </CardTitle>
       </CardHeader>
@@ -12,12 +12,12 @@
         <div class="flex items-center space-x-4">
           <img
             src="/assets/logo.png"
-            alt="浸入式学语言助手 ILLA Helper Logo"
+            alt="浸入式学语言助手 illa-helper Logo"
             class="w-16 h-16"
           />
           <div>
             <h3 class="text-lg font-semibold">
-              浸入式学语言助手 (ILLA Helper)
+              浸入式学语言助手 (illa-helper)
             </h3>
             <p class="text-sm text-muted-foreground">
               版本 {{ extensionVersion }}
@@ -26,7 +26,7 @@
         </div>
         <div class="prose prose-sm max-w-none text-foreground">
           <p>
-            浸入式学语言助手 (ILLA Helper) 是一款基于 'i+1'
+            浸入式学语言助手 (illa-helper) 是一款基于 'i+1'
             可理解输入理论的浏览器扩展，旨在通过沉浸式翻译和发音学习生态系统，帮助您在日常浏览中轻松、高效地学习外语。
           </p>
         </div>

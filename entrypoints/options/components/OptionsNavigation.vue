@@ -24,7 +24,7 @@
             <h4
               class="text-sm font-semibold text-center font-mono bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.8)] animate-flicker relative"
             >
-              浸入式学语言助手 ILLA Helper
+              浸入式学语言助手 illa-helper
             </h4>
           </div>
           <!-- 移动端关闭按钮 -->
