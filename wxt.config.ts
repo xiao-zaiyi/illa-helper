@@ -9,8 +9,7 @@ export default defineConfig({
     author: {
       email: 'xiao1932794922@gmail.com',
     },
-    description:
-      '基于"可理解输入"理论的英语学习工具，帮助你在日常浏览中自然学习英语',
+    description: `浸入式学语言助手(illa-helper) extension turns browsing into language learning. AI uses "i+1" theory, supports 20+ languages.`,
     version: '1.7.4',
     permissions: ['storage', 'notifications', 'contextMenus', 'activeTab'],
     host_permissions: ['<all_urls>'],
