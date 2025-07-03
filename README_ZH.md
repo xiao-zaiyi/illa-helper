@@ -378,6 +378,8 @@ Safari需要额外的步骤将Web扩展打包为Safari扩展。请参考[Apple�
 
 ### Firefox相关问题解决 🚨
 
+> 根据 [Firefox 中的附加组件签名](https://support.mozilla.org/zh-CN/kb/add-ons-signing-firefox?as=u&utm_source=inproduct)，唯有 [延长支持版（ESR）](https://www.mozilla.org/firefox/organizations/)、[开发者版](https://www.mozilla.org/firefox/developer/)和 [Nightly](https://nightly.mozilla.org/) 版才会读取 `xpinstall.signatures.required` 为 `false` 的配置；普通版本即使设置 `false` 仍只能通过临时安装的方式。
+
 #### "获取用户设置失败: Error: The storage API will not work with a temporary addon ID"
 
 这是Firefox的已知限制。解决方案：

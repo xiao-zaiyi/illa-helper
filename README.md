@@ -237,6 +237,8 @@ npm run zip:firefox
 
 Firefox requires special installation steps due to security restrictions:
 
+The official release version currently cannot be installed through this method, only through the store.
+
 **Method 1: Temporary Installation (Recommended for Development)**
 1. Enter `about:debugging#/runtime/this-firefox` in Firefox address bar
 2. Click **"Load Temporary Add-on..."**
@@ -375,6 +377,8 @@ Yes. The extension provides precise translation control:
 Safari requires additional steps to package Web Extensions as Safari extensions. Please refer to [Apple's developer documentation](https://developer.apple.com/documentation/safariservices/safari_web_extensions/converting_a_web_extension_for_safari).
 
 ### Firefox Issues Resolution 🚨
+
+> According to [Add-on signing in Firefox](https://support.mozilla.org/en-US/kb/add-on-signing-in-firefox), only [Extended Support Release (ESR)](https://www.mozilla.org/firefox/organizations/), [Developer Edition](https://www.mozilla.org/firefox/developer/), and [Nightly](https://nightly.mozilla.org/) versions will read the `xpinstall.signatures.required` setting when set to `false`; regular versions can only use temporary installation even if set to `false`.
 
 #### "Failed to get user settings: Error: The storage API will not work with a temporary addon ID"
 
