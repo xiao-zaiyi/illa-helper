@@ -508,7 +508,8 @@ export class PronunciationService {
   async updateApiConfig(apiConfig?: ApiConfig): Promise<void> {
     try {
       // 如果提供了参数，直接使用；否则从存储获取
-      const configToUse = apiConfig || await this.storageManager.getActiveApiConfig();
+      const configToUse =
+        apiConfig || (await this.storageManager.getActiveApiConfig());
       if (configToUse) {
         this.aiTranslationProvider.updateApiConfig(configToUse);
         console.log('API配置已更新');
@@ -675,16 +676,16 @@ export class PronunciationService {
   /**
    * 处理鼠标进入事件的核心逻辑
    *
-   * 该方法是发音系统响应用户交互的核心入口，实现了复杂的异步加载策略：
+   * 该方法是发音系统响应用户交互的核心入口，实现了非阻塞式异步加载策略：
    * 1. 对于短语：直接显示交互式单词列表
-   * 2. 对于单词：优先显示音标，同时异步获取AI翻译
-   * 3. 实现了音标和翻译的并行加载，提升用户体验
+   * 2. 对于单词：立即显示包含加载状态的悬浮框，然后并行获取音标和翻译
+   * 3. 实现了立即响应的用户体验，消除感知延迟
    * 4. 支持优雅降级：即使音标获取失败，仍可显示翻译内容
    *
-   * 异步加载策略说明：
-   * - 音标数据优先级较高，缺失时会先尝试获取
-   * - AI翻译异步加载，不阻塞界面显示
-   * - 翻译结果获取后动态更新已显示的悬浮框
+   * 新的异步加载策略说明：
+   * - 立即显示悬浮框框架，包含加载状态指示
+   * - 音标和翻译并行异步获取，不阻塞界面显示
+   * - 数据返回后动态更新已显示的悬浮框对应区域
    *
    * @param elementData - 元素数据对象，包含单词、DOM元素等信息
    */
@@ -713,89 +714,119 @@ export class PronunciationService {
           return;
         }
 
-        // 单词情况：实现智能的数据加载策略
-        // 检查是否需要获取音标数据（音标优先级较高）
+        // 单词情况：立即显示悬浮框，然后异步加载数据
+        // 检查是否需要获取音标数据
         const needPhonetic = !elementData.phonetic;
-        // 检查是否需要获取AI翻译（可以与音标并行加载）
+        // 检查是否需要获取AI翻译
         const needMeaning = !elementData.phonetic?.aiTranslation;
 
-        // 如果需要获取音标，先获取音标
-        if (needPhonetic) {
-          elementData.element.classList.add(CSS_CLASSES.PRONUNCIATION_LOADING);
-
-          try {
-            const phoneticResult = await this.phoneticProvider.getPhonetic(
-              elementData.word,
-            );
-            if (phoneticResult.success && phoneticResult.data) {
-              elementData.phonetic = phoneticResult.data;
-            } else {
-              // 音标获取失败时，创建包含错误信息的基础结构
-              elementData.phonetic = {
-                word: elementData.word,
-                phonetics: [],
-                error: {
-                  hasPhoneticError: true,
-                  phoneticErrorMessage: phoneticResult.error || '音标获取失败',
-                },
-              };
-            }
-          } catch (error) {
-            console.error('获取音标失败:', error);
-            // 异常情况也创建错误状态的基础结构
-            elementData.phonetic = {
-              word: elementData.word,
-              phonetics: [],
-              error: {
-                hasPhoneticError: true,
-                phoneticErrorMessage: '音标获取异常',
-              },
-            };
-          } finally {
-            elementData.element.classList.remove(
-              CSS_CLASSES.PRONUNCIATION_LOADING,
-            );
-          }
+        // 如果没有任何数据，创建基础结构以支持加载状态显示
+        if (!elementData.phonetic) {
+          elementData.phonetic = {
+            word: elementData.word,
+            phonetics: [],
+          };
         }
 
-        // 显示工具提示（包含音标和词义加载状态）
+        // 立即显示悬浮框（包含加载状态）
         this.showTooltip(elementData);
 
-        // 异步获取AI翻译（如果需要）
-        // 这个过程与界面显示并行进行，不会阻塞用户交互
-        if (needMeaning) {
-          try {
-            const meaningResult = await this.aiTranslationProvider.getMeaning(
-              elementData.word,
-            );
-            if (meaningResult.success && meaningResult.data) {
-              // 将AI翻译数据集成到音标信息结构中
-              if (!elementData.phonetic) {
-                // 如果没有音标数据，创建基础结构
-                elementData.phonetic = {
-                  word: elementData.word,
-                  phonetics: [],
-                  aiTranslation: meaningResult.data,
-                };
+        // 并行异步获取音标和翻译数据
+        const promises: Promise<void>[] = [];
+
+        // 异步获取音标数据
+        if (needPhonetic) {
+          const phoneticPromise = this.phoneticProvider
+            .getPhonetic(elementData.word)
+            .then((phoneticResult) => {
+              if (phoneticResult.success && phoneticResult.data) {
+                // 更新音标数据
+                if (elementData.phonetic) {
+                  elementData.phonetic.phonetics =
+                    phoneticResult.data.phonetics;
+                  elementData.phonetic.meanings = phoneticResult.data.meanings;
+                } else {
+                  elementData.phonetic = phoneticResult.data;
+                }
               } else {
-                // 如果已有音标数据，添加翻译信息
-                elementData.phonetic.aiTranslation = meaningResult.data;
+                // 音标获取失败时，设置错误信息
+                if (elementData.phonetic) {
+                  elementData.phonetic.error = {
+                    hasPhoneticError: true,
+                    phoneticErrorMessage:
+                      phoneticResult.error || '音标获取失败',
+                  };
+                }
               }
 
-              // 动态更新已显示的悬浮框中的词义内容
-              // 实现无缝的用户体验，翻译结果实时显示
+              // 动态更新已显示的悬浮框中的音标内容
               if (elementData.tooltip) {
-                this.tooltipRenderer.updateTooltipWithMeaning(
+                this.tooltipRenderer.updateTooltipWithPhonetic(
                   elementData.tooltip,
-                  meaningResult.data.explain,
+                  elementData.phonetic,
                 );
               }
-            }
-          } catch (error) {
-            console.error('获取AI翻译失败:', error);
-            // 翻译失败不影响音标功能，实现优雅降级
-          }
+            })
+            .catch((error) => {
+              console.error('获取音标失败:', error);
+              // 异常情况设置错误状态
+              if (elementData.phonetic) {
+                elementData.phonetic.error = {
+                  hasPhoneticError: true,
+                  phoneticErrorMessage: '音标获取异常',
+                };
+              }
+
+              // 更新悬浮框显示错误状态
+              if (elementData.tooltip) {
+                this.tooltipRenderer.updateTooltipWithPhonetic(
+                  elementData.tooltip,
+                  elementData.phonetic,
+                );
+              }
+            });
+
+          promises.push(phoneticPromise);
         }
+
+        // 异步获取AI翻译数据
+        if (needMeaning) {
+          const meaningPromise = this.aiTranslationProvider
+            .getMeaning(elementData.word)
+            .then((meaningResult) => {
+              if (meaningResult.success && meaningResult.data) {
+                // 将AI翻译数据集成到音标信息结构中
+                if (!elementData.phonetic) {
+                  // 如果没有音标数据，创建基础结构
+                  elementData.phonetic = {
+                    word: elementData.word,
+                    phonetics: [],
+                    aiTranslation: meaningResult.data,
+                  };
+                } else {
+                  // 如果已有音标数据，添加翻译信息
+                  elementData.phonetic.aiTranslation = meaningResult.data;
+                }
+
+                // 动态更新已显示的悬浮框中的词义内容
+                if (elementData.tooltip) {
+                  this.tooltipRenderer.updateTooltipWithMeaning(
+                    elementData.tooltip,
+                    meaningResult.data.explain,
+                  );
+                }
+              }
+            })
+            .catch((error) => {
+              console.error('获取AI翻译失败:', error);
+              // 翻译失败不影响音标功能，实现优雅降级
+            });
+
+          promises.push(meaningPromise);
+        }
+
+        // 不等待异步操作完成，让它们在后台运行
+        // 这确保了界面的即时响应性
       },
       TIMER_CONSTANTS.SHOW_DELAY,
     ); // 显示延迟
@@ -1061,7 +1092,10 @@ export class PronunciationService {
   }
 
   /**
-   * 显示单词悬浮框
+   * 显示单词悬浮框（二级悬浮框）
+   *
+   * 应用与主悬浮框相同的立即显示+异步更新策略，
+   * 消除等待API响应的延迟，提供即时的用户反馈。
    */
   private async showWordTooltip(
     wordElement: HTMLElement,
@@ -1074,40 +1108,14 @@ export class PronunciationService {
       // 取消所有主悬浮框的隐藏定时器，防止主悬浮框在单词悬浮框显示时消失
       this.cancelAllMainTooltipHideTimers();
 
-      // 获取单词的音标信息
-      const result = await this.phoneticProvider.getPhonetic(word);
-
-      // 创建单词悬浮框（音标获取失败也要显示）
+      // 立即创建并显示单词悬浮框（包含加载状态）
       const wordTooltip = document.createElement('div');
       wordTooltip.className = 'wxt-word-tooltip';
 
-      let phonetic = result.data;
-      let phoneticText = '';
-
-      if (result.success && phonetic) {
-        // 音标获取成功
-        phoneticText = phonetic.phonetics?.[0]?.text || '';
-      } else {
-        // 音标获取失败，创建包含错误信息的基础结构
-        phonetic = {
-          word: word,
-          phonetics: [],
-          error: {
-            hasPhoneticError: true,
-            phoneticErrorMessage: result.error || '音标获取失败',
-          },
-        };
-      }
-
-      // 使用TooltipRenderer生成嵌套单词悬浮框HTML
+      // 使用TooltipRenderer生成嵌套单词悬浮框HTML（显示加载状态）
       safeSetInnerHTML(
         wordTooltip,
-        this.tooltipRenderer.createNestedWordTooltipHTML(
-          word,
-          phoneticText,
-          phonetic?.error?.hasPhoneticError,
-          phonetic?.error?.phoneticErrorMessage,
-        ),
+        this.tooltipRenderer.createNestedWordTooltipHTML(word),
       );
 
       // 添加朗读功能
@@ -1172,21 +1180,82 @@ export class PronunciationService {
         wordTooltip.style.opacity = '1';
       });
 
-      // 异步获取词义
-      try {
-        const meaningResult = await this.aiTranslationProvider.getMeaning(word);
-        if (meaningResult.success && meaningResult.data) {
-          // 检查悬浮框是否仍然是当前显示的悬浮框
+      // 并行异步获取音标和翻译数据
+      const promises: Promise<void>[] = [];
+
+      // 异步获取音标数据
+      const phoneticPromise = this.phoneticProvider
+        .getPhonetic(word)
+        .then((result) => {
+          let phonetic;
+          if (result.success && result.data) {
+            // 音标获取成功
+            phonetic = result.data;
+          } else {
+            // 音标获取失败，创建包含错误信息的基础结构
+            phonetic = {
+              word: word,
+              phonetics: [],
+              error: {
+                hasPhoneticError: true,
+                phoneticErrorMessage: result.error || '音标获取失败',
+              },
+            };
+          }
+
+          // 动态更新已显示的悬浮框中的音标内容
           if (this.currentWordTooltip === wordTooltip) {
-            this.tooltipRenderer.updateTooltipWithMeaning(
+            this.tooltipRenderer.updateTooltipWithPhonetic(
               wordTooltip,
-              meaningResult.data.explain,
+              phonetic,
             );
           }
-        }
-      } catch (error) {
-        console.error('获取单词悬浮框词义失败:', error);
-      }
+        })
+        .catch((error) => {
+          console.error('获取单词悬浮框音标失败:', error);
+          // 异常情况设置错误状态
+          const phonetic = {
+            word: word,
+            phonetics: [],
+            error: {
+              hasPhoneticError: true,
+              phoneticErrorMessage: '音标获取异常',
+            },
+          };
+
+          // 更新悬浮框显示错误状态
+          if (this.currentWordTooltip === wordTooltip) {
+            this.tooltipRenderer.updateTooltipWithPhonetic(
+              wordTooltip,
+              phonetic,
+            );
+          }
+        });
+
+      promises.push(phoneticPromise);
+
+      // 异步获取翻译数据
+      const meaningPromise = this.aiTranslationProvider
+        .getMeaning(word)
+        .then((meaningResult) => {
+          if (meaningResult.success && meaningResult.data) {
+            // 检查悬浮框是否仍然是当前显示的悬浮框
+            if (this.currentWordTooltip === wordTooltip) {
+              this.tooltipRenderer.updateTooltipWithMeaning(
+                wordTooltip,
+                meaningResult.data.explain,
+              );
+            }
+          }
+        })
+        .catch((error) => {
+          console.error('获取单词悬浮框词义失败:', error);
+        });
+
+      promises.push(meaningPromise);
+
+      // 不等待异步操作完成，让它们在后台运行
+      // 这确保了界面的即时响应性
     } catch (error) {
       console.error('显示单词悬浮框失败:', error);
     }

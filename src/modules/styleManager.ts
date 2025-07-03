@@ -61,10 +61,10 @@ export class StyleManager {
     }
 
     // 安全地包装用户CSS，确保只应用到翻译元素
-    const safeCSS = this.customCSS?.trim() ? 
-      `.wxt-style-custom { ${this.customCSS} }` : 
-      '.wxt-style-custom { /* 请在设置中添加自定义CSS */ }';
-    
+    const safeCSS = this.customCSS?.trim()
+      ? `.wxt-style-custom { ${this.customCSS} }`
+      : '.wxt-style-custom { /* 请在设置中添加自定义CSS */ }';
+
     this.customStyleElement.textContent = safeCSS;
   }
 
@@ -164,7 +164,7 @@ export class StyleManager {
         color: var(--wxt-primary-color);
         transition: filter 0.2s ease-in-out;
       }
-        
+
       .wxt-translation-term--learning:hover {
         filter: blur(0);
       }
@@ -721,6 +721,32 @@ export class StyleManager {
         content: '';
         width: 12px;
         height: 12px;
+        border: 2px solid transparent;
+        border-top-color: #64ffda;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        flex-shrink: 0;
+      }
+
+      .wxt-phonetic-loading {
+        font-size: 12px;
+        color: #a0a0a0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-style: italic;
+        margin-bottom: 4px;
+        text-align: center;
+      }
+
+      .wxt-phonetic-loading::after {
+        content: '';
+        width: 10px;
+        height: 10px;
         border: 2px solid transparent;
         border-top-color: #64ffda;
         border-radius: 50%;

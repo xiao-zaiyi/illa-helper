@@ -102,12 +102,15 @@ export class TooltipRenderer {
     const hasPhoneticError = phonetic?.error?.hasPhoneticError;
     const phoneticErrorMessage = phonetic?.error?.phoneticErrorMessage;
 
-    // 音标显示逻辑：正常音标 > 错误提示 > 空
+    // 音标显示逻辑：正常音标 > 错误提示 > 加载状态
     let phoneticDisplay = '';
     if (phoneticText) {
       phoneticDisplay = `<div class="wxt-phonetic-row"><div class="wxt-phonetic-text">${phoneticText}</div></div>`;
     } else if (hasPhoneticError) {
       phoneticDisplay = `<div class="wxt-phonetic-row"><div class="wxt-phonetic-error">${phoneticErrorMessage}</div></div>`;
+    } else {
+      // 显示音标加载状态
+      phoneticDisplay = `<div class="wxt-phonetic-row"><div class="wxt-phonetic-loading">获取音标中...</div></div>`;
     }
 
     return `
@@ -152,12 +155,15 @@ export class TooltipRenderer {
     hasError?: boolean,
     errorMessage?: string,
   ): string {
-    // 音标显示逻辑：正常音标 > 错误提示 > 空
+    // 音标显示逻辑：正常音标 > 错误提示 > 加载状态
     let phoneticDisplay = '';
     if (phoneticText) {
       phoneticDisplay = `<div class="wxt-phonetic-text">${phoneticText}</div>`;
     } else if (hasError) {
       phoneticDisplay = `<div class="wxt-phonetic-error">${errorMessage || '音标获取失败'}</div>`;
+    } else {
+      // 显示音标加载状态
+      phoneticDisplay = `<div class="wxt-phonetic-loading">获取音标中...</div>`;
     }
 
     return `
@@ -181,7 +187,7 @@ export class TooltipRenderer {
                 </div>
               </div>
             </div>
-            ${phoneticDisplay ? `<div class="wxt-phonetic-row">${phoneticDisplay}</div>` : ''}
+            <div class="wxt-phonetic-row">${phoneticDisplay}</div>
             <div class="wxt-meaning-container">
               <div class="wxt-meaning-loading">获取词义中...</div>
             </div>
@@ -224,6 +230,57 @@ export class TooltipRenderer {
 
     meaningElement.textContent = meaning;
     meaningElement.style.display = 'block';
+  }
+
+  /**
+   * 动态更新悬浮框的音标内容
+   *
+   * 异步更新已显示的悬浮框中的音标内容，实现无缝的用户体验。
+   * 移除加载提示，显示实际的音标结果，支持错误状态的处理。
+   *
+   * @param tooltip - 悬浮框DOM元素
+   * @param phoneticInfo - 音标信息对象，包含音标数据或错误信息
+   */
+  updateTooltipWithPhonetic(tooltip: HTMLElement, phoneticInfo: any): void {
+    const phoneticRow = tooltip.querySelector('.wxt-phonetic-row');
+    if (!phoneticRow) return;
+
+    // 移除加载提示
+    const loadingElement = phoneticRow.querySelector('.wxt-phonetic-loading');
+    if (loadingElement) {
+      loadingElement.remove();
+    }
+
+    // 处理音标数据或错误状态
+    let phoneticElement: HTMLElement;
+
+    if (phoneticInfo.error?.hasPhoneticError) {
+      // 显示错误状态
+      phoneticElement = document.createElement('div');
+      phoneticElement.className = 'wxt-phonetic-error';
+      phoneticElement.textContent =
+        phoneticInfo.error.phoneticErrorMessage || '音标获取失败';
+    } else if (phoneticInfo.phonetics && phoneticInfo.phonetics.length > 0) {
+      // 显示音标文本
+      const phoneticText = phoneticInfo.phonetics[0]?.text || '';
+      if (phoneticText) {
+        phoneticElement = document.createElement('div');
+        phoneticElement.className = 'wxt-phonetic-text';
+        phoneticElement.textContent = phoneticText;
+      } else {
+        // 没有音标文本，显示默认错误信息
+        phoneticElement = document.createElement('div');
+        phoneticElement.className = 'wxt-phonetic-error';
+        phoneticElement.textContent = '暂无音标信息';
+      }
+    } else {
+      // 没有音标数据，显示默认错误信息
+      phoneticElement = document.createElement('div');
+      phoneticElement.className = 'wxt-phonetic-error';
+      phoneticElement.textContent = '暂无音标信息';
+    }
+
+    phoneticRow.appendChild(phoneticElement);
   }
 
   /**

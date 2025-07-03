@@ -35,6 +35,7 @@ export const CSS_CLASSES = {
   MEANING_CONTAINER: 'wxt-meaning-container', // 新增：词义容器
   MEANING_TEXT: 'wxt-meaning-text', // 新增：词义文本
   MEANING_LOADING: 'wxt-meaning-loading', // 新增：词义加载状态
+  PHONETIC_LOADING: 'wxt-phonetic-loading', // 新增：音标加载状态
 } as const;
 
 // SVG图标常量

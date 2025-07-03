@@ -377,15 +377,12 @@ const openOptionsBasePage = () => {
                 </option>
               </select>
               <!-- 自定义样式提示 -->
-              <div 
-                v-if="settings.translationStyle === 'custom'" 
+              <div
+                v-if="settings.translationStyle === 'custom'"
                 class="custom-style-tip"
               >
                 <p class="tip-text">💡 自定义样式已选择</p>
-                <button 
-                  @click="openOptionsBasePage" 
-                  class="tip-link-btn"
-                >
+                <button @click="openOptionsBasePage" class="tip-link-btn">
                   前往设置中心编辑CSS →
                 </button>
               </div>
