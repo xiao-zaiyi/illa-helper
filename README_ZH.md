@@ -142,6 +142,28 @@
 
 ## 🛠️ 安装与运行
 
+### 🚀 快速安装（推荐）
+
+对于大多数用户，我们推荐直接从官方扩展商店安装：
+
+#### Chrome/Edge 用户
+[![Chrome 应用商店](https://img.shields.io/badge/Chrome%20应用商店-可用-brightgreen?logo=googlechrome)](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)
+
+**[📥 从 Chrome 应用商店安装](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)**
+
+#### Firefox 用户
+[![Firefox 插件商店](https://img.shields.io/badge/Firefox%20插件商店-可用-orange?logo=firefox)](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)
+
+**[📥 从 Firefox 插件商店安装](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)**
+
+> 💡 **提示**: 官方商店安装是最简单的方式 - 一键安装且自动更新！
+
+---
+
+### 🔧 手动安装（开发者）
+
+如果你想参与开发或需要从源码构建：
+
 ### 1. 先决条件
 
 - [Node.js](https://nodejs.org/)（版本 18 或更高）
@@ -215,6 +237,8 @@ npm run zip:firefox
 
 Firefox由于安全限制，需要特殊的安装步骤：
 
+正式版目前不能通过此方法安装，只能通过商店进行安装。
+
 **方法一：临时安装（推荐开发调试）**
 1. 在Firefox地址栏输入 `about:debugging#/runtime/this-firefox`
 2. 点击 **"临时加载附加组件..."**
@@ -234,7 +258,7 @@ Firefox中的storage API需要明确的addon ID才能正常工作。本项目已
 ```typescript
 browser_specific_settings: {
   gecko: {
-    id: 'illa-helper@xiao-zaiyi',
+    id: 'illa-helper@1932794922@qq.com',
     strict_min_version: '88.0'
   }
 }

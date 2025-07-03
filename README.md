@@ -142,6 +142,28 @@ This extension is built with [Web Extension API](https://developer.mozilla.org/e
 
 ## 🛠️ Installation & Setup
 
+### 🚀 Quick Install (Recommended)
+
+For most users, we recommend installing directly from official extension stores:
+
+#### Chrome/Edge Users
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-brightgreen?logo=googlechrome)](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)
+
+**[📥 Install from Chrome Web Store](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)**
+
+#### Firefox Users
+[![Firefox Add-ons](https://img.shields.io/badge/Firefox%20Add--ons-Available-orange?logo=firefox)](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)
+
+**[📥 Install from Firefox Add-ons](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)**
+
+> 💡 **Tip**: Official store installation is the easiest way - just one click to install with automatic updates!
+
+---
+
+### 🔧 Manual Install (For Developers)
+
+If you want to participate in development or need to build from source:
+
 ### 1. Prerequisites
 
 - [Node.js](https://nodejs.org/) (version 18 or higher)
@@ -234,7 +256,7 @@ The storage API in Firefox requires an explicit addon ID to work properly. This 
 ```typescript
 browser_specific_settings: {
   gecko: {
-    id: 'illa-helper@xiao-zaiyi',
+    id: 'illa-helper@1932794922@qq.com',
     strict_min_version: '88.0'
   }
 }
