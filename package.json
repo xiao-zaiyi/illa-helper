@@ -28,7 +28,7 @@
     "@google/generative-ai": "^0.24.1",
     "@tailwindcss/vite": "^4.1.10",
     "@tanstack/vue-table": "^8.21.3",
-    "@vueuse/core": "^13.4.0",
+    "@vueuse/core": "^13.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",

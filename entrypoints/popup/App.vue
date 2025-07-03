@@ -247,6 +247,7 @@ const styleOptions = [
   { value: TranslationStyle.HIGHLIGHTED, label: '高亮' },
   { value: TranslationStyle.DOTTED, label: '点画线' },
   { value: TranslationStyle.LEARNING, label: '学习模式' },
+  { value: TranslationStyle.CUSTOM, label: '自定义' },
 ];
 
 const triggerOptions = [
@@ -263,6 +264,10 @@ const extensionVersion = ref('N/A');
 
 const openOptionsPage = () => {
   browser.tabs.create({ url: 'options.html#translation' });
+};
+
+const openOptionsBasePage = () => {
+  browser.tabs.create({ url: 'options.html#basic' });
 };
 </script>
 
@@ -371,6 +376,19 @@ const openOptionsPage = () => {
                   {{ option.label }}
                 </option>
               </select>
+              <!-- 自定义样式提示 -->
+              <div 
+                v-if="settings.translationStyle === 'custom'" 
+                class="custom-style-tip"
+              >
+                <p class="tip-text">💡 自定义样式已选择</p>
+                <button 
+                  @click="openOptionsBasePage" 
+                  class="tip-link-btn"
+                >
+                  前往设置中心编辑CSS →
+                </button>
+              </div>
             </div>
 
             <div class="setting-group">
@@ -1367,5 +1385,40 @@ footer p {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* 自定义样式提示 */
+.custom-style-tip {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(106, 136, 224, 0.08);
+  border: 1px solid rgba(106, 136, 224, 0.2);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tip-text {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.tip-link-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.tip-link-btn:hover {
+  color: var(--primary-hover-color);
 }
 </style>

@@ -6,6 +6,7 @@ import {
   ReplacementConfig,
   OriginalWordDisplayMode,
   TranslationPosition,
+  TranslationStyle,
 } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { TextReplacer } from '@/src/modules/textReplacer';
@@ -141,6 +142,10 @@ function updateConfiguration(
   textReplacer: TextReplacer,
 ) {
   styleManager.setTranslationStyle(settings.translationStyle);
+  // 如果是自定义样式，应用自定义CSS
+  if (settings.translationStyle === TranslationStyle.CUSTOM) {
+    styleManager.setCustomCSS(settings.customTranslationCSS);
+  }
   textReplacer.setConfig(createReplacementConfig(settings));
 }
 

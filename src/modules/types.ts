@@ -148,6 +148,7 @@ export enum TranslationStyle {
   HIGHLIGHTED = 'highlighted',
   DOTTED = 'dotted',
   LEARNING = 'learning',
+  CUSTOM = 'custom',
 }
 
 export enum TriggerMode {
@@ -192,6 +193,8 @@ export interface UserSettings {
   showParentheses: boolean;
   // 新增：API请求超时时间配置
   apiRequestTimeout: number; // 以毫秒为单位
+  // 新增：自定义翻译样式CSS
+  customTranslationCSS: string;
 }
 
 // 简化：默认多语言配置
@@ -242,6 +245,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   translationPosition: TranslationPosition.AFTER,
   showParentheses: true,
   apiRequestTimeout: 0, // 默认不超时
+  customTranslationCSS: '', // 默认无自定义CSS
 };
 
 // 右键菜单相关类型定义

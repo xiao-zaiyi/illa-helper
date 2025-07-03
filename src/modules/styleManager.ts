@@ -9,6 +9,8 @@ import { TranslationStyle } from './types';
 // 样式管理器
 export class StyleManager {
   private currentStyle: TranslationStyle;
+  private customCSS: string = '';
+  private customStyleElement: HTMLStyleElement | null = null;
 
   constructor() {
     this.currentStyle = TranslationStyle.DEFAULT;
@@ -26,6 +28,15 @@ export class StyleManager {
   }
 
   /**
+   * 设置自定义CSS
+   * @param css 自定义CSS样式
+   */
+  setCustomCSS(css: string): void {
+    this.customCSS = css;
+    this.updateCustomStyle();
+  }
+
+  /**
    * 获取当前样式类名
    * @returns 样式类名
    */
@@ -33,7 +44,28 @@ export class StyleManager {
     if (this.currentStyle === TranslationStyle.LEARNING) {
       return 'wxt-translation-term--learning';
     }
+    if (this.currentStyle === TranslationStyle.CUSTOM) {
+      return 'wxt-style-custom';
+    }
     return `wxt-style-${this.currentStyle}`;
+  }
+
+  /**
+   * 更新自定义样式
+   */
+  private updateCustomStyle(): void {
+    if (!this.customStyleElement) {
+      this.customStyleElement = document.createElement('style');
+      this.customStyleElement.id = 'wxt-custom-translation-style';
+      document.head.appendChild(this.customStyleElement);
+    }
+
+    // 安全地包装用户CSS，确保只应用到翻译元素
+    const safeCSS = this.customCSS?.trim() ? 
+      `.wxt-style-custom { ${this.customCSS} }` : 
+      '.wxt-style-custom { /* 请在设置中添加自定义CSS */ }';
+    
+    this.customStyleElement.textContent = safeCSS;
   }
 
   /**

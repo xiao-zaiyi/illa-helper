@@ -76,8 +76,25 @@
               <SelectItem value="highlighted">高亮</SelectItem>
               <SelectItem value="dotted">点画线</SelectItem>
               <SelectItem value="learning">学习模式</SelectItem>
+              <SelectItem value="custom">自定义</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        
+        <!-- 自定义CSS编辑框 -->
+        <div v-if="settings.translationStyle === 'custom'" class="space-y-2">
+          <Label for="custom-css">自定义CSS样式</Label>
+          <Textarea
+            id="custom-css"
+            :model-value="settings.customTranslationCSS"
+            @update:model-value="settings.customTranslationCSS = $event as string"
+            placeholder="例如: color: #ff0000; font-weight: bold; background-color: #f0f0f0;"
+            class="font-mono text-sm"
+            rows="4"
+          />
+          <p class="text-xs text-muted-foreground">
+            提示：这里的CSS样式将应用到翻译文本上。请不要包含选择器，直接写样式属性即可。
+          </p>
         </div>
       </CardContent>
       <CardContent>
@@ -200,6 +217,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
 
 const settings = ref<UserSettings>(DEFAULT_SETTINGS);
 const storageManager = new StorageManager();
@@ -212,6 +230,10 @@ const emit = defineEmits<{
 onMounted(async () => {
   settings.value = await storageManager.getUserSettings();
   styleManager.setTranslationStyle(settings.value.translationStyle);
+  // 如果是自定义样式，加载自定义CSS
+  if (settings.value.translationStyle === TranslationStyle.CUSTOM) {
+    styleManager.setCustomCSS(settings.value.customTranslationCSS);
+  }
 });
 
 const previewTranslation = computed(() => {
@@ -223,6 +245,10 @@ const previewTranslation = computed(() => {
 
 const currentStyleClass = computed(() => {
   styleManager.setTranslationStyle(settings.value.translationStyle);
+  // 如果是自定义样式，更新自定义CSS
+  if (settings.value.translationStyle === TranslationStyle.CUSTOM) {
+    styleManager.setCustomCSS(settings.value.customTranslationCSS);
+  }
   return styleManager.getCurrentStyleClass();
 });
 
@@ -232,6 +258,10 @@ watch(
     await storageManager.saveUserSettings(newSettings);
     emit('saveMessage', '设置已保存');
     styleManager.setTranslationStyle(newSettings.translationStyle);
+    // 如果是自定义样式，更新自定义CSS
+    if (newSettings.translationStyle === TranslationStyle.CUSTOM) {
+      styleManager.setCustomCSS(newSettings.customTranslationCSS);
+    }
     browser.runtime.sendMessage({
       type: 'settings_updated',
       settings: newSettings,
