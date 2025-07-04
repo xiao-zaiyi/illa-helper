@@ -15,7 +15,8 @@ import {
   CSS_CLASSES,
   UI_CONSTANTS,
 } from '../config';
-import { DEFAULT_API_CONFIG, ApiConfig } from '../../types';
+import { ApiConfig } from '../../shared/types/api';
+import { DEFAULT_API_CONFIG } from '../../shared/constants/defaults';
 import { StorageManager } from '../../storageManager';
 import { safeSetInnerHTML } from '@/src/utils';
 

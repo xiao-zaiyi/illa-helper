@@ -4,12 +4,9 @@
  * 使用序列化方式存储数据
  */
 
-import {
-  UserSettings,
-  DEFAULT_SETTINGS,
-  ApiConfigItem,
-  ApiConfig,
-} from './types';
+import { UserSettings } from './shared/types/storage';
+import { ApiConfigItem, ApiConfig } from './shared/types/api';
+import { DEFAULT_SETTINGS } from './shared/constants/defaults';
 
 // 存储管理器
 export class StorageManager {

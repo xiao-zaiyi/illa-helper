@@ -10,8 +10,8 @@ import {
   UserSettings,
   ReplacementConfig,
   FullTextAnalysisResponse,
-  TranslationStyle,
-} from './types';
+} from './shared/types/api';
+import { TranslationStyle } from './shared/types/core';
 
 // 替换结果接口
 export interface ReplacementResult {

@@ -698,7 +698,7 @@ import {
   DEFAULT_SETTINGS,
   ApiConfigItem,
   ApiConfig,
-} from '@/src/modules/types';
+} from '@/src/modules/shared/types';
 import {
   Card,
   CardContent,

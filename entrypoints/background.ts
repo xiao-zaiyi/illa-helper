@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import { DEFAULT_SETTINGS } from '@/src/modules/types';
+import { DEFAULT_SETTINGS } from '@/src/modules/shared/constants/defaults';
 import { StorageManager } from '@/src/modules/storageManager';
 import { ContextMenuManager } from '@/src/modules/contextMenu';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';

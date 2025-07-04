@@ -22,7 +22,7 @@
 import { IPhoneticProvider } from './IPhoneticProvider';
 import { DictionaryApiProvider } from './DictionaryApiProvider';
 import { AITranslationProvider } from '../translation/AITranslationProvider';
-import { ApiConfig } from '../../types';
+import { ApiConfig } from '../../shared/types/api';
 
 export class PhoneticProviderFactory {
   /** 提供者实例缓存，实现单例模式 */

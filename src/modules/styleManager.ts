@@ -5,7 +5,7 @@
 
 // 翻译文本样式
 
-import { TranslationStyle } from './types';
+import { TranslationStyle } from './shared/types/core';
 // 样式管理器
 export class StyleManager {
   private currentStyle: TranslationStyle;

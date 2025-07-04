@@ -3,8 +3,8 @@
  */
 
 import { CACHE_CONSTANTS, PROVIDER_CONSTANTS } from './constants';
-import type { TooltipHotkey } from '../../types';
-import { DEFAULT_TOOLTIP_HOTKEY } from '../../types';
+import type { TooltipHotkey } from '../../shared/types/ui';
+import { DEFAULT_TOOLTIP_HOTKEY } from '../../shared/constants/defaults';
 
 // TTS配置
 export interface TTSConfig {

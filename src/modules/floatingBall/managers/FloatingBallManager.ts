@@ -3,11 +3,8 @@
  * 负责在页面上创建和管理翻译悬浮球
  */
 
-import type {
-  FloatingBallConfig,
-  FloatingBallState,
-  FloatingBallActionType,
-} from '../types';
+import type { FloatingBallConfig } from '../../shared/types/ui';
+import type { FloatingBallState, FloatingBallActionType } from '../types';
 import {
   FLOATING_BALL_STYLES,
   DRAG_CONFIG,

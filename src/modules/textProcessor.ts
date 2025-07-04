@@ -1,8 +1,8 @@
 import {
   OriginalWordDisplayMode,
-  ApiConfig,
   TranslationPosition,
-} from './types';
+} from './shared/types/core';
+import { ApiConfig } from './shared/types/api';
 import { PronunciationService } from './pronunciation/services/PronunciationService';
 import { DEFAULT_PRONUNCIATION_CONFIG } from './pronunciation/config';
 import { ContentSegmenter } from './processing/ContentSegmenter';

@@ -207,7 +207,7 @@ import {
   DEFAULT_SETTINGS,
   TranslationPosition,
   TranslationStyle,
-} from '@/src/modules/types';
+} from '@/src/modules/shared/types';
 import { getUserLevelLabel } from '@/src/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';

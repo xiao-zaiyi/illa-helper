@@ -2,7 +2,8 @@
  * 基础翻译提供者抽象类
  */
 
-import { ApiConfig, UserSettings, FullTextAnalysisResponse } from '../../types';
+import { ApiConfig, FullTextAnalysisResponse } from '../../shared/types/api';
+import { UserSettings } from '../../shared/types/storage';
 import { ITranslationProvider } from '../types';
 import { validateInputs, createErrorResponse } from '../utils/apiUtils';
 

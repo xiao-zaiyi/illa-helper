@@ -7,7 +7,10 @@ import {
   ContentSegment,
   globalProcessingState,
 } from './ProcessingStateManager';
-import { OriginalWordDisplayMode, TranslationPosition } from '../types';
+import {
+  OriginalWordDisplayMode,
+  TranslationPosition,
+} from '../shared/types/core';
 
 /**
  * 处理结果接口

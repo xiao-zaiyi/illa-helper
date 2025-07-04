@@ -4,7 +4,7 @@
  */
 
 import { universalApi, callAI, quickAI } from '../services/UniversalApiService';
-import { TranslationProvider } from '../../types';
+import { TranslationProvider } from '../../shared/types/core';
 
 /**
  * 基础使用示例
