@@ -12,6 +12,8 @@ import { StorageManager } from '@/src/modules/storageManager';
 import { TextReplacer } from '@/src/modules/textReplacer';
 import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
+import { translationStateManager } from '@/src/modules/translationStateManager';
+import { translationCacheManager } from '@/src/modules/translationCache';
 export default defineContentScript({
   // 匹配所有网站
   matches: ['<all_urls>'],
@@ -62,8 +64,11 @@ export default defineContentScript({
     // --- 应用初始配置 ---
     updateConfiguration(settings, styleManager, textReplacer);
 
+    // 初始化翻译状态管理器
+    await translationStateManager.initialize();
+
     // --- 初始化悬浮球 ---
-    floatingBallManager.init(async () => {
+    await floatingBallManager.init(async () => {
       // 悬浮球点击翻译回调
       // 验证API配置
       const isConfigValid = await browser.runtime.sendMessage({
@@ -72,14 +77,58 @@ export default defineContentScript({
       });
 
       if (isConfigValid) {
-        await processPage(
-          textProcessor,
-          textReplacer,
-          settings.originalWordDisplayMode,
-          settings.maxLength,
-          settings.translationPosition,
-          settings.showParentheses,
-        );
+        // 从存储中获取最新的翻译状态
+        const translationState = await translationStateManager.getTranslationStateAsync();
+        console.log('[Content] 翻译状态检查:', translationState, '时间戳:', Date.now());
+        
+        if (translationState) {
+          console.log('[Content] 开始执行翻译...');
+          // 重置所有处理状态，确保重新翻译
+          const { globalProcessingState } = await import('@/src/modules/processing/ProcessingStateManager');
+          globalProcessingState.reset();
+          console.log('[Content] 已重置全局处理状态');
+          
+          textProcessor.resetAll();
+          console.log('[Content] 已重置文本处理器');
+          
+          // 清除所有DOM处理标记，确保重新处理
+          const processedElements = document.querySelectorAll('[data-wxt-word-processed], [data-wxt-text-processed], [data-wxt-processed-time], [data-pronunciation-added]');
+          console.log('[Content] 找到DOM处理标记元素:', processedElements.length, '个');
+          
+          processedElements.forEach((element: Element) => {
+            element.removeAttribute('data-wxt-word-processed');
+            element.removeAttribute('data-wxt-text-processed');
+            element.removeAttribute('data-wxt-processed-time');
+            element.removeAttribute('data-pronunciation-added');
+          });
+          
+          // 移除处理中的视觉反馈
+          const processingElements = document.querySelectorAll('.wxt-processing');
+          processingElements.forEach((element: Element) => {
+            element.classList.remove('wxt-processing');
+          });
+          
+          // 添加调试信息：检查处理状态和缓存
+          const stats = globalProcessingState.getProcessingStats();
+          const cacheStats = translationCacheManager.getStats();
+          console.log('[Content] 处理状态统计:', stats);
+          console.log('[Content] 翻译缓存统计:', cacheStats);
+          
+          await processPage(
+            textProcessor,
+            textReplacer,
+            settings.originalWordDisplayMode,
+            settings.maxLength,
+            settings.translationPosition,
+            settings.showParentheses,
+            true, // 强制重新处理所有段落
+          );
+        } else {
+          console.log('[Content] 翻译已关闭，开始还原页面...');
+          textProcessor.restoreOriginalState(document.body, textReplacer);
+        }
+      } else {
+        console.log('[Content] API配置无效，跳过处理');
       }
     });
 
@@ -88,14 +137,26 @@ export default defineContentScript({
       websiteStatus === 'whitelisted' ||
       settings.triggerMode === TriggerMode.AUTOMATIC
     ) {
-      await processPage(
-        textProcessor,
-        textReplacer,
-        settings.originalWordDisplayMode,
-        settings.maxLength,
-        settings.translationPosition,
-        settings.showParentheses,
-      );
+      // 检查翻译状态，只有在开启时才执行翻译
+      if (translationStateManager.getTranslationState()) {
+        // 重置处理状态，确保重新翻译
+        const { globalProcessingState } = await import('@/src/modules/processing/ProcessingStateManager');
+        globalProcessingState.reset();
+        console.log('[Content] 自动模式：已重置全局处理状态');
+        
+        textProcessor.resetAll();
+        console.log('[Content] 自动模式：已重置文本处理器');
+        
+        await processPage(
+          textProcessor,
+          textReplacer,
+          settings.originalWordDisplayMode,
+          settings.maxLength,
+          settings.translationPosition,
+          settings.showParentheses,
+          true, // 强制重新处理所有段落
+        );
+      }
     }
 
     // --- 监听消息和DOM变化 ---
@@ -159,7 +220,10 @@ async function processPage(
   maxLength: number | undefined,
   translationPosition: TranslationPosition,
   showParentheses: boolean,
+  forceReprocess: boolean = false,
 ) {
+  console.log('[Content] 开始处理页面', forceReprocess ? '(强制重新处理)' : '');
+  
   await textProcessor.processRoot(
     document.body,
     textReplacer,
@@ -167,6 +231,7 @@ async function processPage(
     maxLength,
     translationPosition,
     showParentheses,
+    forceReprocess,
   );
 }
 
@@ -223,14 +288,26 @@ function setupListeners(
     } else if (message.type === 'translate-page-command') {
       // 收到翻译整页快捷键命令
       try {
-        await processPage(
-          textProcessor,
-          textReplacer,
-          settings.originalWordDisplayMode,
-          settings.maxLength,
-          settings.translationPosition,
-          settings.showParentheses,
-        );
+        // 检查翻译状态，只有在开启时才执行翻译
+        if (translationStateManager.getTranslationState()) {
+          // 重置处理状态，确保重新翻译
+          const { globalProcessingState } = await import('@/src/modules/processing/ProcessingStateManager');
+          globalProcessingState.reset();
+          console.log('[Content] 快捷键命令：已重置全局处理状态');
+          
+          textProcessor.resetAll();
+          console.log('[Content] 快捷键命令：已重置文本处理器');
+          
+          await processPage(
+            textProcessor,
+            textReplacer,
+            settings.originalWordDisplayMode,
+            settings.maxLength,
+            settings.translationPosition,
+            settings.showParentheses,
+            true, // 强制重新处理所有段落
+          );
+        }
       } catch (error) {
         console.error('[Content] 翻译整页失败:', error);
       }
@@ -242,14 +319,25 @@ function setupListeners(
           source: 'user_action',
         });
         if (isConfigValid) {
-          await processPage(
-            textProcessor,
-            textReplacer,
-            settings.originalWordDisplayMode,
-            settings.maxLength,
-            settings.translationPosition,
-            settings.showParentheses,
-          );
+          // 检查翻译状态，只有在开启时才执行翻译
+          if (translationStateManager.getTranslationState()) {
+            // 重置处理状态，确保重新翻译
+            const { globalProcessingState } = await import('@/src/modules/processing/ProcessingStateManager');
+            globalProcessingState.reset();
+            console.log('[Content] 手动翻译：已重置全局处理状态');
+            
+            textProcessor.resetAll();
+            console.log('[Content] 手动翻译：已重置文本处理器');
+            
+            await processPage(
+              textProcessor,
+              textReplacer,
+              settings.originalWordDisplayMode,
+              settings.maxLength,
+              settings.translationPosition,
+              settings.showParentheses,
+            );
+          }
         }
       }
     }
@@ -331,6 +419,12 @@ function setupDomObserver(
     clearTimeout(debounceTimer);
     debounceTimer = window.setTimeout(async () => {
       if (nodesToProcess.size === 0) return;
+
+      // 检查翻译状态，只有在开启时才执行翻译
+      if (!translationStateManager.getTranslationState()) {
+        nodesToProcess.clear();
+        return;
+      }
 
       const topLevelNodes = new Set<Node>();
       nodesToProcess.forEach((node) => {

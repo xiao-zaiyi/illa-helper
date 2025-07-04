@@ -15,6 +15,7 @@ import {
   MENU_ACTIONS,
 } from '../config';
 import { safeSetInnerHTML } from '@/src/utils';
+import { translationStateManager } from '@/src/modules/translationStateManager';
 
 export class FloatingBallManager {
   private config: FloatingBallConfig;
@@ -47,11 +48,15 @@ export class FloatingBallManager {
       isVisible: false,
       isMenuExpanded: false,
       currentPosition: config.position,
+      isTranslateActive: false, // 初始化为false，稍后从存储中恢复
     };
 
     // 初始化触摸设备检测
     this.isTouchDevice =
       'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    // 监听翻译状态变化
+    translationStateManager.addListener(this.handleTranslationStateChange.bind(this));
   }
 
   /**
@@ -98,13 +103,22 @@ export class FloatingBallManager {
   /**
    * 初始化悬浮球
    */
-  init(onTranslate?: () => void): void {
+  async init(onTranslate?: () => void): Promise<void> {
     this.onTranslateCallback = onTranslate;
 
+    // 初始化翻译状态管理器并恢复状态
+    await translationStateManager.initialize();
+    this.state.isTranslateActive = translationStateManager.getTranslationState();
+    
     if (this.config.enabled) {
       this.createBall();
       this.setupEventListeners();
       this.state.isVisible = true;
+      
+      // 在创建悬浮球后根据恢复的状态设置绿色圆边
+      if (this.state.isTranslateActive) {
+        this.showGreenBorder();
+      }
     }
   }
 
@@ -301,6 +315,13 @@ export class FloatingBallManager {
 
     // 校准位置
     this.calibratePosition();
+
+    // 根据翻译状态设置绿色圆边（只有在已初始化时才设置）
+    if (translationStateManager.isInitialized() && this.state.isTranslateActive) {
+      this.showGreenBorder();
+    } else {
+      this.removeGreenBorder();
+    }
   }
 
   /**
@@ -392,45 +413,35 @@ export class FloatingBallManager {
       background,
       boxShadow,
       hoverScale,
-      activeBackground,
-      activeBoxShadow,
     } = FLOATING_BALL_STYLES;
 
     // 鼠标进入效果
-    this.ballElement.addEventListener('mouseenter', () => {
+    this.bindEventListener(this.ballElement, 'mouseenter', () => {
       if (!this.state.isDragging && this.ballElement) {
         this.ballElement.style.background = hoverBackground;
         this.ballElement.style.transform = `translateY(-50%) scale(${hoverScale})`;
         this.ballElement.style.boxShadow = hoverBoxShadow;
+        // 根据翻译状态设置绿色圆边
+        if (translationStateManager.isInitialized() && this.state.isTranslateActive) {
+          this.showGreenBorder();
+        } else {
+          this.removeGreenBorder();
+        }
       }
     });
 
     // 鼠标离开效果
-    this.ballElement.addEventListener('mouseleave', () => {
+    this.bindEventListener(this.ballElement, 'mouseleave', () => {
       if (!this.state.isDragging && this.ballElement) {
         this.ballElement.style.background = background;
         this.ballElement.style.transform = 'translateY(-50%) scale(1)';
         this.ballElement.style.boxShadow = boxShadow;
-      }
-    });
-
-    // 点击激活效果
-    this.ballElement.addEventListener('mousedown', () => {
-      if (this.ballElement) {
-        this.ballElement.style.background = activeBackground;
-        this.ballElement.style.boxShadow = activeBoxShadow;
-      }
-    });
-
-    // 点击释放效果
-    this.ballElement.addEventListener('mouseup', () => {
-      if (!this.state.isDragging && this.ballElement) {
-        setTimeout(() => {
-          if (this.ballElement) {
-            this.ballElement.style.background = hoverBackground;
-            this.ballElement.style.boxShadow = hoverBoxShadow;
-          }
-        }, 150); // 短暂显示激活状态后恢复悬停状态
+        // 根据翻译状态设置绿色圆边
+        if (translationStateManager.isInitialized() && this.state.isTranslateActive) {
+          this.showGreenBorder();
+        } else {
+          this.removeGreenBorder();
+        }
       }
     });
   }
@@ -564,8 +575,8 @@ export class FloatingBallManager {
     }
 
     // 设置新的定时器，100ms后执行翻译（防止快速点击）
-    this.clickDebounceTimer = window.setTimeout(() => {
-      this.handleTranslate();
+    this.clickDebounceTimer = window.setTimeout(async () => {
+      await this.handleTranslate();
       this.clickDebounceTimer = null;
     }, 100);
   }
@@ -573,19 +584,71 @@ export class FloatingBallManager {
   /**
    * 处理翻译
    */
-  private handleTranslate(): void {
+  private async handleTranslate(): Promise<void> {
     if (this.onTranslateCallback && this.ballElement) {
+      // 切换翻译状态
+      const newState = await translationStateManager.toggleTranslation();
+      
+      console.log('[FloatingBall] 翻译状态切换:', newState);
+      
+      // 更新本地状态
+      this.state.isTranslateActive = newState;
+      
+      // 根据新状态设置绿色圆边
+      if (newState) {
+        this.showGreenBorder();
+      } else {
+        this.removeGreenBorder();
+      }
+
+      // 调用翻译回调
+      console.log('[FloatingBall] 调用翻译回调，当前状态:', newState);
       this.onTranslateCallback();
 
       // 显示翻译动画
-      const { activeBackground, background } = FLOATING_BALL_STYLES;
+      const { activeBackground } = FLOATING_BALL_STYLES;
       this.ballElement.style.background = activeBackground;
 
       setTimeout(() => {
         if (this.ballElement) {
+          // 恢复默认样式
+          const { background } = FLOATING_BALL_STYLES;
           this.ballElement.style.background = background;
         }
       }, 1000);
+    }
+  }
+
+  /**
+   * 显示绿色圆边
+   */
+  private showGreenBorder(): void {
+    if (this.ballElement) {
+      this.ballElement.style.border = '3px solid #4ade80';
+    }
+  }
+
+  /**
+   * 移除绿色圆边
+   */
+  private removeGreenBorder(): void {
+    if (this.ballElement) {
+      this.ballElement.style.border = 'none';
+    }
+  }
+
+  /**
+   * 处理翻译状态变化
+   */
+  private handleTranslationStateChange(isActive: boolean): void {
+    this.state.isTranslateActive = isActive;
+    
+    if (this.ballElement) {
+      if (isActive) {
+        this.showGreenBorder();
+      } else {
+        this.removeGreenBorder();
+      }
     }
   }
 
@@ -613,6 +676,13 @@ export class FloatingBallManager {
     // 禁用过渡动画，防止拖拽时的干扰
     if (this.ballElement) {
       this.ballElement.style.transition = 'none';
+    }
+
+    // 添加激活样式（但不改变绿色圆边状态）
+    if (this.ballElement) {
+      const { activeBackground, activeBoxShadow } = FLOATING_BALL_STYLES;
+      this.ballElement.style.background = activeBackground;
+      this.ballElement.style.boxShadow = activeBoxShadow;
     }
   }
 
@@ -729,6 +799,19 @@ export class FloatingBallManager {
 
     const wasDragging = this.state.isDragging;
 
+    // 恢复过渡动画和样式
+    if (this.ballElement) {
+      const { background, boxShadow } = FLOATING_BALL_STYLES;
+      this.ballElement.style.background = background;
+      this.ballElement.style.boxShadow = boxShadow;
+      // 根据翻译状态设置绿色圆边
+      if (this.state.isTranslateActive) {
+        this.showGreenBorder();
+      } else {
+        this.removeGreenBorder();
+      }
+    }
+
     if (wasDragging) {
       // 最终校准位置
       this.calibratePosition();
@@ -785,6 +868,12 @@ export class FloatingBallManager {
 
         // 添加视觉反馈，表示可拖动状态
         this.ballElement.style.transform = 'translateY(-50%) scale(1.05)';
+        // 根据翻译状态设置绿色圆边
+        if (translationStateManager.isInitialized() && this.state.isTranslateActive) {
+          this.showGreenBorder();
+        } else {
+          this.removeGreenBorder();
+        }
 
         // 禁用过渡动画，防止拖拽时的干扰
         this.ballElement.style.transition = 'none';
@@ -858,7 +947,7 @@ export class FloatingBallManager {
   /**
    * 触摸结束处理（独立实现）
    */
-  private handleTouchEnd(e: TouchEvent): void {
+  private async handleTouchEnd(e: TouchEvent): Promise<void> {
     // 检查是否是悬浮球上的点击/拖动
     const touchOnBall = this.dragStartY !== 0;
 
@@ -872,6 +961,12 @@ export class FloatingBallManager {
 
         // 恢复正常大小
         this.ballElement.style.transform = 'translateY(-50%) scale(1)';
+        // 根据翻译状态设置绿色圆边
+        if (translationStateManager.isInitialized() && this.state.isTranslateActive) {
+          this.showGreenBorder();
+        } else {
+          this.removeGreenBorder();
+        }
       }
 
       const wasDragging = this.state.isDragging;
@@ -891,7 +986,7 @@ export class FloatingBallManager {
         // 短触摸时间视为点击，触发翻译
         if (timeDiff < 300) {
           // 模拟点击事件
-          this.handleTranslate();
+          await this.handleTranslate();
         }
       }
     }
@@ -1195,12 +1290,16 @@ export class FloatingBallManager {
       animationStyle.remove();
     }
 
+    // 移除翻译状态监听器
+    translationStateManager.removeListener(this.handleTranslationStateChange.bind(this));
+
     // 重置状态
     this.state = {
       isDragging: false,
       isVisible: false,
       isMenuExpanded: false,
       currentPosition: 50,
+      isTranslateActive: false,
     };
 
     // 重置其他属性

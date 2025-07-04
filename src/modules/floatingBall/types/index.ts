@@ -25,4 +25,5 @@ export interface FloatingBallState {
   isVisible: boolean;
   isMenuExpanded: boolean; // 新增：菜单是否展开
   currentPosition: number;
+  isTranslateActive: boolean; // 新增：翻译功能是否激活
 }
