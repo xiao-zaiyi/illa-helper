@@ -75,6 +75,7 @@ export class ProcessingCoordinator {
     originalWordDisplayMode: OriginalWordDisplayMode,
     translationPosition: TranslationPosition,
     showParentheses: boolean,
+    forceReprocess: boolean = false,
   ): Promise<ProcessingResult> {
     const startTime = Date.now();
 
@@ -87,6 +88,7 @@ export class ProcessingCoordinator {
         translationPosition,
         showParentheses,
         startTime,
+        forceReprocess,
       );
     }));
   }
@@ -101,6 +103,7 @@ export class ProcessingCoordinator {
     translationPosition: TranslationPosition,
     showParentheses: boolean,
     startTime: number,
+    forceReprocess: boolean = false,
   ): Promise<ProcessingResult> {
     let processedCount = 0;
     let skippedCount = 0;
@@ -108,8 +111,12 @@ export class ProcessingCoordinator {
     let errorCount = 0;
     const errors: string[] = [];
 
-    // 过滤已处理和正在处理的段落
+    // 过滤已处理和正在处理的段落（除非强制重新处理）
     const segmentsToProcess = segments.filter((segment) => {
+      if (forceReprocess) {
+        return true; // 强制重新处理所有段落
+      }
+      
       const isProcessed = globalProcessingState.isContentProcessed(
         segment.fingerprint,
       );
@@ -243,8 +250,8 @@ export class ProcessingCoordinator {
         this.addProcessingFeedback(element);
       });
 
-      // 调用文本替换器进行处理
-      const result = await textReplacer.replaceText(segment.textContent);
+      // 调用文本替换器进行处理，传递指纹用于缓存
+      const result = await textReplacer.replaceText(segment.textContent, segment.fingerprint);
 
       if (result && result.replacements && result.replacements.length > 0) {
         // 应用替换到DOM

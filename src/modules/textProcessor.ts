@@ -8,6 +8,7 @@ import { DEFAULT_PRONUNCIATION_CONFIG } from './pronunciation/config';
 import { ContentSegmenter } from './processing/ContentSegmenter';
 import { ProcessingCoordinator } from './processing/ProcessingCoordinator';
 import { globalProcessingState } from './processing/ProcessingStateManager';
+import { translationCacheManager } from './translationCache';
 
 /**
  * 文本处理模块
@@ -141,6 +142,7 @@ export class TextProcessor {
     maxLength: number = 400,
     translationPosition: TranslationPosition,
     showParentheses: boolean,
+    forceReprocess: boolean = false,
   ): Promise<void> {
     try {
       // 第一步：更新内容分段器配置
@@ -165,6 +167,7 @@ export class TextProcessor {
         originalWordDisplayMode,
         translationPosition,
         showParentheses,
+        forceReprocess,
       );
     } catch (_) {
       // 静默处理错误
@@ -274,6 +277,9 @@ export class TextProcessor {
         console.log('[TextProcessor] 已清理文本替换器缓存');
       }
       globalProcessingState.reset();
+      
+      // 注意：不清除翻译缓存，保留翻译结果以便快速恢复
+      console.log('[TextProcessor] 保留翻译缓存以便快速恢复');
       
       console.log('[TextProcessor] 页面还原完成');
     } catch (error) {

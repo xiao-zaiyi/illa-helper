@@ -13,6 +13,7 @@ import { TextReplacer } from '@/src/modules/textReplacer';
 import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 import { translationStateManager } from '@/src/modules/translationStateManager';
+import { translationCacheManager } from '@/src/modules/translationCache';
 export default defineContentScript({
   // 匹配所有网站
   matches: ['<all_urls>'],
@@ -107,9 +108,11 @@ export default defineContentScript({
             element.classList.remove('wxt-processing');
           });
           
-          // 添加调试信息：检查处理状态
+          // 添加调试信息：检查处理状态和缓存
           const stats = globalProcessingState.getProcessingStats();
+          const cacheStats = translationCacheManager.getStats();
           console.log('[Content] 处理状态统计:', stats);
+          console.log('[Content] 翻译缓存统计:', cacheStats);
           
           await processPage(
             textProcessor,
@@ -118,6 +121,7 @@ export default defineContentScript({
             settings.maxLength,
             settings.translationPosition,
             settings.showParentheses,
+            true, // 强制重新处理所有段落
           );
         } else {
           console.log('[Content] 翻译已关闭，开始还原页面...');
@@ -150,6 +154,7 @@ export default defineContentScript({
           settings.maxLength,
           settings.translationPosition,
           settings.showParentheses,
+          true, // 强制重新处理所有段落
         );
       }
     }
@@ -215,8 +220,9 @@ async function processPage(
   maxLength: number | undefined,
   translationPosition: TranslationPosition,
   showParentheses: boolean,
+  forceReprocess: boolean = false,
 ) {
-  console.log('[Content] 开始处理页面');
+  console.log('[Content] 开始处理页面', forceReprocess ? '(强制重新处理)' : '');
   
   await textProcessor.processRoot(
     document.body,
@@ -225,6 +231,7 @@ async function processPage(
     maxLength,
     translationPosition,
     showParentheses,
+    forceReprocess,
   );
 }
 
@@ -298,6 +305,7 @@ function setupListeners(
             settings.maxLength,
             settings.translationPosition,
             settings.showParentheses,
+            true, // 强制重新处理所有段落
           );
         }
       } catch (error) {
