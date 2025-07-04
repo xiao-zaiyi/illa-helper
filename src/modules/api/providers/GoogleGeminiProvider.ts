@@ -8,7 +8,7 @@ import { UserSettings } from '../../shared/types/storage';
 import { BaseProvider } from '../base/BaseProvider';
 import { mergeCustomParams } from '../utils/apiUtils';
 import { addPositionsToReplacements } from '../utils/textUtils';
-import { getSystemPromptByConfig } from '../../promptManager';
+import { getSystemPromptByConfig } from '../../core/translation/PromptService';
 import {
   extractAndParseJson,
   getApiTimeout,

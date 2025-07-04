@@ -475,8 +475,8 @@ const response = await sendApiRequest(
 
 #### 处理页面内容
 ```typescript
-import { TextProcessor } from '@/src/modules/textProcessor';
-import { TextReplacer } from '@/src/modules/textReplacer';
+import { TextProcessor } from '@/src/modules/core/translation/TextProcessorService';
+import { TextReplacer } from '@/src/modules/core/translation/TextReplacerService';
 import { OriginalWordDisplayMode } from '@/src/modules/types';
 
 const textProcessor = new TextProcessor(true); // 启用发音功能

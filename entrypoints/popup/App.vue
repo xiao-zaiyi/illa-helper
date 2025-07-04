@@ -24,7 +24,7 @@ import { notifySettingsChanged } from '@/src/modules/messaging';
 import {
   getTranslationDirectionOptions,
   getTargetLanguageOptions,
-} from '@/src/modules/languageManager';
+} from '@/src/modules/core/translation/LanguageService';
 import {
   ExternalLink,
   Zap as ZapIcon,

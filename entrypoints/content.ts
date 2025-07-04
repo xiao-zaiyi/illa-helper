@@ -1,4 +1,4 @@
-import { TextProcessor } from '@/src/modules/textProcessor';
+import { TextProcessor, TextProcessorService } from '@/src/modules/core/translation/TextProcessorService';
 import { StyleManager } from '@/src/modules/styles';
 import {
   UserSettings,
@@ -9,7 +9,7 @@ import {
   TranslationStyle,
 } from '@/src/modules/shared/types';
 import { StorageManager } from '@/src/modules/storageManager';
-import { TextReplacer } from '@/src/modules/textReplacer';
+import { TextReplacer, TextReplacerService } from '@/src/modules/core/translation/TextReplacerService';
 import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 export default defineContentScript({
@@ -52,11 +52,11 @@ export default defineContentScript({
     const activeConfig = settings.apiConfigs.find(
       (config) => config.id === settings.activeApiConfigId,
     );
-    const textProcessor = new TextProcessor(
-      settings.enablePronunciationTooltip,
-      activeConfig?.config,
-    );
-    const textReplacer = new TextReplacer(createReplacementConfig(settings));
+    const textProcessor = TextProcessor.getInstance({
+      enablePronunciationTooltip: settings.enablePronunciationTooltip,
+      apiConfig: activeConfig?.config,
+    });
+    const textReplacer = TextReplacer.getInstance(createReplacementConfig(settings));
     const floatingBallManager = new FloatingBallManager(settings.floatingBall);
 
     // --- 应用初始配置 ---
@@ -139,22 +139,22 @@ function createReplacementConfig(settings: UserSettings): ReplacementConfig {
 function updateConfiguration(
   settings: UserSettings,
   styleManager: StyleManager,
-  textReplacer: TextReplacer,
+  textReplacer: TextReplacerService,
 ) {
   styleManager.setTranslationStyle(settings.translationStyle);
   // 如果是自定义样式，应用自定义CSS
   if (settings.translationStyle === TranslationStyle.CUSTOM) {
     styleManager.setCustomCSS(settings.customTranslationCSS);
   }
-  textReplacer.setConfig(createReplacementConfig(settings));
+  textReplacer.updateConfig(createReplacementConfig(settings));
 }
 
 /**
  * 处理整个页面或其动态加载的部分
  */
 async function processPage(
-  textProcessor: TextProcessor,
-  textReplacer: TextReplacer,
+  textProcessor: TextProcessorService,
+  textReplacer: TextReplacerService,
   originalWordDisplayMode: OriginalWordDisplayMode,
   maxLength: number | undefined,
   translationPosition: TranslationPosition,
@@ -176,8 +176,8 @@ async function processPage(
 function setupListeners(
   settings: UserSettings,
   styleManager: StyleManager,
-  textProcessor: TextProcessor,
-  textReplacer: TextReplacer,
+  textProcessor: TextProcessorService,
+  textReplacer: TextReplacerService,
   floatingBallManager: FloatingBallManager,
 ) {
   // 监听来自 popup 的消息
@@ -194,7 +194,7 @@ function setupListeners(
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-          newSettings.enablePronunciationTooltip ||
+        newSettings.enablePronunciationTooltip ||
         settings.translationDirection !== newSettings.translationDirection ||
         settings.userLevel !== newSettings.userLevel ||
         settings.useGptApi !== newSettings.useGptApi;
@@ -273,8 +273,8 @@ function setupListeners(
  * 使用新的状态管理器进行更智能的重复处理检测
  */
 function setupDomObserver(
-  textProcessor: TextProcessor,
-  textReplacer: TextReplacer,
+  textProcessor: TextProcessorService,
+  textReplacer: TextReplacerService,
   originalWordDisplayMode: OriginalWordDisplayMode,
   maxLength: number | undefined,
   translationPosition: TranslationPosition,

@@ -81,14 +81,9 @@ a:hover .wxt-original-word--learning {
 
 /* 处理状态样式 */
 .wxt-processing {
-  opacity: 0.7;
   pointer-events: none;
 }
 
-.wxt-processing-glow {
-  box-shadow: 0 0 8px rgba(106, 136, 224, 0.4);
-  border-radius: 3px;
-}
 
 /* 错误状态样式 */
 .wxt-error {
@@ -101,7 +96,7 @@ a:hover .wxt-original-word--learning {
   .wxt-word-container {
     font-size: 14px;
   }
-  
+
   .wxt-english {
     font-size: 0.85em;
   }

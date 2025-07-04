@@ -8,7 +8,7 @@ import { BaseProvider } from '../base/BaseProvider';
 import { mergeCustomParams } from '../utils/apiUtils';
 import { addPositionsToReplacements } from '../utils/textUtils';
 import { sendApiRequest } from '../utils/requestUtils';
-import { getSystemPrompt, getSystemPromptByConfig } from '../../promptManager';
+import { getSystemPrompt, getSystemPromptByConfig } from '../../core/translation/PromptService';
 import { cleanMarkdownFromResponse, getApiTimeout } from '@/src/utils';
 import { rateLimitManager } from '../../rateLimit';
 
@@ -30,17 +30,17 @@ export class OpenAIProvider extends BaseProvider {
 
     const systemPrompt = useIntelligentMode
       ? getSystemPromptByConfig({
-          translationDirection: 'intelligent',
-          targetLanguage: settings.multilingualConfig.targetLanguage,
-          userLevel: settings.userLevel,
-          replacementRate: settings.replacementRate,
-          intelligentMode: true,
-        })
+        translationDirection: 'intelligent',
+        targetLanguage: settings.multilingualConfig.targetLanguage,
+        userLevel: settings.userLevel,
+        replacementRate: settings.replacementRate,
+        intelligentMode: true,
+      })
       : getSystemPrompt(
-          settings.translationDirection,
-          settings.userLevel,
-          settings.replacementRate,
-        );
+        settings.translationDirection,
+        settings.userLevel,
+        settings.replacementRate,
+      );
 
     let requestBody: any = {
       model: this.config.model,
