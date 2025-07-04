@@ -206,4 +206,78 @@ export class TextProcessor {
     this.processingCoordinator.resetStats();
     globalProcessingState.reset();
   }
+
+  /**
+   * 重置所有处理状态和缓存
+   */
+  resetAll(): void {
+    console.log('[TextProcessor] 重置所有处理状态和缓存');
+    this.processingCoordinator.resetStats();
+    globalProcessingState.reset();
+  }
+
+  /**
+   * 还原页面到原始状态
+   * 移除所有翻译内容，恢复到原始文本
+   */
+  restoreOriginalState(root: Node = document.body, textReplacer?: any): void {
+    try {
+      console.log('[TextProcessor] 开始还原页面到原始状态');
+      
+      // 确保 root 是 Element 类型
+      const rootElement = root as Element;
+      
+      // 查找所有翻译相关的元素
+      const translationElements = rootElement.querySelectorAll('.wxt-translation-term');
+      const originalWordElements = rootElement.querySelectorAll('.wxt-original-word');
+      
+      console.log('[TextProcessor] 找到翻译元素:', translationElements.length, '个');
+      console.log('[TextProcessor] 找到原始词元素:', originalWordElements.length, '个');
+      
+      // 移除翻译元素
+      translationElements.forEach((element: Element) => {
+        element.remove();
+      });
+      
+      // 还原原始词元素
+      originalWordElements.forEach((element: Element) => {
+        const originalText = element.textContent || '';
+        const parent = element.parentNode;
+        
+        if (parent) {
+          // 创建文本节点替换原始词元素
+          const textNode = document.createTextNode(originalText);
+          parent.replaceChild(textNode, element);
+        }
+      });
+      
+      // 清除所有处理标记
+      const processedElements = rootElement.querySelectorAll('[data-wxt-word-processed], [data-wxt-text-processed], [data-wxt-processed-time], [data-pronunciation-added]');
+      console.log('[TextProcessor] 找到处理标记元素:', processedElements.length, '个');
+      
+      processedElements.forEach((element: Element) => {
+        element.removeAttribute('data-wxt-word-processed');
+        element.removeAttribute('data-wxt-text-processed');
+        element.removeAttribute('data-wxt-processed-time');
+        element.removeAttribute('data-pronunciation-added');
+      });
+      
+      // 移除处理中的视觉反馈
+      const processingElements = rootElement.querySelectorAll('.wxt-processing');
+      processingElements.forEach((element: Element) => {
+        element.classList.remove('wxt-processing');
+      });
+      
+      // 清理所有缓存和处理状态
+      if (textReplacer && typeof textReplacer.clearAllCache === 'function') {
+        textReplacer.clearAllCache();
+        console.log('[TextProcessor] 已清理文本替换器缓存');
+      }
+      globalProcessingState.reset();
+      
+      console.log('[TextProcessor] 页面还原完成');
+    } catch (error) {
+      console.error('[TextProcessor] 还原页面失败:', error);
+    }
+  }
 }
