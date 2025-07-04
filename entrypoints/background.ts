@@ -22,8 +22,7 @@ export default defineBackground(() => {
   const initializationService = InitializationService.getInstance();
 
   // 传统管理器（保持兼容性）
-  const websiteManager = new WebsiteManager();
-  const contextMenuManager = new ContextMenuManager(websiteManager);
+  new ContextMenuManager(new WebsiteManager());
 
   /**
    * 初始化所有服务
