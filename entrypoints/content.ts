@@ -1,5 +1,5 @@
 import { TextProcessor } from '@/src/modules/textProcessor';
-import { StyleManager } from '@/src/modules/styleManager';
+import { StyleManager } from '@/src/modules/styles';
 import {
   UserSettings,
   TriggerMode,

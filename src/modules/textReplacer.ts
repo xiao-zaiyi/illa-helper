@@ -4,7 +4,7 @@
  */
 
 import { ApiServiceFactory } from './api';
-import { StyleManager } from './styleManager';
+import { StyleManager } from './styles';
 import { StorageManager } from './storageManager';
 import {
   UserSettings,
@@ -45,7 +45,7 @@ export class TextReplacer {
   private static readonly CACHE_MAX_SIZE = 100;
   private static readonly CACHE_CLEANUP_BATCH = 20;
 
-  private styleManager: StyleManager;
+  public styleManager: StyleManager;
   private config: ReplacementConfig;
   private cache: Map<string, FullTextAnalysisResponse>;
 

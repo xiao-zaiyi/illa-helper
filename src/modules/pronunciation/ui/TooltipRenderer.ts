@@ -70,7 +70,6 @@ export class TooltipRenderer {
       <div class="wxt-tooltip-card">
         <div class="wxt-tooltip-header">
           <div class="wxt-word-info">
-            <div class="wxt-word-main">短语</div>
             <div class="wxt-phrase-text">${phrase}</div>
           </div>
           ${

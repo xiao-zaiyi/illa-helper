@@ -201,7 +201,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
 import { StorageManager } from '@/src/modules/storageManager';
-import { StyleManager } from '@/src/modules/styleManager';
+import { StyleManager } from '@/src/modules/styles';
 import {
   UserSettings,
   DEFAULT_SETTINGS,
