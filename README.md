@@ -5,12 +5,14 @@
 </div>
 <div align="center">
 
-![Version](https://img.shields.io/github/package-json/v/xiao-zaiyi/illa-helper?color=blue)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
-![Status](https://img.shields.io/badge/status-stable-green)
-![Built with WXT](https://img.shields.io/badge/built%20with-WXT-blue)
-![Firefox Compatible](https://img.shields.io/badge/Firefox-compatible-orange)
+
+[![Stars](https://img.shields.io/github/stars/xiao-zaiyi/illa-helper?style=flat-square&logo=github&color=007EC6)](https://github.com/xiao-zaiyi/illa-helper/stargazers)
+[![Forks](https://img.shields.io/github/forks/xiao-zaiyi/illa-helper?style=flat-square&logo=github&color=007EC6)](https://github.com/xiao-zaiyi/illa-helper/network/members)
+[![License](https://img.shields.io/github/license/xiao-zaiyi/illa-helper?style=flat-square&logo=github&color=42c88c)](https://github.com/xiao-zaiyi/illa-helper/blob/main/LICENSE)
+[![Open Issues](https://img.shields.io/github/issues/xiao-zaiyi/illa-helper?style=flat-square&logo=github&color=orange)](https://github.com/xiao-zaiyi/illa-helper/issues)
+[![Release](https://img.shields.io/github/v/release/xiao-zaiyi/illa-helper?style=flat-square&logo=github&color=blueviolet)](https://github.com/xiao-zaiyi/illa-helper/releases)
+[![TwitterFollow](https://img.shields.io/twitter/follow/zaiyixiao?logo=x&color=007EC6&label=zaiyixiao)](https://x.com/zaiyixiao)
+
 <br/>
 <a href="https://hellogithub.com/repository/52653c92268d4024878a1a6781df9dd8" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=52653c92268d4024878a1a6781df9dd8&claim_uid=RfJtwvgkBr3MUGy&theme=small" alt="Featured｜HelloGitHub" /></a>
 </div>
@@ -19,11 +21,31 @@
 
 English | [简体中文](./README_ZH.md)
 
+## 🚀 Quick Install
+
+### 📥 Official Store Installation (Recommended)
+
+#### Chrome/Edge Users
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-brightgreen?logo=googlechrome)](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)
+
+**[📥 Install from Chrome Web Store](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)**
+
+#### Firefox Users
+[![Firefox Add-ons](https://img.shields.io/badge/Firefox%20Add--ons-Available-orange?logo=firefox)](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)
+
+**[📥 Install from Firefox Add-ons](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)**
+
+> 💡 **Recommended**: Official store installation is the easiest way - one-click install with automatic updates!
+
+---
+
 ## ✨ Core Philosophy
 
 We firmly believe that the best way to learn a language is through extensive exposure to "comprehensible input," the famous **"i+1"** theory. This means content should be slightly above your current level—challenging but not incomprehensible. This extension aims to turn the entire internet into your personalized language learning material by intelligently replacing selected words with their translations in your target language, allowing you to naturally improve your vocabulary and language intuition while immersed in reading.
 
 **🎯 Project Highlights**: Features a complete pronunciation learning ecosystem with intelligent multi-language translation, including automatic language detection, phonetic notation, AI definitions, dual TTS support, and interactive tooltips for a comprehensive one-stop immersive experience from smart translation to pronunciation learning.
+
+**⚡ Architecture Highlights**: Adopts modern service-oriented architecture design, refactored content script from a monolithic 437-line file into a modular service system, including ContentManager coordinator, configuration service, page processing service, and listener service, achieving highly decoupled, maintainable and extensible technical architecture.
 
 > 📚 **Complete Documentation**: See [Architecture & Features Guide](./docs/ARCHITECTURE_AND_FEATURES.md) for technical architecture, API reference, development guide, and troubleshooting.
 
@@ -77,6 +99,9 @@ We firmly believe that the best way to learn a language is through extensive exp
 - **Incremental Processing**: Only processes new content, avoiding duplicate translations
 - **DOM Safety**: Uses Range API to ensure DOM structure integrity
 - **Memory Management**: Timely cleanup of listeners and optimized memory usage
+- **Service-Oriented Architecture**: Content script adopts modern service patterns with separation of concerns for improved maintainability
+- **Lazy Loading**: Core services initialize on-demand, reducing startup time
+- **Error Isolation**: Independent services ensure single-point failures don't affect overall functionality
 
 ### 💻 Modern Technical Architecture
 - **Framework**: [WXT](https://wxt.dev/) - A modern WebExtension development framework.
@@ -84,7 +109,8 @@ We firmly believe that the best way to learn a language is through extensive exp
 - **UI Library**: Tailwind CSS + Lucide Icons.
 - **Tooling**: ESLint + Prettier + TypeScript compilation.
 - **API Integration**: OpenAI-compatible interfaces + Dictionary API + Youdao TTS.
-- **Architectural Patterns**: Provider Pattern + Modular Design + Event-Driven.
+- **Architectural Patterns**: Service-oriented architecture + Dependency injection + Event-driven + Modular design
+- **Content Script**: ContentManager coordinator + Microservice architecture + Lazy loading
 - **Cross-browser Compatibility**: Supports Chrome, Edge, Firefox, with partial support for Safari.
 
 ## 🌐 Browser Compatibility
@@ -104,6 +130,7 @@ This extension is built with [Web Extension API](https://developer.mozilla.org/e
 - **Translation Results**: Smart caching based on content and settings, avoiding duplicate API calls
 - **Phonetic Data**: 24-hour TTL local caching for improved response speed
 - **TTS Audio**: Memory-level caching, no need to regenerate audio for the same word
+- **Service Instances**: Singleton pattern caching of core services, reducing repeated initialization overhead
 
 ### 🔄 Incremental Processing Mechanism
 - **DOM Monitoring**: Only processes new content, avoiding duplicate translations
@@ -140,36 +167,18 @@ This extension is built with [Web Extension API](https://developer.mozilla.org/e
   <p><i>🧠 Smart Multi-language: AI automatic detection and translation for 20+ languages, covering mainstream learning languages including Chinese, English, Japanese, Korean, etc.</i></p>
 </div>
 
-## 🛠️ Installation & Setup
+## 🛠️ Developer Installation
 
-### 🚀 Quick Install (Recommended)
-
-For most users, we recommend installing directly from official extension stores:
-
-#### Chrome/Edge Users
-[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-brightgreen?logo=googlechrome)](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)
-
-**[📥 Install from Chrome Web Store](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)**
-
-#### Firefox Users
-[![Firefox Add-ons](https://img.shields.io/badge/Firefox%20Add--ons-Available-orange?logo=firefox)](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)
-
-**[📥 Install from Firefox Add-ons](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)**
-
-> 💡 **Tip**: Official store installation is the easiest way - just one click to install with automatic updates!
-
----
-
-### 🔧 Manual Install (For Developers)
+### 🔧 Build from Source (For Developers)
 
 If you want to participate in development or need to build from source:
 
-### 1. Prerequisites
+#### 1. Prerequisites
 
 - [Node.js](https://nodejs.org/) (version 18 or higher)
 - [npm](https://nodejs.org/) or other package managers
 
-### 2. Installation
+#### 2. Installation
 
 1.  **Clone the repository:**
     
@@ -186,7 +195,7 @@ If you want to participate in development or need to build from source:
     
 > **Tip**: If you just want to use this extension without participating in development, please go directly to the [Releases](https://github.com/xiao-zaiyi/illa-helper/releases) page to download the latest packaged version.
 
-### 3. Configuration
+#### 3. Configuration
 
 The project manages local development environment configuration through `.env` files.
 
@@ -207,7 +216,7 @@ The project manages local development environment configuration through `.env` f
     ```
     > **Note**: The `.env` file has been added to `.gitignore`, so your keys won't be accidentally committed.
 
-### 4. Build Extension
+#### 4. Build Extension
 
 Execute the appropriate build commands based on your target browser:
 
@@ -223,9 +232,9 @@ npm run build:firefox
 npm run zip:firefox
 ```
 
-### 5. Load Extension
+#### 5. Load Extension
 
-#### Chrome/Edge Installation
+##### Chrome/Edge Installation
 1. Open your browser (Chrome, Edge, etc.)
 2. Go to the extension management page (`chrome://extensions` or `edge://extensions`)
 3. Turn on **"Developer mode"**
@@ -233,7 +242,7 @@ npm run zip:firefox
 5. Select the `.output/chrome-mv3` folder in the project root directory
 6. Done! You should now see the extension icon in your browser toolbar
 
-#### Firefox Installation Guide <a id="firefox-installation-guide"></a>
+##### Firefox Installation Guide <a id="firefox-installation-guide"></a>
 
 Firefox requires special installation steps due to security restrictions:
 
@@ -279,7 +288,7 @@ This ensures proper storage functionality for saving user settings in Firefox.
 │   └── ARCHITECTURE_AND_FEATURES.md  # Detailed technical documentation
 ├── entrypoints/          # Extension entry points
 │   ├── background.ts     # Background service (config validation, notification management)
-│   ├── content.ts        # Content script (core translation logic)
+│   ├── content.ts        # Content script entry (lightweight entry point)
 │   ├── popup/            # Vue 3 popup interface
 │   │   ├── App.vue       # Main UI component
 │   │   ├── index.html    # Popup page
@@ -292,7 +301,21 @@ This ensures proper storage functionality for saving user settings in Firefox.
 │       └── components/   # Options page components (content not available)
 ├── images/               # Project image assets
 ├── lib/                  # Third-party libraries or helper modules
-├── src/modules/          # Core feature modules (Note: Full structure not verified due to environment limits)
+├── src/modules/          # Core feature modules (Modern modular architecture)
+│   ├── content/          # 📄 Content script module (NEW! Service-oriented architecture)
+│   │   ├── ContentManager.ts    # Main coordinator service (lifecycle management)
+│   │   ├── services/     # Business service layer
+│   │   │   ├── ConfigurationService.ts  # Configuration management service
+│   │   │   ├── ProcessingService.ts     # Page processing service
+│   │   │   ├── ListenerService.ts       # Listener service
+│   │   │   └── index.ts  # Service exports
+│   │   ├── utils/        # Utility function layer
+│   │   │   └── domUtils.ts  # DOM operation utilities
+│   │   ├── types.ts      # Type definitions
+│   │   └── index.ts      # Module entry
+│   ├── background/       # 🔧 Background service module (refactored)
+│   │   ├── services/     # Background service collection
+│   │   └── types.ts      # Background type definitions
 │   ├── pronunciation/    # 🔊 Pronunciation system module (complete ecosystem)
 │   │   ├── phonetic/     # Phonetic retrieval service (Dictionary API)
 │   │   ├── tts/          # Speech synthesis service (Youdao TTS + Web Speech)
@@ -302,19 +325,18 @@ This ensures proper storage functionality for saving user settings in Firefox.
 │   │   ├── utils/        # Utility function library (DOM, positioning, timers)
 │   │   ├── config/       # Configuration management (constants, settings)
 │   │   └── types/        # Type definitions (complete type system)
-│   ├── options/          # Settings management module
-│   │   └── blacklist/    # Website blacklist feature
-│   ├── processing/       # Text processing module
-│   ├── floatingBall/     # Floating ball feature
-│   ├── api/              # AI translation API service module
-│   ├── textProcessor.ts  # Intelligent text processor
-│   ├── textReplacer.ts   # Text replacement engine
-│   ├── styleManager.ts   # Style manager
-│   ├── storageManager.ts # Configuration storage management
-│   ├── languageManager.ts# Multi-language support
-│   ├── promptManager.ts  # AI prompt management
-│   ├── messaging.ts      # Messaging system
-│   └── types.ts          # Core type definitions
+│   ├── core/             # 🎯 Core feature modules
+│   │   ├── translation/  # Translation engine (TextProcessor, TextReplacer)
+│   │   ├── storage/      # Storage management (configuration persistence)
+│   │   └── messaging/    # Messaging system
+│   ├── options/          # ⚙️ Settings management module
+│   │   └── website-management/ # Website rule management
+│   ├── processing/       # 📝 Text processing module
+│   ├── floatingBall/     # ⚪ Floating ball feature
+│   ├── api/              # 🌐 AI translation API service module
+│   ├── styles/           # 🎨 Style manager
+│   ├── shared/           # 🔗 Shared modules (types, constants, utilities)
+│   └── infrastructure/   # 🏗️ Infrastructure (rate limiting, etc.)
 ├── public/               # Static assets
 │   ├── icon/             # Extension icons (content not available)
 │   ├── warning.png       # Notification icon
@@ -331,9 +353,11 @@ This ensures proper storage functionality for saving user settings in Firefox.
 - **UI Library**: Tailwind CSS + Lucide Icons.
 - **Tooling**: ESLint + Prettier + TypeScript compilation.
 - **API Integration**: OpenAI-compatible interfaces + Dictionary API + Youdao TTS.
-- **Architectural Patterns**: Provider Pattern + Modular Design + Event-Driven.
+- **Architectural Patterns**: Service-oriented architecture + Dependency injection + Event-driven + Modular design
+- **Content Script**: ContentManager coordinator + Microservice architecture + Lazy loading
 - **Pronunciation System**: Factory Pattern + Multi-TTS services + Smart Caching.
 - **Storage Management**: Configuration versioning + Cross-browser compatibility.
+- **Code Quality**: TypeScript strict mode + Interface constraints + Error boundaries
 
 > 📖 **See Detailed Documentation**: [Architecture & Features Guide](./docs/ARCHITECTURE_AND_FEATURES.md) - Contains the complete technical architecture, API reference, and development guidelines.
 
@@ -439,6 +463,12 @@ You can try:
 - Check the extension's permission settings.
 - Try clearing your browser cache and retrying.
 
+#### 5. Content script functionality issues
+- Check if ContentManager service initializes properly
+- Look for service loading errors in the console
+- Verify configuration service and processing service status
+- Ensure the website is not in the blacklist
+
 ## 🤝 Contribution Guide
 
 We warmly welcome contributions of all kinds! Whether it's submitting a bug, proposing a new feature, or contributing code directly.
@@ -465,14 +495,14 @@ We warmly welcome contributions of all kinds! Whether it's submitting a bug, pro
 
 ### Development Guide
 
-- **Architectural Principles**: Follow the Provider Pattern and modular design, especially the Factory Pattern for the pronunciation system.
-- **Coding Standards**: Use TypeScript strict mode, format with ESLint + Prettier, and provide complete type definitions.
-- **Testing Requirements**: Ensure new features work correctly on multiple browsers and websites, especially in multi-language environments.
-- **Performance Considerations**: Pay attention to DOM manipulation efficiency, memory management, and multi-language caching strategies.
-- **API Compatibility**: Maintain backward compatibility with existing API interfaces and support configuration version migration.
-- **Multi-language Support**: When adding a new language, register it in `languageManager.ts` and test the translation effect.
-- **Pronunciation Feature**: When extending TTS services, implement the `ITTSProvider` interface and register it in the factory.
-- **Browser Compatibility**: New features need to be tested in Chrome, Edge, and Firefox.
+- **Architectural Principles**: Follow service-oriented architecture and modular design, especially the Factory Pattern for the pronunciation system
+- **Coding Standards**: TypeScript strict mode, ESLint + Prettier formatting, complete type definitions
+- **Testing Requirements**: Ensure new features work correctly on multiple browsers and websites, especially in multi-language environments
+- **Performance Considerations**: Pay attention to DOM manipulation efficiency, memory management, and multi-language caching strategies
+- **API Compatibility**: Maintain backward compatibility with existing API interfaces and support configuration version migration
+- **Multi-language Support**: When adding a new language, register it in languageManager.ts and test the translation effect
+- **Pronunciation Feature**: When extending TTS services, implement the ITTSProvider interface and register it in the factory
+- **Browser Compatibility**: New features need to be tested in Chrome, Edge, and Firefox
 
 > 📖 **Detailed Development Guide**: Check out the [Architecture & Features Guide](./docs/ARCHITECTURE_AND_FEATURES.md) for complete development environment setup, code structure explanations, and best practices.
 

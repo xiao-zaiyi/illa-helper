@@ -7,7 +7,12 @@ import { UserSettings, ContextMenuMessage } from '../../shared/types/storage';
 import { ContextMenuActionType, UrlPatternType } from '../../shared/types/core';
 
 // 重新导出导入的类型
-export type { UserSettings, ContextMenuMessage, ContextMenuActionType, UrlPatternType };
+export type {
+  UserSettings,
+  ContextMenuMessage,
+  ContextMenuActionType,
+  UrlPatternType,
+};
 
 // ==================== 消息类型定义 ====================
 
@@ -131,5 +136,3 @@ export interface MessagingServiceConfig {
   maxRetries?: number;
   enableBroadcast?: boolean;
 }
-
-

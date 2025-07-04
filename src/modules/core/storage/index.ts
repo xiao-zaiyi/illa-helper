@@ -4,10 +4,7 @@
  */
 
 // 服务类导出
-export {
-  default as StorageService,
-  storageService,
-} from './StorageService';
+export { default as StorageService, storageService } from './StorageService';
 
 // 类型定义导出
 export type {

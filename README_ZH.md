@@ -5,12 +5,13 @@
 </div>
 <div align="center">
 
-![Version](https://img.shields.io/github/package-json/v/xiao-zaiyi/illa-helper?color=blue)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
-![Status](https://img.shields.io/badge/status-stable-green)
-![Built with WXT](https://img.shields.io/badge/built%20with-WXT-blue)
-![Firefox Compatible](https://img.shields.io/badge/Firefox-compatible-orange)
+[![Stars](https://img.shields.io/github/stars/xiao-zaiyi/illa-helper?style=flat-square&logo=github&color=007EC6)](https://github.com/xiao-zaiyi/illa-helper/stargazers)
+[![Forks](https://img.shields.io/github/forks/xiao-zaiyi/illa-helper?style=flat-square&logo=github&color=007EC6)](https://github.com/xiao-zaiyi/illa-helper/network/members)
+[![License](https://img.shields.io/github/license/xiao-zaiyi/illa-helper?style=flat-square&logo=github&color=42c88c)](https://github.com/xiao-zaiyi/illa-helper/blob/main/LICENSE)
+[![Open Issues](https://img.shields.io/github/issues/xiao-zaiyi/illa-helper?style=flat-square&logo=github&color=orange)](https://github.com/xiao-zaiyi/illa-helper/issues)
+[![Release](https://img.shields.io/github/v/release/xiao-zaiyi/illa-helper?style=flat-square&logo=github&color=blueviolet)](https://github.com/xiao-zaiyi/illa-helper/releases)
+[![TwitterFollow](https://img.shields.io/twitter/follow/zaiyixiao?logo=x&color=007EC6&label=zaiyixiao)](https://x.com/zaiyixiao)
+
 <br/>
 <a href="https://hellogithub.com/repository/52653c92268d4024878a1a6781df9dd8" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=52653c92268d4024878a1a6781df9dd8&claim_uid=RfJtwvgkBr3MUGy&theme=small" alt="Featured｜HelloGitHub" /></a>
 </div>
@@ -18,6 +19,24 @@
 > 一款基于"可理解输入"理论的浏览器扩展，帮助你在日常网页浏览中自然地学习语言。
 
 简体中文 | [English](./README.md)
+
+## 🚀 快速安装
+
+### 📥 官方商店安装（推荐）
+
+#### Chrome/Edge 用户
+[![Chrome 应用商店](https://img.shields.io/badge/Chrome%20应用商店-可用-brightgreen?logo=googlechrome)](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)
+
+**[📥 从 Chrome 应用商店安装](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)**
+
+#### Firefox 用户
+[![Firefox 插件商店](https://img.shields.io/badge/Firefox%20插件商店-可用-orange?logo=firefox)](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)
+
+**[📥 从 Firefox 插件商店安装](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)**
+
+> 💡 **推荐**：官方商店安装是最简单的方式 - 一键安装且自动更新！
+
+---
 
 ## ✨ 核心理念
 
@@ -140,36 +159,18 @@
   <p><i>🧠 智能多语言: 支持20+种语言的AI自动检测和翻译，涵盖中文、英语、日语、韩语等主流学习语言</i></p>
 </div>
 
-## 🛠️ 安装与运行
+## 🛠️ 开发者安装
 
-### 🚀 快速安装（推荐）
-
-对于大多数用户，我们推荐直接从官方扩展商店安装：
-
-#### Chrome/Edge 用户
-[![Chrome 应用商店](https://img.shields.io/badge/Chrome%20应用商店-可用-brightgreen?logo=googlechrome)](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)
-
-**[📥 从 Chrome 应用商店安装](https://chromewebstore.google.com/detail/ekeljkknchehakckhghhkbalnnmgnche?utm_source=item-share-cb)**
-
-#### Firefox 用户
-[![Firefox 插件商店](https://img.shields.io/badge/Firefox%20插件商店-可用-orange?logo=firefox)](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)
-
-**[📥 从 Firefox 插件商店安装](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%B8%E5%85%A5%E5%BC%8F%E5%AD%A6%E8%AF%AD%E8%A8%80%E5%8A%A9%E6%89%8B/)**
-
-> 💡 **提示**: 官方商店安装是最简单的方式 - 一键安装且自动更新！
-
----
-
-### 🔧 手动安装（开发者）
+### 🔧 从源码构建（开发者）
 
 如果你想参与开发或需要从源码构建：
 
-### 1. 先决条件
+#### 1. 先决条件
 
 - [Node.js](https://nodejs.org/)（版本 18 或更高）
 - [npm](https://nodejs.org/) 或其他包管理器
 
-### 2. 安装
+#### 2. 安装
 
 1.  **克隆仓库:**
     
@@ -186,7 +187,7 @@
     
 > **提示**: 如果你只想使用这个扩展而不参与开发，请直接前往 [Releases](https://github.com/xiao-zaiyi/illa-helper/releases) 页面下载最新版本的打包文件。
 
-### 3. 配置
+#### 3. 配置
 
 项目通过 `.env` 文件管理本地开发环境的配置。
 
@@ -207,7 +208,7 @@
     ```
     > **注意**: `.env` 文件已被添加到 `.gitignore` 中，所以你的密钥不会被意外提交。
 
-### 4. 构建扩展
+#### 4. 构建扩展
 
 根据目标浏览器执行相应的构建命令：
 
@@ -223,9 +224,9 @@ npm run build:firefox
 npm run zip:firefox
 ```
 
-### 5. 加载扩展
+#### 5. 加载扩展
 
-#### Chrome/Edge安装
+##### Chrome/Edge安装
 1. 打开浏览器（Chrome、Edge等）
 2. 进入扩展管理页面（`chrome://extensions` 或 `edge://extensions`）
 3. 打开 **"开发者模式"**
@@ -233,7 +234,7 @@ npm run zip:firefox
 5. 选择项目根目录下的 `.output/chrome-mv3` 文件夹
 6. 完成！现在你应该能在浏览器工具栏看到扩展的图标了
 
-#### Firefox安装指南 <a id="firefox-安装指南"></a>
+##### Firefox安装指南 <a id="firefox-安装指南"></a>
 
 Firefox由于安全限制，需要特殊的安装步骤：
 
@@ -292,7 +293,21 @@ browser_specific_settings: {
 │       └── components/   # 设置页面组件 (内容无法获取)
 ├── images/               # 项目图片资源
 ├── lib/                  # 第三方库或辅助模块
-├── src/modules/          # 核心功能模块 (注意：由于环境限制，此目录下的详细结构未能完全验证)
+├── src/modules/          # 核心功能模块（现代化模块架构）
+│   ├── content/          # 📄 内容脚本模块（新增！服务化架构）
+│   │   ├── ContentManager.ts    # 主协调服务（生命周期管理）
+│   │   ├── services/     # 业务服务层
+│   │   │   ├── ConfigurationService.ts  # 配置管理服务
+│   │   │   ├── ProcessingService.ts     # 页面处理服务
+│   │   │   ├── ListenerService.ts       # 监听器服务
+│   │   │   └── index.ts  # 服务导出
+│   │   ├── utils/        # 工具函数层
+│   │   │   └── domUtils.ts  # DOM操作工具
+│   │   ├── types.ts      # 类型定义
+│   │   └── index.ts      # 模块入口
+│   ├── background/       # 🔧 后台服务模块
+│   │   ├── services/     # 后台服务集合
+│   │   └── types.ts      # 后台类型定义
 │   ├── pronunciation/    # 🔊 发音系统模块（完整生态系统）
 │   │   ├── phonetic/     # 音标获取服务（Dictionary API）
 │   │   ├── tts/          # 语音合成服务（有道TTS + Web Speech）
@@ -302,19 +317,18 @@ browser_specific_settings: {
 │   │   ├── utils/        # 工具函数库（DOM、定位、计时器）
 │   │   ├── config/       # 配置管理（常量、配置项）
 │   │   └── types/        # 类型定义（完整类型系统）
-│   ├── options/          # 设置管理模块
-│   │   └── blacklist/    # 网站黑名单功能
-│   ├── processing/       # 文本处理模块
-│   ├── floatingBall/     # 浮动球功能
-│   ├── api/              # AI翻译API服务模块
-│   ├── textProcessor.ts  # 智能文本处理器
-│   ├── textReplacer.ts   # 文本替换引擎
-│   ├── styleManager.ts   # 样式管理器
-│   ├── storageManager.ts # 配置存储管理
-│   ├── languageManager.ts# 多语言支持
-│   ├── promptManager.ts  # AI提示词管理
-│   ├── messaging.ts      # 消息传递系统
-│   └── types.ts          # 核心类型定义
+│   ├── core/             # 🎯 核心功能模块
+│   │   ├── translation/  # 翻译引擎（TextProcessor、TextReplacer）
+│   │   ├── storage/      # 存储管理（配置持久化）
+│   │   └── messaging/    # 消息传递系统
+│   ├── options/          # ⚙️ 设置管理模块
+│   │   └── website-management/ # 网站规则管理
+│   ├── processing/       # 📝 文本处理模块
+│   ├── floatingBall/     # ⚪ 浮动球功能
+│   ├── api/              # 🌐 AI翻译API服务模块
+│   ├── styles/           # 🎨 样式管理器
+│   ├── shared/           # 🔗 共享模块（类型、常量、工具）
+│   └── infrastructure/   # 🏗️ 基础设施（限流等）
 ├── public/               # 静态资源
 │   ├── icon/             # 扩展图标 (内容无法获取)
 │   ├── warning.png       # 通知图标
@@ -438,6 +452,12 @@ Safari需要额外的步骤将Web扩展打包为Safari扩展。请参考[Apple�
 - Firefox用户确认使用正确的安装方式
 - 检查扩展权限设置
 - 清除浏览器缓存后重试
+
+#### 5. 内容脚本功能异常
+- 检查ContentManager服务是否正常初始化
+- 查看控制台是否有服务加载错误
+- 验证配置服务和处理服务状态
+- 确认网站不在黑名单中
 
 
 ## 🤝 贡献指南

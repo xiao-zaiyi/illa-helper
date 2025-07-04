@@ -2,12 +2,10 @@
  * API代理服务 - 处理通过background的API请求，绕过CORS限制
  */
 
-import { browser } from 'wxt/browser';
 import {
   ApiRequestMessage,
   ApiResponse,
   ApiProxyServiceConfig,
-  ApiProxyError,
   BACKGROUND_CONSTANTS,
 } from '../types';
 
@@ -37,7 +35,9 @@ export class ApiProxyService {
   /**
    * 处理API请求
    */
-  public async handleApiRequest(message: ApiRequestMessage): Promise<ApiResponse> {
+  public async handleApiRequest(
+    message: ApiRequestMessage,
+  ): Promise<ApiResponse> {
     const { url, method, headers, body, timeout } = message.data;
     let timeoutId: NodeJS.Timeout | undefined;
 

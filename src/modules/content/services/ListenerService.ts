@@ -77,7 +77,10 @@ export class ListenerService implements IListenerService {
    * 处理消息
    */
   private async handleMessage(message: any): Promise<void> {
-    if (message.type === 'settings_updated' || message.type === 'api_config_updated') {
+    if (
+      message.type === 'settings_updated' ||
+      message.type === 'api_config_updated'
+    ) {
       await this.handleSettingsUpdate(message.settings);
     } else if (message.type === 'translate-page-command') {
       await this.processingService.processPage();
@@ -101,7 +104,8 @@ export class ListenerService implements IListenerService {
     const needsPageReload =
       this.settings.triggerMode !== newSettings.triggerMode ||
       this.settings.isEnabled !== newSettings.isEnabled ||
-      this.settings.enablePronunciationTooltip !== newSettings.enablePronunciationTooltip ||
+      this.settings.enablePronunciationTooltip !==
+        newSettings.enablePronunciationTooltip ||
       this.settings.translationDirection !== newSettings.translationDirection ||
       this.settings.userLevel !== newSettings.userLevel ||
       this.settings.useGptApi !== newSettings.useGptApi;
@@ -112,7 +116,11 @@ export class ListenerService implements IListenerService {
     }
 
     Object.assign(this.settings, newSettings);
-    this.configurationService.updateConfiguration(this.settings, this.styleManager, this.textReplacer);
+    this.configurationService.updateConfiguration(
+      this.settings,
+      this.styleManager,
+      this.textReplacer,
+    );
     this.processingService.updateSettings(this.settings);
     this.floatingBallManager.updateConfig(this.settings.floatingBall);
   }
@@ -140,7 +148,10 @@ export class ListenerService implements IListenerService {
               }
             }
           });
-        } else if (mutation.type === 'characterData' && mutation.target.parentElement) {
+        } else if (
+          mutation.type === 'characterData' &&
+          mutation.target.parentElement
+        ) {
           if (!isProcessingResultNode(mutation.target.parentElement)) {
             nodesToProcess.add(mutation.target.parentElement);
             hasValidChanges = true;
@@ -173,7 +184,10 @@ export class ListenerService implements IListenerService {
 
       const topLevelNodes = new Set<Node>();
       nodesToProcess.forEach((node) => {
-        if (document.body.contains(node) && !isDescendant(node, nodesToProcess)) {
+        if (
+          document.body.contains(node) &&
+          !isDescendant(node, nodesToProcess)
+        ) {
           topLevelNodes.add(node);
         }
       });

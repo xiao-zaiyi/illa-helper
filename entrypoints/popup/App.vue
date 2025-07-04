@@ -200,8 +200,12 @@ watch(
   },
 );
 
-const targetLanguageOptions = computed(() => languageService.getTargetLanguageOptions());
-const directionOptions = computed(() => languageService.getTranslationDirectionOptions());
+const targetLanguageOptions = computed(() =>
+  languageService.getTargetLanguageOptions(),
+);
+const directionOptions = computed(() =>
+  languageService.getTranslationDirectionOptions(),
+);
 
 const onTargetLanguageChange = (event: Event) => {
   const target = event.target as HTMLSelectElement;

@@ -83,7 +83,7 @@ export class LanguageService {
   /**
    * 私有构造函数，防止外部实例化
    */
-  private constructor() { }
+  private constructor() {}
 
   /**
    * 获取服务实例
@@ -317,8 +317,6 @@ export class LanguageService {
 
 // 单例实例导出
 export const languageService = LanguageService.getInstance();
-
-
 
 // 默认导出
 export default LanguageService;

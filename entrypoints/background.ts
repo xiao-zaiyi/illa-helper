@@ -6,12 +6,14 @@ import { browser } from 'wxt/browser';
 import { StorageService } from '@/src/modules/core/storage';
 import { ContextMenuManager } from '@/src/modules/contextMenu';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
-import { DEFAULT_SETTINGS } from '@/src/modules/shared/constants/defaults';
 import { NotificationService } from '@/src/modules/background/services/NotificationService';
 import { ApiProxyService } from '@/src/modules/background/services/ApiProxyService';
 import { CommandService } from '@/src/modules/background/services/CommandService';
 import { InitializationService } from '@/src/modules/background/services/InitializationService';
-import { MESSAGE_TYPES, BACKGROUND_CONSTANTS } from '@/src/modules/background/types';
+import {
+  MESSAGE_TYPES,
+  BACKGROUND_CONSTANTS,
+} from '@/src/modules/background/types';
 
 export default defineBackground(() => {
   // 服务实例
@@ -118,7 +120,9 @@ export default defineBackground(() => {
     } catch (error) {
       console.error('[Background] 无法打开popup:', error);
       // 回退到打开options页面
-      const optionsUrl = browser.runtime.getURL(BACKGROUND_CONSTANTS.OPTIONS_PATH);
+      const optionsUrl = browser.runtime.getURL(
+        BACKGROUND_CONSTANTS.OPTIONS_PATH,
+      );
       browser.tabs.create({ url: optionsUrl });
     }
   }
@@ -127,7 +131,9 @@ export default defineBackground(() => {
    * 处理打开选项页面消息
    */
   async function handleOpenOptions(): Promise<void> {
-    const optionsUrl = browser.runtime.getURL(BACKGROUND_CONSTANTS.OPTIONS_PATH);
+    const optionsUrl = browser.runtime.getURL(
+      BACKGROUND_CONSTANTS.OPTIONS_PATH,
+    );
     browser.tabs.create({ url: optionsUrl });
   }
 
@@ -136,7 +142,7 @@ export default defineBackground(() => {
    */
   function handleValidateConfiguration(
     message: any,
-    sendResponse: (response: boolean) => void
+    sendResponse: (response: boolean) => void,
   ): void {
     (async () => {
       try {
@@ -168,7 +174,7 @@ export default defineBackground(() => {
    */
   function handleApiRequest(
     message: any,
-    sendResponse: (response: any) => void
+    sendResponse: (response: any) => void,
   ): void {
     (async () => {
       try {

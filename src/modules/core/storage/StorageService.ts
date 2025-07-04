@@ -423,21 +423,18 @@ export class StorageService {
    * @returns 修复后的设置
    */
   private validateAndFixSettings(settings: UserSettings): UserSettings {
-    let hasChanges = false;
     const validatedSettings = { ...settings };
 
     try {
       // 确保必要字段存在
       if (!validatedSettings.apiConfigs) {
         validatedSettings.apiConfigs = DEFAULT_SETTINGS.apiConfigs;
-        hasChanges = true;
       }
 
       if (!validatedSettings.activeApiConfigId) {
         if (validatedSettings.apiConfigs.length > 0) {
           validatedSettings.activeApiConfigId =
             validatedSettings.apiConfigs[0].id;
-          hasChanges = true;
         }
       }
 
@@ -450,14 +447,13 @@ export class StorageService {
         if (!activeConfigExists && validatedSettings.apiConfigs.length > 0) {
           validatedSettings.activeApiConfigId =
             validatedSettings.apiConfigs[0].id;
-          hasChanges = true;
         }
       }
 
       // 验证其他必要字段
       if (!validatedSettings.multilingualConfig) {
-        validatedSettings.multilingualConfig = DEFAULT_SETTINGS.multilingualConfig;
-        hasChanges = true;
+        validatedSettings.multilingualConfig =
+          DEFAULT_SETTINGS.multilingualConfig;
       }
 
       return validatedSettings;
@@ -489,7 +485,6 @@ export class StorageService {
 
 // 单例实例导出
 export const storageService = StorageService.getInstance();
-
 
 // 默认导出
 export default StorageService;

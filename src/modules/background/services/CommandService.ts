@@ -67,7 +67,9 @@ export class CommandService {
   /**
    * 执行具体命令
    */
-  private async executeCommand(command: ExtensionCommand): Promise<CommandHandlerResult> {
+  private async executeCommand(
+    command: ExtensionCommand,
+  ): Promise<CommandHandlerResult> {
     switch (command) {
       case EXTENSION_COMMANDS.TRANSLATE_PAGE:
         return this.handleTranslatePageCommand();
@@ -211,7 +213,9 @@ export class CommandService {
   /**
    * 手动执行命令（供其他服务调用）
    */
-  public async executeManualCommand(command: ExtensionCommand): Promise<CommandHandlerResult> {
+  public async executeManualCommand(
+    command: ExtensionCommand,
+  ): Promise<CommandHandlerResult> {
     console.log(`[CommandService] 手动执行命令: ${command}`);
 
     if (!this.isCommandEnabled(command)) {
@@ -273,4 +277,4 @@ export class CommandService {
     console.log('[CommandService] 服务已销毁');
     CommandService.instance = null;
   }
-} 
+}

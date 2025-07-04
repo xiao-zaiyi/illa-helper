@@ -123,7 +123,9 @@ export class ContentManager implements IContentManager {
     // 创建服务实例
     const styleManager = new StyleManager();
 
-    const activeConfig = this.configurationService.getActiveApiConfig(this.settings);
+    const activeConfig = this.configurationService.getActiveApiConfig(
+      this.settings,
+    );
     const textProcessor = TextProcessorService.getInstance({
       enablePronunciationTooltip: this.settings.enablePronunciationTooltip,
       apiConfig: activeConfig?.config,
@@ -133,7 +135,9 @@ export class ContentManager implements IContentManager {
       this.configurationService.createReplacementConfig(this.settings),
     );
 
-    const floatingBallManager = new FloatingBallManager(this.settings.floatingBall);
+    const floatingBallManager = new FloatingBallManager(
+      this.settings.floatingBall,
+    );
 
     // 保存服务容器
     this.services = {

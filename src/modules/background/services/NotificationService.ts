@@ -35,12 +35,14 @@ export class NotificationService {
   /**
    * 显示基础通知
    */
-  public async showNotification(notificationConfig: NotificationConfig): Promise<string> {
+  public async showNotification(
+    notificationConfig: NotificationConfig,
+  ): Promise<string> {
     try {
-      // @ts-ignore - 临时忽略类型检查，WXT框架的类型定义问题
       const notificationId = await browser.notifications.create({
         type: 'basic',
-        iconUrl: notificationConfig.iconUrl || browser.runtime.getURL('/warning.png'),
+        iconUrl:
+          notificationConfig.iconUrl || browser.runtime.getURL('/warning.png'),
         title: notificationConfig.title,
         message: notificationConfig.message,
       });
@@ -49,7 +51,7 @@ export class NotificationService {
       console.error('创建通知失败:', error);
       throw new NotificationError(
         `创建通知失败: ${error instanceof Error ? error.message : '未知错误'}`,
-        { notificationConfig }
+        { notificationConfig },
       );
     }
   }
@@ -57,7 +59,9 @@ export class NotificationService {
   /**
    * 显示API配置错误通知
    */
-  public async showApiConfigError(source: 'user_action' | 'page_load'): Promise<void> {
+  public async showApiConfigError(
+    source: 'user_action' | 'page_load',
+  ): Promise<void> {
     const notificationConfig: NotificationConfig = {
       type: 'basic',
       title: '[浸入式学语言助手] API 配置错误',
@@ -87,7 +91,7 @@ export class NotificationService {
   public async showSuccessNotification(
     title: string,
     message: string,
-    iconUrl?: string
+    iconUrl?: string,
   ): Promise<string> {
     return this.showNotification({
       type: 'basic',
@@ -103,7 +107,7 @@ export class NotificationService {
   public async showErrorNotification(
     title: string,
     message: string,
-    error?: Error
+    error?: Error,
   ): Promise<string> {
     return this.showNotification({
       type: 'basic',
@@ -118,7 +122,7 @@ export class NotificationService {
    */
   public async showWarningNotification(
     title: string,
-    message: string
+    message: string,
   ): Promise<string> {
     const config: NotificationConfig = {
       type: 'basic',
@@ -137,7 +141,7 @@ export class NotificationService {
   public async showProgressNotification(
     title: string,
     message: string,
-    progress: number
+    progress: number,
   ): Promise<string> {
     const options = {
       type: 'progress' as chrome.notifications.TemplateType,
@@ -156,7 +160,7 @@ export class NotificationService {
       console.error('创建进度通知失败:', error);
       throw new NotificationError(
         `创建进度通知失败: ${error instanceof Error ? error.message : '未知错误'}`,
-        { title, message, progress }
+        { title, message, progress },
       );
     }
   }
@@ -167,7 +171,7 @@ export class NotificationService {
   public async updateProgressNotification(
     notificationId: string,
     progress: number,
-    message?: string
+    message?: string,
   ): Promise<void> {
     try {
       const updateOptions: chrome.notifications.NotificationOptions = {
@@ -184,7 +188,7 @@ export class NotificationService {
       console.error('更新进度通知失败:', error);
       throw new NotificationError(
         `更新进度通知失败: ${error instanceof Error ? error.message : '未知错误'}`,
-        { notificationId, progress, message }
+        { notificationId, progress, message },
       );
     }
   }
@@ -200,7 +204,7 @@ export class NotificationService {
       console.error('清除通知失败:', error);
       throw new NotificationError(
         `清除通知失败: ${error instanceof Error ? error.message : '未知错误'}`,
-        { notificationId }
+        { notificationId },
       );
     }
   }
@@ -211,15 +215,15 @@ export class NotificationService {
   public async clearAllNotifications(): Promise<void> {
     try {
       const notifications = await browser.notifications.getAll();
-      const clearPromises = Object.keys(notifications).map(id =>
-        this.clearNotification(id)
+      const clearPromises = Object.keys(notifications).map((id) =>
+        this.clearNotification(id),
       );
       await Promise.all(clearPromises);
       console.log('所有通知已清除');
     } catch (error) {
       console.error('清除所有通知失败:', error);
       throw new NotificationError(
-        `清除所有通知失败: ${error instanceof Error ? error.message : '未知错误'}`
+        `清除所有通知失败: ${error instanceof Error ? error.message : '未知错误'}`,
       );
     }
   }
@@ -229,7 +233,9 @@ export class NotificationService {
    */
   private async hasShownSessionNotification(): Promise<boolean> {
     try {
-      const result = await browser.storage.session.get(this.config.sessionStorageKey);
+      const result = await browser.storage.session.get(
+        this.config.sessionStorageKey,
+      );
       return !!result[this.config.sessionStorageKey];
     } catch (error) {
       console.error('检查会话通知状态失败:', error);
@@ -265,7 +271,7 @@ export class NotificationService {
    * 设置通知点击监听器
    */
   public setNotificationClickListener(
-    callback: (notificationId: string) => void
+    callback: (notificationId: string) => void,
   ): void {
     browser.notifications.onClicked.addListener(callback);
   }
@@ -274,7 +280,7 @@ export class NotificationService {
    * 设置通知按钮点击监听器
    */
   public setNotificationButtonClickListener(
-    callback: (notificationId: string, buttonIndex: number) => void
+    callback: (notificationId: string, buttonIndex: number) => void,
   ): void {
     if (browser.notifications.onButtonClicked) {
       browser.notifications.onButtonClicked.addListener(callback);
@@ -285,7 +291,7 @@ export class NotificationService {
    * 设置通知关闭监听器
    */
   public setNotificationCloseListener(
-    callback: (notificationId: string, byUser: boolean) => void
+    callback: (notificationId: string, byUser: boolean) => void,
   ): void {
     browser.notifications.onClosed.addListener(callback);
   }

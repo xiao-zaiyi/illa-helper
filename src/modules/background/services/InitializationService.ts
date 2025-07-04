@@ -34,7 +34,9 @@ export class InitializationService {
   /**
    * 处理扩展安装事件
    */
-  public async handleInstallation(details: chrome.runtime.InstalledDetails): Promise<InitializationResult> {
+  public async handleInstallation(
+    details: chrome.runtime.InstalledDetails,
+  ): Promise<InitializationResult> {
     const result: InitializationResult = {
       success: true,
       errors: [],
@@ -50,7 +52,9 @@ export class InitializationService {
       await this.initializeContextMenu(result);
     } catch (error) {
       result.success = false;
-      result.errors.push(`初始化失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      result.errors.push(
+        `初始化失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      );
     }
 
     return result;
@@ -59,18 +63,20 @@ export class InitializationService {
   /**
    * 首次安装设置
    */
-  private async performFirstTimeSetup(result: InitializationResult): Promise<void> {
+  private async performFirstTimeSetup(
+    result: InitializationResult,
+  ): Promise<void> {
     try {
       await this.storageService.saveUserSettings(DEFAULT_SETTINGS);
       console.log('默认设置已保存');
     } catch (error) {
-      result.errors.push('保存默认设置失败');
+      result.errors.push('保存默认设置失败' + error);
       // 回退方案
       try {
         await browser.storage.sync.set(DEFAULT_SETTINGS);
         result.warnings.push('使用了备用存储方式');
-      } catch (fallbackError) {
-        result.errors.push('备用存储方式也失败了');
+      } catch (error) {
+        result.errors.push('备用存储方式也失败了' + error);
       }
     }
   }
@@ -83,19 +89,21 @@ export class InitializationService {
       await this.createContextMenus();
       console.log('右键菜单初始化完成');
     } catch (error) {
-      result.errors.push('右键菜单初始化失败');
+      result.errors.push('右键菜单初始化失败' + error);
     }
   }
 
   /**
    * 初始化菜单管理器
    */
-  private async initializeContextMenu(result: InitializationResult): Promise<void> {
+  private async initializeContextMenu(
+    result: InitializationResult,
+  ): Promise<void> {
     try {
       await this.contextMenuManager.init();
       console.log('菜单管理器初始化完成');
     } catch (error) {
-      result.errors.push('菜单管理器初始化失败');
+      result.errors.push('菜单管理器初始化失败' + error);
     }
   }
 
@@ -122,11 +130,27 @@ export class InitializationService {
 
     // 其他菜单项...
     const menuItems = [
-      { id: 'illa-add-blacklist-domain', title: '添加域名到黑名单', visible: false },
-      { id: 'illa-add-blacklist-exact', title: '添加当前页面到黑名单', visible: false },
+      {
+        id: 'illa-add-blacklist-domain',
+        title: '添加域名到黑名单',
+        visible: false,
+      },
+      {
+        id: 'illa-add-blacklist-exact',
+        title: '添加当前页面到黑名单',
+        visible: false,
+      },
       { id: 'illa-remove-blacklist', title: '从黑名单中移除', visible: false },
-      { id: 'illa-add-whitelist-domain', title: '添加域名到白名单', visible: false },
-      { id: 'illa-add-whitelist-exact', title: '添加当前页面到白名单', visible: false },
+      {
+        id: 'illa-add-whitelist-domain',
+        title: '添加域名到白名单',
+        visible: false,
+      },
+      {
+        id: 'illa-add-whitelist-exact',
+        title: '添加当前页面到白名单',
+        visible: false,
+      },
       { id: 'illa-remove-whitelist', title: '从白名单中移除', visible: false },
     ];
 

@@ -379,5 +379,3 @@ export class TextProcessorService {
 export const getTextProcessorService = (config?: TextProcessorConfig) => {
   return TextProcessorService.getInstance(config);
 };
-
-

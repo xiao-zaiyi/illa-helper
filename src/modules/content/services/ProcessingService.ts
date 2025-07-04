@@ -1,8 +1,4 @@
-import {
-  UserSettings,
-  OriginalWordDisplayMode,
-  TranslationPosition
-} from '@/src/modules/shared/types';
+import { UserSettings } from '@/src/modules/shared/types';
 import { TextProcessorService } from '@/src/modules/core/translation/TextProcessorService';
 import { TextReplacerService } from '@/src/modules/core/translation/TextReplacerService';
 import { IProcessingService, ProcessingParams } from '../types';

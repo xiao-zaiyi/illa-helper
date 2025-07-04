@@ -21,7 +21,9 @@ import {
 // 默认API配置
 export const DEFAULT_API_CONFIG: ApiConfig = {
   apiKey: import.meta.env.VITE_WXT_DEFAULT_API_KEY || '',
-  apiEndpoint: import.meta.env.VITE_WXT_DEFAULT_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions',
+  apiEndpoint:
+    import.meta.env.VITE_WXT_DEFAULT_API_ENDPOINT ||
+    'https://api.openai.com/v1/chat/completions',
   model: import.meta.env.VITE_WXT_DEFAULT_MODEL || 'gpt-4o-mini',
   temperature: parseFloat(import.meta.env.VITE_WXT_DEFAULT_TEMPERATURE) || 0,
   enable_thinking: false,
@@ -44,8 +46,6 @@ export const DEFAULT_PRONUNCIATION_HOTKEY: TooltipHotkey = {
   modifierKeys: [],
   description: '快捷键',
 };
-
-
 
 // 默认悬浮球配置
 export const DEFAULT_FLOATING_BALL_CONFIG: FloatingBallConfig = {

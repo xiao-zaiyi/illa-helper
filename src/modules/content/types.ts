@@ -2,7 +2,7 @@ import {
   UserSettings,
   OriginalWordDisplayMode,
   TranslationPosition,
-  ReplacementConfig
+  ReplacementConfig,
 } from '@/src/modules/shared/types';
 import { StyleManager } from '@/src/modules/styles';
 import { TextProcessorService } from '@/src/modules/core/translation/TextProcessorService';
@@ -23,7 +23,11 @@ export interface IContentManager {
 export interface IConfigurationService {
   getUserSettings(): Promise<UserSettings>;
   createReplacementConfig(settings: UserSettings): ReplacementConfig;
-  updateConfiguration(settings: UserSettings, styleManager: StyleManager, textReplacer: TextReplacerService): void;
+  updateConfiguration(
+    settings: UserSettings,
+    styleManager: StyleManager,
+    textReplacer: TextReplacerService,
+  ): void;
 }
 
 /**
