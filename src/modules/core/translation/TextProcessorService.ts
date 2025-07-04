@@ -380,5 +380,4 @@ export const getTextProcessorService = (config?: TextProcessorConfig) => {
   return TextProcessorService.getInstance(config);
 };
 
-// 保持向后兼容：导出类的别名
-export const TextProcessor = TextProcessorService;
+

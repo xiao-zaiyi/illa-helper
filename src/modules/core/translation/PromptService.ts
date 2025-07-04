@@ -12,11 +12,7 @@
 
 import { UserLevel } from '../../shared/types/core';
 import { PromptConfig, PromptOptions } from './types';
-import {
-  getLanguageNames,
-  getTargetLanguageDisplayName,
-  LANGUAGES,
-} from './LanguageService';
+import { languageService } from './LanguageService';
 
 // ==================== 常量定义 ====================
 
@@ -52,7 +48,7 @@ export class PromptService {
   /**
    * 私有构造函数，防止外部实例化
    */
-  private constructor() {}
+  private constructor() { }
 
   /**
    * 获取服务实例
@@ -104,7 +100,7 @@ export class PromptService {
    */
   private generateIntelligentFormatExample(targetLanguage: string): string {
     // 从LANGUAGES对象动态获取目标语言的原生名称作为示例翻译
-    const targetLangInfo = LANGUAGES[targetLanguage];
+    const targetLangInfo = languageService.languages[targetLanguage];
     const exampleTranslation = targetLangInfo
       ? targetLangInfo.nativeName
       : 'target_translation';
@@ -118,7 +114,7 @@ export class PromptService {
    * @returns 任务指令字符串
    */
   private generateTraditionalTaskInstruction(direction: string): string {
-    const langNames = getLanguageNames(direction);
+    const langNames = languageService.getLanguageNames(direction);
 
     if (langNames) {
       const userDescription =
@@ -147,7 +143,7 @@ export class PromptService {
     level: UserLevel,
     replacementRate: number,
   ): string {
-    const targetLanguageName = getTargetLanguageDisplayName(targetLanguage);
+    const targetLanguageName = languageService.getTargetLanguageDisplayName(targetLanguage);
 
     // 核心任务指令
     const taskInstruction = `The user is a native speaker learning other languages. You will be provided with a text that could be in any language. Your task is to:
@@ -240,7 +236,7 @@ export class PromptService {
     level: UserLevel,
     replacementRate: number,
   ): string {
-    const targetLanguageName = getTargetLanguageDisplayName(targetLanguage);
+    const targetLanguageName = languageService.getTargetLanguageDisplayName(targetLanguage);
 
     const taskInstruction = `Your task is to act as a translation engine. You will be given a text in any language. Your goal is to select key words and phrases and provide their translations in ${targetLanguageName}.`;
 
@@ -252,8 +248,8 @@ export class PromptService {
   4.  **Content Purity**: The "translation" value must ONLY be the translated text. Do not add any explanations, comments, or extra information.
   5.  **Word Selection**: Adjust the number and difficulty of the selected words based on the user's learning level: ${UserLevel[level]}.
   6.  **Translation Rate**: The total length of the *original* words/phrases you select to translate should be approximately ${Math.round(
-    replacementRate * 100,
-  )}% of the total text length.
+      replacementRate * 100,
+    )}% of the total text length.
   `;
 
     const example = `
@@ -317,18 +313,7 @@ export class PromptService {
 // 单例实例导出
 export const promptService = PromptService.getInstance();
 
-// 向后兼容的函数导出
-export const getIntelligentSystemPrompt = (
-  targetLanguage: string,
-  level: UserLevel,
-  replacementRate: number,
-): string => {
-  return promptService.getIntelligentSystemPrompt(
-    targetLanguage,
-    level,
-    replacementRate,
-  );
-};
+
 
 export const getSystemPrompt = (
   direction: string,

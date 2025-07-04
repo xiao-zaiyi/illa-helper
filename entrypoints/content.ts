@@ -1,7 +1,4 @@
-import {
-  TextProcessor,
-  TextProcessorService,
-} from '@/src/modules/core/translation/TextProcessorService';
+import { TextProcessorService } from '@/src/modules/core/translation/TextProcessorService';
 import { StyleManager } from '@/src/modules/styles';
 import {
   UserSettings,
@@ -12,10 +9,7 @@ import {
   TranslationStyle,
 } from '@/src/modules/shared/types';
 import { StorageService } from '@/src/modules/core/storage';
-import {
-  TextReplacer,
-  TextReplacerService,
-} from '@/src/modules/core/translation/TextReplacerService';
+import { TextReplacerService } from '@/src/modules/core/translation/TextReplacerService';
 import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 export default defineContentScript({
@@ -58,11 +52,11 @@ export default defineContentScript({
     const activeConfig = settings.apiConfigs.find(
       (config) => config.id === settings.activeApiConfigId,
     );
-    const textProcessor = TextProcessor.getInstance({
+    const textProcessor = TextProcessorService.getInstance({
       enablePronunciationTooltip: settings.enablePronunciationTooltip,
       apiConfig: activeConfig?.config,
     });
-    const textReplacer = TextReplacer.getInstance(
+    const textReplacer = TextReplacerService.getInstance(
       createReplacementConfig(settings),
     );
     const floatingBallManager = new FloatingBallManager(settings.floatingBall);
@@ -202,7 +196,7 @@ function setupListeners(
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-          newSettings.enablePronunciationTooltip ||
+        newSettings.enablePronunciationTooltip ||
         settings.translationDirection !== newSettings.translationDirection ||
         settings.userLevel !== newSettings.userLevel ||
         settings.useGptApi !== newSettings.useGptApi;

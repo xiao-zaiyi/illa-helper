@@ -7,7 +7,6 @@
 export {
   default as StorageService,
   storageService,
-  StorageManager,
 } from './StorageService';
 
 // 类型定义导出

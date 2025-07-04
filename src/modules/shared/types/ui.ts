@@ -6,7 +6,6 @@
 // 快捷键配置接口
 export interface TooltipHotkey {
   enabled: boolean; // 是否启用快捷键要求
-  requireModifier: boolean; // 是否需要修饰键
   modifierKeys: string[]; // 修饰键数组 ['ctrl', 'alt', 'shift']
   key?: string; // 可选的附加键
   description?: string; // 快捷键描述

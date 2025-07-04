@@ -490,8 +490,6 @@ export class StorageService {
 // 单例实例导出
 export const storageService = StorageService.getInstance();
 
-// 向后兼容的类导出
-export const StorageManager = StorageService;
 
 // 默认导出
 export default StorageService;

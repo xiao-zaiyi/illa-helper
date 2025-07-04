@@ -1,333 +1,192 @@
+/**
+ * Background Script - 使用现代化服务架构
+ */
+
 import { browser } from 'wxt/browser';
-import { DEFAULT_SETTINGS } from '@/src/modules/shared/constants/defaults';
 import { StorageService } from '@/src/modules/core/storage';
 import { ContextMenuManager } from '@/src/modules/contextMenu';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
+import { DEFAULT_SETTINGS } from '@/src/modules/shared/constants/defaults';
+import { NotificationService } from '@/src/modules/background/services/NotificationService';
+import { ApiProxyService } from '@/src/modules/background/services/ApiProxyService';
+import { CommandService } from '@/src/modules/background/services/CommandService';
+import { InitializationService } from '@/src/modules/background/services/InitializationService';
+import { MESSAGE_TYPES, BACKGROUND_CONSTANTS } from '@/src/modules/background/types';
 
 export default defineBackground(() => {
-  // 初始化右键菜单管理器
+  // 服务实例
+  const storageService = StorageService.getInstance();
+  const notificationService = NotificationService.getInstance();
+  const apiProxyService = ApiProxyService.getInstance();
+  const commandService = CommandService.getInstance();
+  const initializationService = InitializationService.getInstance();
+
+  // 传统管理器（保持兼容性）
   const websiteManager = new WebsiteManager();
   const contextMenuManager = new ContextMenuManager(websiteManager);
 
-  // 在扩展首次安装时，设置默认值
+  /**
+   * 初始化所有服务
+   */
+  async function initializeServices(): Promise<void> {
+    try {
+      // 初始化命令服务
+      commandService.initialize();
+
+      console.log('[Background] 所有服务初始化完成');
+    } catch (error) {
+      console.error('[Background] 服务初始化失败:', error);
+    }
+  }
+
+  /**
+   * 处理扩展安装事件
+   */
   browser.runtime.onInstalled.addListener(async (details) => {
-    if (details.reason === 'install') {
-      try {
-        // 使用StorageService保存默认设置，确保使用序列化格式
-        const storageService = StorageService.getInstance();
-        await storageService.saveUserSettings(DEFAULT_SETTINGS);
-        console.log('DEFAULT_SETTINGS', DEFAULT_SETTINGS);
-      } catch (error) {
-        console.error('保存默认设置失败:', error);
-        // 回退到旧的保存方式
-        browser.storage.sync.set(DEFAULT_SETTINGS);
+    console.log(`[Background] 安装事件: ${details.reason}`);
+
+    try {
+      const result = await initializationService.handleInstallation(details);
+
+      if (result.success) {
+        console.log('[Background] 安装处理成功');
+        if (result.warnings.length > 0) {
+          console.warn('[Background] 安装警告:', result.warnings);
+        }
+      } else {
+        console.error('[Background] 安装处理失败:', result.errors);
       }
-    }
-
-    // 创建静态右键菜单结构
-    try {
-      await createContextMenus();
-      console.log('右键菜单初始化完成');
     } catch (error) {
-      console.error('右键菜单初始化失败:', error);
-    }
-
-    // 初始化菜单管理器
-    try {
-      await contextMenuManager.init();
-    } catch (error) {
-      console.error('菜单管理器初始化失败:', error);
+      console.error('[Background] 安装处理异常:', error);
     }
   });
 
+  /**
+   * 处理运行时消息
+   */
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'show-notification') {
-      browser.notifications.create(message.options);
-      return;
-    }
+    console.log(`[Background] 收到消息: ${message.type}`);
 
-    if (message.type === 'open-popup') {
-      // 打开扩展的popup界面
+    switch (message.type) {
+      case MESSAGE_TYPES.SHOW_NOTIFICATION:
+        handleShowNotification(message);
+        return false;
+
+      case MESSAGE_TYPES.OPEN_POPUP:
+        handleOpenPopup();
+        return false;
+
+      case MESSAGE_TYPES.OPEN_OPTIONS:
+        handleOpenOptions();
+        return false;
+
+      case MESSAGE_TYPES.VALIDATE_CONFIG:
+        handleValidateConfiguration(message, sendResponse);
+        return true; // 保持消息通道开放
+
+      case MESSAGE_TYPES.API_REQUEST:
+        handleApiRequest(message, sendResponse);
+        return true; // 保持消息通道开放
+
+      default:
+        console.warn(`[Background] 未知消息类型: ${message.type}`);
+        return false;
+    }
+  });
+
+  /**
+   * 处理显示通知消息
+   */
+  async function handleShowNotification(message: any): Promise<void> {
+    try {
+      await notificationService.showNotification({
+        type: 'basic',
+        title: message.options.title || '通知',
+        message: message.options.message || '',
+        iconUrl: message.options.iconUrl,
+      });
+    } catch (error) {
+      console.error('[Background] 显示通知失败:', error);
+    }
+  }
+
+  /**
+   * 处理打开popup消息
+   */
+  async function handleOpenPopup(): Promise<void> {
+    try {
+      browser.action.openPopup();
+    } catch (error) {
+      console.error('[Background] 无法打开popup:', error);
+      // 回退到打开options页面
+      const optionsUrl = browser.runtime.getURL(BACKGROUND_CONSTANTS.OPTIONS_PATH);
+      browser.tabs.create({ url: optionsUrl });
+    }
+  }
+
+  /**
+   * 处理打开选项页面消息
+   */
+  async function handleOpenOptions(): Promise<void> {
+    const optionsUrl = browser.runtime.getURL(BACKGROUND_CONSTANTS.OPTIONS_PATH);
+    browser.tabs.create({ url: optionsUrl });
+  }
+
+  /**
+   * 处理验证配置消息
+   */
+  function handleValidateConfiguration(
+    message: any,
+    sendResponse: (response: boolean) => void
+  ): void {
+    (async () => {
       try {
-        browser.action.openPopup();
-      } catch (error) {
-        console.error('无法打开popup:', error);
-        const optionsUrl = browser.runtime.getURL('/options.html');
-        browser.tabs.create({ url: optionsUrl });
-      }
-      return;
-    }
+        const settings = await storageService.getUserSettings();
 
-    if (message.type === 'validate-configuration') {
-      (async () => {
-        try {
-          // 使用StorageService获取设置
-          const storageService = StorageService.getInstance();
-          const settings = await storageService.getUserSettings();
+        // 检查多配置系统中的活跃配置
+        const activeConfig = settings.apiConfigs?.find(
+          (config) => config.id === settings.activeApiConfigId,
+        );
+        const isConfigValid = !!activeConfig?.config?.apiKey;
 
-          // 检查多配置系统中的活跃配置
-          const activeConfig = settings.apiConfigs?.find(
-            (config) => config.id === settings.activeApiConfigId,
-          );
-          const isConfigValid = !!activeConfig?.config?.apiKey;
-
-          if (isConfigValid) {
-            sendResponse(true);
-            return;
-          }
-        } catch (error) {
-          console.error('配置验证失败:', error);
-          sendResponse(false);
+        if (isConfigValid) {
+          sendResponse(true);
           return;
         }
 
-        // --- 无效配置处理 ---
-        const notificationOptions = {
-          type: 'basic' as const,
-          title: '[浸入式学语言助手] API 配置错误',
-          message: 'API 密钥未设置。请点击扩展图标进入设置页面进行配置。',
-          iconUrl: browser.runtime.getURL('/warning.png'),
-        };
-
-        if (message.source === 'user_action') {
-          browser.notifications.create(notificationOptions);
-        } else {
-          // 默认为 page_load 逻辑
-          const { apiKeyNotificationShown } = await browser.storage.session.get(
-            'apiKeyNotificationShown',
-          );
-          if (!apiKeyNotificationShown) {
-            browser.notifications.create(notificationOptions);
-            await browser.storage.session.set({
-              apiKeyNotificationShown: true,
-            });
-          }
-        }
+        // 配置无效时显示通知
+        await notificationService.showApiConfigError(message.source);
         sendResponse(false);
-      })();
-      return true;
-    }
-
-    // 打开options页面
-    if (message.type === 'open-options') {
-      const optionsUrl = browser.runtime.getURL('/options.html');
-      browser.tabs.create({ url: optionsUrl });
-      return;
-    }
-
-    // API请求代理 - 绕过CORS限制
-    if (message.type === 'api-request') {
-      (async () => {
-        try {
-          const { url, method, headers, body, timeout } = message.data;
-
-          // 创建AbortController用于超时控制
-          const controller = new AbortController();
-          let timeoutId: NodeJS.Timeout | undefined;
-
-          // 只有在timeout大于0时才设置超时
-          if (timeout && timeout > 0) {
-            timeoutId = setTimeout(() => controller.abort(), timeout);
-          }
-
-          const response = await fetch(url, {
-            method,
-            headers,
-            body,
-            signal: controller.signal,
-          });
-
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-          }
-
-          // 读取响应数据
-          const responseData = await response.text();
-          let parsedData;
-
-          try {
-            parsedData = JSON.parse(responseData);
-          } catch {
-            parsedData = responseData;
-          }
-
-          if (response.ok) {
-            sendResponse({
-              success: true,
-              data: parsedData,
-            });
-          } else {
-            sendResponse({
-              success: false,
-              error: {
-                message: `HTTP ${response.status}: ${response.statusText}`,
-                status: response.status,
-                statusText: response.statusText,
-              },
-            });
-          }
-        } catch (error: any) {
-          console.error('Background API请求失败:', error);
-
-          let errorMessage = '请求失败';
-          if (error.name === 'AbortError') {
-            errorMessage = '请求超时';
-          } else if (error.message) {
-            errorMessage = error.message;
-          }
-
-          sendResponse({
-            success: false,
-            error: {
-              message: errorMessage,
-            },
-          });
-        }
-      })();
-      return true; // 保持消息通道开放用于异步响应
-    }
-  });
-
-  browser.commands.onCommand.addListener(async (command) => {
-    if (command === 'translate-page') {
-      // 验证API配置
-      const isValid = await validateApiConfiguration();
-      if (!isValid) {
-        return;
-      }
-
-      try {
-        const tabs = await browser.tabs.query({
-          active: true,
-          currentWindow: true,
-        });
-        if (tabs[0]?.id) {
-          await browser.tabs.sendMessage(tabs[0].id, {
-            type: 'translate-page-command',
-          });
-        }
       } catch (error) {
-        console.error('[Background] 翻译整页失败:', error);
+        console.error('[Background] 配置验证失败:', error);
+        sendResponse(false);
       }
-    }
-  });
-
-  // 独立的API配置验证函数
-  async function validateApiConfiguration(): Promise<boolean> {
-    try {
-      const storageService = StorageService.getInstance();
-      const settings = await storageService.getUserSettings();
-
-      const activeConfig = settings.apiConfigs?.find(
-        (config) => config.id === settings.activeApiConfigId,
-      );
-      const isConfigValid = !!activeConfig?.config?.apiKey;
-
-      if (!isConfigValid) {
-        const notificationOptions = {
-          type: 'basic' as const,
-          title: '[浸入式学语言助手] API 配置错误',
-          message: 'API 密钥未设置。请点击扩展图标进入设置页面进行配置。',
-          iconUrl: browser.runtime.getURL('/warning.png'),
-        };
-        browser.notifications.create(notificationOptions);
-      }
-
-      return isConfigValid;
-    } catch (error) {
-      console.error('[Background] 配置验证失败:', error);
-      return false;
-    }
+    })();
   }
 
-  // 创建静态右键菜单结构 (V3兼容)
-  async function createContextMenus(): Promise<void> {
-    try {
-      // 清除可能存在的旧菜单项
-      await browser.contextMenus.removeAll();
-
-      // 主菜单项
-      await browser.contextMenus.create({
-        id: 'illa-website-management',
-        title: '浸入式学语言助手',
-        contexts: ['page'],
-      });
-
-      // 分隔符
-      await browser.contextMenus.create({
-        id: 'illa-separator',
-        type: 'separator',
-        parentId: 'illa-website-management',
-        contexts: ['page'],
-      });
-
-      // 黑名单相关菜单项
-      await browser.contextMenus.create({
-        id: 'illa-add-blacklist-domain',
-        title: '添加域名到黑名单',
-        parentId: 'illa-website-management',
-        contexts: ['page'],
-        visible: false,
-      });
-
-      await browser.contextMenus.create({
-        id: 'illa-add-blacklist-exact',
-        title: '添加当前页面到黑名单',
-        parentId: 'illa-website-management',
-        contexts: ['page'],
-        visible: false,
-      });
-
-      await browser.contextMenus.create({
-        id: 'illa-remove-blacklist',
-        title: '从黑名单中移除',
-        parentId: 'illa-website-management',
-        contexts: ['page'],
-        visible: false,
-      });
-
-      // 白名单相关菜单项
-      await browser.contextMenus.create({
-        id: 'illa-add-whitelist-domain',
-        title: '添加域名到白名单',
-        parentId: 'illa-website-management',
-        contexts: ['page'],
-        visible: false,
-      });
-
-      await browser.contextMenus.create({
-        id: 'illa-add-whitelist-exact',
-        title: '添加当前页面到白名单',
-        parentId: 'illa-website-management',
-        contexts: ['page'],
-        visible: false,
-      });
-
-      await browser.contextMenus.create({
-        id: 'illa-remove-whitelist',
-        title: '从白名单中移除',
-        parentId: 'illa-website-management',
-        contexts: ['page'],
-        visible: false,
-      });
-
-      // 设置相关菜单项
-      await browser.contextMenus.create({
-        id: 'illa-settings-separator',
-        type: 'separator',
-        parentId: 'illa-website-management',
-        contexts: ['page'],
-      });
-
-      await browser.contextMenus.create({
-        id: 'illa-open-settings',
-        title: '网站管理设置',
-        parentId: 'illa-website-management',
-        contexts: ['page'],
-      });
-    } catch (error) {
-      console.error('创建右键菜单失败:', error);
-      throw error;
-    }
+  /**
+   * 处理API请求消息
+   */
+  function handleApiRequest(
+    message: any,
+    sendResponse: (response: any) => void
+  ): void {
+    (async () => {
+      try {
+        const response = await apiProxyService.handleApiRequest(message);
+        sendResponse(response);
+      } catch (error) {
+        console.error('[Background] API请求处理失败:', error);
+        sendResponse({
+          success: false,
+          error: {
+            message: error instanceof Error ? error.message : '未知错误',
+          },
+        });
+      }
+    })();
   }
+
+  // 初始化服务
+  initializeServices();
 });

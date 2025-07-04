@@ -83,7 +83,7 @@ export class LanguageService {
   /**
    * 私有构造函数，防止外部实例化
    */
-  private constructor() {}
+  private constructor() { }
 
   /**
    * 获取服务实例
@@ -318,39 +318,7 @@ export class LanguageService {
 // 单例实例导出
 export const languageService = LanguageService.getInstance();
 
-// 向后兼容的常量和函数导出
-export const LANGUAGES = languageService.languages;
 
-export const getTargetLanguageOptions = (): LanguageOption[] => {
-  return languageService.getTargetLanguageOptions();
-};
-
-export const isIntelligentModeEnabled = (
-  config: MultilingualConfig,
-): boolean => {
-  return languageService.isIntelligentModeEnabled(config);
-};
-
-export const getTargetLanguageDisplayName = (languageCode: string): string => {
-  return languageService.getTargetLanguageDisplayName(languageCode);
-};
-
-export const getTranslationDirectionOptions =
-  (): TranslationDirectionOption[] => {
-    return languageService.getTranslationDirectionOptions();
-  };
-
-export const getLanguageNames = (direction: string): LanguageNames | null => {
-  return languageService.getLanguageNames(direction);
-};
-
-export const isSupportedLanguage = (languageCode: string): boolean => {
-  return languageService.isSupportedLanguage(languageCode);
-};
-
-export const normalizeLanguageCode = (languageCode: string): string => {
-  return languageService.normalizeLanguageCode(languageCode);
-};
 
 // 默认导出
 export default LanguageService;

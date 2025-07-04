@@ -129,11 +129,4 @@ export interface MessagingServiceConfig {
   enableBroadcast?: boolean;
 }
 
-// ==================== 导出汇总 ====================
 
-export type {
-  UserSettings,
-  ContextMenuMessage,
-  ContextMenuActionType,
-  UrlPatternType,
-};

@@ -15,16 +15,13 @@ import {
   UserSettings,
   OriginalWordDisplayMode,
   DEFAULT_MULTILINGUAL_CONFIG,
-  DEFAULT_TOOLTIP_HOTKEY,
+  DEFAULT_PRONUNCIATION_HOTKEY,
   DEFAULT_FLOATING_BALL_CONFIG,
 } from '@/src/modules/shared/types';
 import { getUserLevelOptions } from '@/src/utils';
 import { StorageService } from '@/src/modules/core/storage';
 import { notifySettingsChanged } from '@/src/modules/core/messaging';
-import {
-  getTranslationDirectionOptions,
-  getTargetLanguageOptions,
-} from '@/src/modules/core/translation/LanguageService';
+import { languageService } from '@/src/modules/core/translation/LanguageService';
 import {
   ExternalLink,
   Zap as ZapIcon,
@@ -33,10 +30,12 @@ import {
 } from 'lucide-vue-next';
 import { testApiConnection, ApiTestResult } from '@/src/utils';
 
+// 服务实例
+const storageService = StorageService.getInstance();
+
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
 
 onMounted(async () => {
-  const storageService = StorageService.getInstance();
   const loadedSettings = await storageService.getUserSettings();
 
   // 确保所有配置项存在
@@ -44,7 +43,7 @@ onMounted(async () => {
     loadedSettings.multilingualConfig = { ...DEFAULT_MULTILINGUAL_CONFIG };
   }
   if (!loadedSettings.pronunciationHotkey) {
-    loadedSettings.pronunciationHotkey = { ...DEFAULT_TOOLTIP_HOTKEY };
+    loadedSettings.pronunciationHotkey = { ...DEFAULT_PRONUNCIATION_HOTKEY };
   }
   if (!loadedSettings.floatingBall) {
     loadedSettings.floatingBall = { ...DEFAULT_FLOATING_BALL_CONFIG };
@@ -139,7 +138,6 @@ const saveAndNotifySettings = async () => {
       return;
     }
 
-    const storageService = StorageService.getInstance();
     await storageService.saveUserSettings(settings.value);
     await notifySettingsChanged(settings.value);
     showSavedMessage('设置已保存');
@@ -202,8 +200,8 @@ watch(
   },
 );
 
-const targetLanguageOptions = computed(() => getTargetLanguageOptions());
-const directionOptions = computed(() => getTranslationDirectionOptions());
+const targetLanguageOptions = computed(() => languageService.getTargetLanguageOptions());
+const directionOptions = computed(() => languageService.getTranslationDirectionOptions());
 
 const onTargetLanguageChange = (event: Event) => {
   const target = event.target as HTMLSelectElement;
@@ -221,7 +219,6 @@ const activeConfig = computed(() => {
 
 const handleActiveConfigChange = async () => {
   try {
-    const storageService = StorageService.getInstance();
     await storageService.setActiveApiConfig(settings.value.activeApiConfigId);
 
     // 重新加载完整设置以确保同步

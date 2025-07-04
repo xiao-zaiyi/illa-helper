@@ -4,7 +4,7 @@
 
 import { CACHE_CONSTANTS, PROVIDER_CONSTANTS } from './constants';
 import type { TooltipHotkey } from '../../shared/types/ui';
-import { DEFAULT_TOOLTIP_HOTKEY } from '../../shared/constants/defaults';
+import { DEFAULT_PRONUNCIATION_HOTKEY } from '../../shared/constants/defaults';
 
 // TTS配置
 export interface TTSConfig {
@@ -54,7 +54,7 @@ export const DEFAULT_UI_CONFIG: PronunciationUIConfig = {
   showPlayButton: true,
   tooltipEnabled: true,
   inlineDisplay: false, // 禁用内联显示，只在悬浮框中显示
-  hotkey: DEFAULT_TOOLTIP_HOTKEY,
+  hotkey: DEFAULT_PRONUNCIATION_HOTKEY,
 };
 
 // 默认发音配置
