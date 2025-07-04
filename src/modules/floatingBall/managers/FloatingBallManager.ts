@@ -15,6 +15,8 @@ import {
   MENU_ACTIONS,
 } from '../config';
 import { safeSetInnerHTML } from '@/src/utils';
+// 引入黑名单管理
+import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 
 export class FloatingBallManager {
   private config: FloatingBallConfig;
@@ -39,6 +41,7 @@ export class FloatingBallManager {
   // 菜单悬停相关
   private menuHoverTimer: number | null = null;
   private menuItemsEventsBound = false; // 防止重复绑定菜单项事件
+  private websiteManager = new WebsiteManager();
 
   constructor(config: FloatingBallConfig) {
     this.config = config;
@@ -1051,6 +1054,9 @@ export class FloatingBallManager {
       case 'close':
         this.closeBall();
         break;
+      case 'blacklist':
+        this.addBlackList();
+        break;
       case 'options':
         this.openOptions();
         break;
@@ -1081,6 +1087,34 @@ export class FloatingBallManager {
       console.error('打开选项失败:', error);
     }
   }
+
+  /**
+  * 加入黑名单
+  */
+  private async addBlackList(): Promise<void> {
+    try {
+      // 获取当前页面的url
+      const currentUrl = window.location.href;
+      const isBlocked = await this.websiteManager.isBlacklisted(currentUrl);
+      if (isBlocked) {
+        console.log('当前页面已在黑名单中');
+        alert('当前页面已在黑名单中')
+        return;
+      }
+      // 直接屏蔽整个网站
+      const pattern = '*://' + window.location.host + '/*';
+      this.websiteManager.addRule(pattern, 'blacklist');
+      // 提示并刷新页面，用户点确定就刷新，点取消不刷新
+      const userChoice = confirm('已将' + window.location.host + '网站加入黑名单，是否现在刷新页面？');
+      if (userChoice) {
+        window.location.reload();
+      }
+    }
+    catch (error) {
+      console.error('加入黑名单失败:', error);
+    }
+  }
+
 
   /**
    * 关闭悬浮球
