@@ -101,7 +101,8 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import { StorageManager } from '@/src/modules/storageManager';
-import { UserSettings, DEFAULT_SETTINGS } from '@/src/modules/types';
+import { UserSettings } from '@/src/modules/shared/types/storage';
+import { DEFAULT_SETTINGS } from '@/src/modules/shared/constants/defaults';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';

@@ -2,7 +2,8 @@
  * OpenAI 翻译提供者
  */
 
-import { UserSettings, FullTextAnalysisResponse } from '../../types';
+import { FullTextAnalysisResponse } from '../../shared/types/api';
+import { UserSettings } from '../../shared/types/storage';
 import { BaseProvider } from '../base/BaseProvider';
 import { mergeCustomParams } from '../utils/apiUtils';
 import { addPositionsToReplacements } from '../utils/textUtils';

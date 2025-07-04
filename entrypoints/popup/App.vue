@@ -17,7 +17,7 @@ import {
   DEFAULT_MULTILINGUAL_CONFIG,
   DEFAULT_TOOLTIP_HOTKEY,
   DEFAULT_FLOATING_BALL_CONFIG,
-} from '@/src/modules/types';
+} from '@/src/modules/shared/types';
 import { getUserLevelOptions } from '@/src/utils';
 import { StorageManager } from '@/src/modules/storageManager';
 import { notifySettingsChanged } from '@/src/modules/messaging';

@@ -2,7 +2,8 @@
  * API 服务工厂
  */
 
-import { ApiConfigItem, TranslationProvider } from '../../types';
+import { ApiConfigItem } from '../../shared/types/api';
+import { TranslationProvider } from '../../shared/types/core';
 import { ITranslationProvider } from '../types';
 import { GoogleGeminiProvider, OpenAIProvider } from '../providers';
 

@@ -2,7 +2,7 @@
  * 悬浮球配置
  */
 
-import type { FloatingBallConfig } from '../types';
+import type { FloatingBallConfig } from '../../shared/types/ui';
 
 // 默认悬浮球配置
 export const DEFAULT_FLOATING_BALL_CONFIG: FloatingBallConfig = {

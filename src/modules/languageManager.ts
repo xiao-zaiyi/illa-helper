@@ -1,4 +1,4 @@
-import { LanguageOption, MultilingualConfig } from './types';
+import { LanguageOption, MultilingualConfig } from './shared/types/api';
 
 export interface Language {
   code: string; // e.g., 'en', 'zh', 'ja'

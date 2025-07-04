@@ -1,5 +1,5 @@
 import { TextProcessor } from '@/src/modules/textProcessor';
-import { StyleManager } from '@/src/modules/styleManager';
+import { StyleManager } from '@/src/modules/styles';
 import {
   UserSettings,
   TriggerMode,
@@ -7,7 +7,7 @@ import {
   OriginalWordDisplayMode,
   TranslationPosition,
   TranslationStyle,
-} from '@/src/modules/types';
+} from '@/src/modules/shared/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { TextReplacer } from '@/src/modules/textReplacer';
 import { FloatingBallManager } from '@/src/modules/floatingBall';

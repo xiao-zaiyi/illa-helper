@@ -6,7 +6,8 @@
 import { StorageManager } from '../../storageManager';
 import { sendApiRequest } from '../utils/requestUtils';
 import { mergeCustomParams } from '../utils/apiUtils';
-import { ApiConfigItem, ApiConfig, TranslationProvider } from '../../types';
+import { ApiConfigItem, ApiConfig } from '../../shared/types/api';
+import { TranslationProvider } from '../../shared/types/core';
 import { getApiTimeout } from '@/src/utils';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 

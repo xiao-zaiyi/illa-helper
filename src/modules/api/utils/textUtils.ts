@@ -2,7 +2,7 @@
  * 文本处理工具函数
  */
 
-import { Replacement } from '../../types';
+import { Replacement } from '../../shared/types/api';
 
 /**
  * 为替换项添加位置信息

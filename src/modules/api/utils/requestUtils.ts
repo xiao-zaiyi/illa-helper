@@ -2,7 +2,7 @@
  * 请求处理工具函数
  */
 
-import { ApiConfig } from '../../types';
+import { ApiConfig } from '../../shared/types/api';
 import { BackgroundProxyResponse } from '../types';
 
 /**

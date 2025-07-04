@@ -13,7 +13,10 @@ import {
   generateRuleDescription,
   validateUrlForRule,
 } from '../options/website-management/utils';
-import type { ContextMenuActionType, UrlPatternType } from '../types';
+import type {
+  ContextMenuActionType,
+  UrlPatternType,
+} from '../shared/types/core';
 
 export class ContextMenuManager {
   private websiteManager: WebsiteManager;

@@ -201,13 +201,13 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
 import { StorageManager } from '@/src/modules/storageManager';
-import { StyleManager } from '@/src/modules/styleManager';
+import { StyleManager } from '@/src/modules/styles';
 import {
   UserSettings,
   DEFAULT_SETTINGS,
   TranslationPosition,
   TranslationStyle,
-} from '@/src/modules/types';
+} from '@/src/modules/shared/types';
 import { getUserLevelLabel } from '@/src/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';

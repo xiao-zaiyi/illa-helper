@@ -3,12 +3,8 @@
  * Handles communication between different parts of the extension.
  */
 
-import {
-  UserSettings,
-  ContextMenuMessage,
-  ContextMenuActionType,
-  UrlPatternType,
-} from './types';
+import { UserSettings, ContextMenuMessage } from './shared/types/storage';
+import { ContextMenuActionType, UrlPatternType } from './shared/types/core';
 import { browser } from 'wxt/browser';
 
 /**

@@ -1,4 +1,4 @@
-import { UserLevel } from './types';
+import { UserLevel } from './shared/types/core';
 import {
   getLanguageNames,
   getTargetLanguageDisplayName,

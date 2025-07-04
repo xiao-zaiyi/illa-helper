@@ -2,7 +2,8 @@
  * API模块类型定义
  */
 
-import { UserSettings, FullTextAnalysisResponse } from '../types';
+import { FullTextAnalysisResponse } from '../shared/types/api';
+import { UserSettings } from '../shared/types/storage';
 
 /**
  * 翻译提供者接口
