@@ -1,4 +1,7 @@
-import { TextProcessor, TextProcessorService } from '@/src/modules/core/translation/TextProcessorService';
+import {
+  TextProcessor,
+  TextProcessorService,
+} from '@/src/modules/core/translation/TextProcessorService';
 import { StyleManager } from '@/src/modules/styles';
 import {
   UserSettings,
@@ -8,8 +11,11 @@ import {
   TranslationPosition,
   TranslationStyle,
 } from '@/src/modules/shared/types';
-import { StorageManager } from '@/src/modules/storageManager';
-import { TextReplacer, TextReplacerService } from '@/src/modules/core/translation/TextReplacerService';
+import { StorageService } from '@/src/modules/core/storage';
+import {
+  TextReplacer,
+  TextReplacerService,
+} from '@/src/modules/core/translation/TextReplacerService';
 import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 export default defineContentScript({
@@ -18,8 +24,8 @@ export default defineContentScript({
 
   // 主函数
   async main() {
-    const storageManager = new StorageManager();
-    const settings = await storageManager.getUserSettings();
+    const storageService = StorageService.getInstance();
+    const settings = await storageService.getUserSettings();
 
     // 网站规则检查
     const websiteManager = new WebsiteManager();
@@ -56,7 +62,9 @@ export default defineContentScript({
       enablePronunciationTooltip: settings.enablePronunciationTooltip,
       apiConfig: activeConfig?.config,
     });
-    const textReplacer = TextReplacer.getInstance(createReplacementConfig(settings));
+    const textReplacer = TextReplacer.getInstance(
+      createReplacementConfig(settings),
+    );
     const floatingBallManager = new FloatingBallManager(settings.floatingBall);
 
     // --- 应用初始配置 ---
@@ -194,7 +202,7 @@ function setupListeners(
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-        newSettings.enablePronunciationTooltip ||
+          newSettings.enablePronunciationTooltip ||
         settings.translationDirection !== newSettings.translationDirection ||
         settings.userLevel !== newSettings.userLevel ||
         settings.useGptApi !== newSettings.useGptApi;

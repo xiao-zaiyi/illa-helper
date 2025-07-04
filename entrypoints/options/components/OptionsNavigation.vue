@@ -18,7 +18,10 @@
     >
       <!-- 顶部Logo区域 -->
       <div class="h-16 flex items-center px-6 border-b border-sidebar-border">
-        <div class="flex items-center space-x-3 cursor-pointer" @click="handleLogoClick">
+        <div
+          class="flex items-center space-x-3 cursor-pointer"
+          @click="handleLogoClick"
+        >
           <img src="/assets/vue.svg" alt="logo" class="w-8 h-8" />
           <div class="py-4">
             <h4

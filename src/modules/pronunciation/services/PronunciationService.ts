@@ -17,7 +17,7 @@ import {
 } from '../config';
 import { ApiConfig } from '../../shared/types/api';
 import { DEFAULT_API_CONFIG } from '../../shared/constants/defaults';
-import { StorageManager } from '../../storageManager';
+import { StorageService } from '../../core/storage';
 import { safeSetInnerHTML } from '@/src/utils';
 
 /**
@@ -179,8 +179,8 @@ export class PronunciationService {
   /** 当前主悬浮框对应的元素 */
   private currentMainElement: HTMLElement | null = null;
 
-  /** StorageManager实例，用于获取用户设置 */
-  private storageManager: StorageManager;
+  /** StorageService实例，用于获取用户设置 */
+  private storageService: StorageService;
 
   /** 跟踪Ctrl键是否被按下 */
   private isCtrlPressed = false;
@@ -201,7 +201,7 @@ export class PronunciationService {
     const effectiveApiConfig = apiConfig || DEFAULT_API_CONFIG;
     this.aiTranslationProvider = new AITranslationProvider(effectiveApiConfig);
     this.tooltipRenderer = new TooltipRenderer(this.config.uiConfig);
-    this.storageManager = new StorageManager();
+    this.storageService = StorageService.getInstance();
 
     // 始终创建Web Speech作为备用TTS提供者
     this.fallbackTTSProvider = TTSProviderFactory.createProvider('web-speech', {
@@ -510,7 +510,7 @@ export class PronunciationService {
     try {
       // 如果提供了参数，直接使用；否则从存储获取
       const configToUse =
-        apiConfig || (await this.storageManager.getActiveApiConfig());
+        apiConfig || (await this.storageService.getActiveApiConfig());
       if (configToUse) {
         this.aiTranslationProvider.updateApiConfig(configToUse);
         console.log('API配置已更新');
@@ -656,8 +656,8 @@ export class PronunciationService {
    */
   private async checkHotkey(): Promise<boolean> {
     try {
-      // 使用直接导入的StorageManager
-      const userSettings = await this.storageManager.getUserSettings();
+      // 使用直接导入的StorageService
+      const userSettings = await this.storageService.getUserSettings();
       const hotkey = userSettings.pronunciationHotkey;
 
       // 如果没有配置或未启用快捷键，直接允许
@@ -1316,7 +1316,7 @@ export class PronunciationService {
       this.isCtrlPressed = true;
 
       // 检查热键是否启用
-      const userSettings = await this.storageManager.getUserSettings();
+      const userSettings = await this.storageService.getUserSettings();
       const hotkey = userSettings.pronunciationHotkey;
       if (!hotkey || !hotkey.enabled) {
         return;

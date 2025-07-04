@@ -100,7 +100,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import { StorageManager } from '@/src/modules/storageManager';
+import { StorageService } from '@/src/modules/core/storage';
 import { UserSettings } from '@/src/modules/shared/types/storage';
 import { DEFAULT_SETTINGS } from '@/src/modules/shared/constants/defaults';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -109,20 +109,20 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 
 const settings = ref<UserSettings>(DEFAULT_SETTINGS);
-const storageManager = new StorageManager();
+const storageService = StorageService.getInstance();
 
 const emit = defineEmits<{
   saveMessage: [message: string];
 }>();
 
 onMounted(async () => {
-  settings.value = await storageManager.getUserSettings();
+  settings.value = await storageService.getUserSettings();
 });
 
 watch(
   settings,
   async (newSettings) => {
-    await storageManager.saveUserSettings(newSettings);
+    await storageService.saveUserSettings(newSettings);
     emit('saveMessage', '设置已保存');
     browser.runtime.sendMessage({
       type: 'settings_updated',

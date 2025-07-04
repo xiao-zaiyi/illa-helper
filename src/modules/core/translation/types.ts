@@ -8,14 +8,14 @@ import {
   FullTextAnalysisResponse,
   ApiConfig,
   LanguageOption,
-  MultilingualConfig
+  MultilingualConfig,
 } from '../../shared/types/api';
 import { UserSettings } from '../../shared/types/storage';
 import {
   UserLevel,
   OriginalWordDisplayMode,
   TranslationPosition,
-  TranslationStyle
+  TranslationStyle,
 } from '../../shared/types/core';
 
 // ==================== 文本替换服务类型 ====================
@@ -184,5 +184,5 @@ export type {
   UserLevel,
   OriginalWordDisplayMode,
   TranslationPosition,
-  TranslationStyle
+  TranslationStyle,
 };

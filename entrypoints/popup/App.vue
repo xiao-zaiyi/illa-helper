@@ -19,8 +19,8 @@ import {
   DEFAULT_FLOATING_BALL_CONFIG,
 } from '@/src/modules/shared/types';
 import { getUserLevelOptions } from '@/src/utils';
-import { StorageManager } from '@/src/modules/storageManager';
-import { notifySettingsChanged } from '@/src/modules/messaging';
+import { StorageService } from '@/src/modules/core/storage';
+import { notifySettingsChanged } from '@/src/modules/core/messaging';
 import {
   getTranslationDirectionOptions,
   getTargetLanguageOptions,
@@ -36,8 +36,8 @@ import { testApiConnection, ApiTestResult } from '@/src/utils';
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
 
 onMounted(async () => {
-  const storageManager = new StorageManager();
-  const loadedSettings = await storageManager.getUserSettings();
+  const storageService = StorageService.getInstance();
+  const loadedSettings = await storageService.getUserSettings();
 
   // 确保所有配置项存在
   if (!loadedSettings.multilingualConfig) {
@@ -139,8 +139,8 @@ const saveAndNotifySettings = async () => {
       return;
     }
 
-    const storageManager = new StorageManager();
-    await storageManager.saveUserSettings(settings.value);
+    const storageService = StorageService.getInstance();
+    await storageService.saveUserSettings(settings.value);
     await notifySettingsChanged(settings.value);
     showSavedMessage('设置已保存');
   } catch (error) {
@@ -221,11 +221,11 @@ const activeConfig = computed(() => {
 
 const handleActiveConfigChange = async () => {
   try {
-    const storageManager = new StorageManager();
-    await storageManager.setActiveApiConfig(settings.value.activeApiConfigId);
+    const storageService = StorageService.getInstance();
+    await storageService.setActiveApiConfig(settings.value.activeApiConfigId);
 
     // 重新加载完整设置以确保同步
-    const updatedSettings = await storageManager.getUserSettings();
+    const updatedSettings = await storageService.getUserSettings();
     Object.assign(settings.value, updatedSettings);
 
     // 通知content script配置已更新

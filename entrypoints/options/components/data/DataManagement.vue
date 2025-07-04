@@ -44,14 +44,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { StorageManager } from '@/src/modules/storageManager';
+import { StorageService } from '@/src/modules/core/storage';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Download, Upload } from 'lucide-vue-next';
 
-const storageManager = new StorageManager();
+const storageService = StorageService.getInstance();
 const websiteManager = new WebsiteManager();
 const selectedFile = ref<File | null>(null);
 
@@ -61,7 +61,7 @@ const emit = defineEmits<{
 
 const exportSettings = async () => {
   try {
-    const settings = await storageManager.getUserSettings();
+    const settings = await storageService.getUserSettings();
     const websiteRules = await websiteManager.getRules();
 
     const exportData = {
@@ -123,7 +123,7 @@ const importSettings = async () => {
       // 检查数据格式并导入
       if (importedData.version === '2.0' && importedData.userSettings) {
         // 新格式：包含完整数据
-        await storageManager.saveUserSettings(importedData.userSettings);
+        await storageService.saveUserSettings(importedData.userSettings);
         importStats.settings = true;
 
         // 导入网站管理数据
@@ -151,7 +151,7 @@ const importSettings = async () => {
         importedData.apiConfigs !== undefined
       ) {
         // 旧格式：只有用户设置
-        await storageManager.saveUserSettings(importedData);
+        await storageService.saveUserSettings(importedData);
         importStats.settings = true;
 
         emit('saveMessage', '用户设置已成功导入！', 'success');

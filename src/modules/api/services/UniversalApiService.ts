@@ -3,7 +3,7 @@
  * 提供简单易用的大模型调用接口，适用于各种业务场景
  */
 
-import { StorageManager } from '../../storageManager';
+import { StorageService } from '../../core/storage';
 import { sendApiRequest } from '../utils/requestUtils';
 import { mergeCustomParams } from '../utils/apiUtils';
 import { ApiConfigItem, ApiConfig } from '../../shared/types/api';
@@ -64,10 +64,10 @@ export interface UniversalApiResult {
  */
 export class UniversalApiService {
   private static instance: UniversalApiService | null = null;
-  private storageManager: StorageManager;
+  private storageService: StorageService;
 
   private constructor() {
-    this.storageManager = new StorageManager();
+    this.storageService = StorageService.getInstance();
   }
 
   /**
@@ -402,7 +402,7 @@ export class UniversalApiService {
     Array<{ provider: string; model: string }>
   > {
     try {
-      const userSettings = await this.storageManager.getUserSettings();
+      const userSettings = await this.storageService.getUserSettings();
       return userSettings.apiConfigs.map((config) => ({
         provider: config.provider, // 直接使用字符串，不需要转换
         model: config.config.model,
@@ -419,7 +419,7 @@ export class UniversalApiService {
     configId?: string,
     forceProvider?: TranslationProvider,
   ): Promise<ApiConfigItem | null> {
-    const userSettings = await this.storageManager.getUserSettings();
+    const userSettings = await this.storageService.getUserSettings();
 
     if (configId) {
       return (

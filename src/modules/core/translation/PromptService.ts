@@ -52,7 +52,7 @@ export class PromptService {
   /**
    * 私有构造函数，防止外部实例化
    */
-  private constructor() { }
+  private constructor() {}
 
   /**
    * 获取服务实例
@@ -75,9 +75,11 @@ export class PromptService {
    */
   private generateDifficultyAdjustment(
     level: UserLevel,
-    options: PromptOptions = {}
+    options: PromptOptions = {},
   ): string {
-    const proficiencyType = options.isTraditional ? 'English proficiency' : 'proficiency';
+    const proficiencyType = options.isTraditional
+      ? 'English proficiency'
+      : 'proficiency';
     return `The user's ${proficiencyType} is at the ${UserLevel[level]} level. Please adjust the difficulty and frequency of the selected words accordingly.`;
   }
 
@@ -250,8 +252,8 @@ export class PromptService {
   4.  **Content Purity**: The "translation" value must ONLY be the translated text. Do not add any explanations, comments, or extra information.
   5.  **Word Selection**: Adjust the number and difficulty of the selected words based on the user's learning level: ${UserLevel[level]}.
   6.  **Translation Rate**: The total length of the *original* words/phrases you select to translate should be approximately ${Math.round(
-      replacementRate * 100,
-    )}% of the total text length.
+    replacementRate * 100,
+  )}% of the total text length.
   `;
 
     const example = `
@@ -287,7 +289,10 @@ export class PromptService {
     }
 
     // 智能模式路由
-    if (config.intelligentMode || config.translationDirection === 'intelligent') {
+    if (
+      config.intelligentMode ||
+      config.translationDirection === 'intelligent'
+    ) {
       if (!config.targetLanguage) {
         throw new Error('智能模式下必须提供目标语言');
       }
@@ -318,7 +323,11 @@ export const getIntelligentSystemPrompt = (
   level: UserLevel,
   replacementRate: number,
 ): string => {
-  return promptService.getIntelligentSystemPrompt(targetLanguage, level, replacementRate);
+  return promptService.getIntelligentSystemPrompt(
+    targetLanguage,
+    level,
+    replacementRate,
+  );
 };
 
 export const getSystemPrompt = (
@@ -334,7 +343,11 @@ export const getGeminiSystemPrompt = (
   level: UserLevel,
   replacementRate: number,
 ): string => {
-  return promptService.getGeminiSystemPrompt(targetLanguage, level, replacementRate);
+  return promptService.getGeminiSystemPrompt(
+    targetLanguage,
+    level,
+    replacementRate,
+  );
 };
 
 export const getSystemPromptByConfig = (config: PromptConfig): string => {

@@ -687,7 +687,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
-import { StorageManager } from '@/src/modules/storageManager';
+import { StorageService } from '@/src/modules/core/storage';
 import {
   testApiConnection as performApiTest,
   testGeminiConnection,
@@ -739,7 +739,7 @@ import {
 } from 'lucide-vue-next';
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
-const storageManager = new StorageManager();
+const storageService = StorageService.getInstance();
 
 // 对话框状态
 const showAddDialog = ref(false);
@@ -824,7 +824,7 @@ const activeConfig = computed(() => {
 
 const handleActiveConfigChange = async () => {
   try {
-    await storageManager.setActiveApiConfig(settings.value.activeApiConfigId);
+    await storageService.setActiveApiConfig(settings.value.activeApiConfigId);
 
     // 重新加载完整设置以确保同步
     await loadSettings();
@@ -862,7 +862,7 @@ const editConfig = (config: ApiConfigItem) => {
 const deleteConfig = async (configId: string) => {
   if (confirm('确定要删除这个配置吗？')) {
     try {
-      await storageManager.removeApiConfig(configId);
+      await storageService.removeApiConfig(configId);
       await loadSettings();
       emit('saveMessage', '配置已删除');
       notifyConfigChange();
@@ -952,7 +952,7 @@ const saveConfig = async () => {
         : configForm.value.provider;
 
     if (editingConfig.value) {
-      await storageManager.updateApiConfig(
+      await storageService.updateApiConfig(
         editingConfig.value.id,
         configForm.value.name,
         finalProvider,
@@ -960,7 +960,7 @@ const saveConfig = async () => {
       );
       emit('saveMessage', '配置已更新');
     } else {
-      await storageManager.addApiConfig(
+      await storageService.addApiConfig(
         configForm.value.name,
         finalProvider,
         configForm.value.config,
@@ -1093,7 +1093,7 @@ const cancelEdit = () => {
 
 const loadSettings = async () => {
   try {
-    settings.value = await storageManager.getUserSettings();
+    settings.value = await storageService.getUserSettings();
   } catch (error) {
     console.error('加载设置失败:', error);
   }
@@ -1127,7 +1127,7 @@ watch(
   settings,
   async (newSettings) => {
     try {
-      await storageManager.saveUserSettings(newSettings);
+      await storageService.saveUserSettings(newSettings);
       emit('saveMessage', '设置已保存');
       notifyConfigChange();
     } catch (error) {

@@ -5,7 +5,7 @@
 
 import { ApiServiceFactory } from '../../api';
 import { StyleManager } from '../../styles';
-import { StorageManager } from '../../storageManager';
+import { StorageService } from '../storage';
 // 替换结果接口
 export interface ReplacementResult {
   original: string; // 原始文本
@@ -93,7 +93,8 @@ export class TextReplacerService {
    * 初始化样式管理器
    */
   private initializeStyleManager(): void {
-    const translationStyle = this.config.translationStyle || TranslationStyle.DEFAULT;
+    const translationStyle =
+      this.config.translationStyle || TranslationStyle.DEFAULT;
     this.styleManager.setTranslationStyle(translationStyle);
   }
 
@@ -125,8 +126,8 @@ export class TextReplacerService {
   public async replaceText(text: string): Promise<FullTextAnalysisResponse> {
     try {
       // 获取当前用户设置
-      const storageManager = new StorageManager();
-      const settings = await storageManager.getUserSettings();
+      const storageService = StorageService.getInstance();
+      const settings = await storageService.getUserSettings();
 
       // 如果不使用API，直接返回原文
       if (!this.config.useGptApi) {
@@ -209,7 +210,7 @@ export class TextReplacerService {
    */
   private async callTranslationAPI(
     text: string,
-    settings: UserSettings
+    settings: UserSettings,
   ): Promise<FullTextAnalysisResponse> {
     // 获取当前活跃的API配置
     const activeConfig = settings.apiConfigs.find(
@@ -233,7 +234,7 @@ export class TextReplacerService {
   private async handleTranslationError(
     text: string,
     settings: UserSettings,
-    error: any
+    error: any,
   ): Promise<FullTextAnalysisResponse> {
     // 检查是否为智能模式
     const isIntelligentMode = this.isIntelligentMode(settings);
@@ -252,8 +253,10 @@ export class TextReplacerService {
    * 判断是否为智能模式
    */
   private isIntelligentMode(settings: UserSettings): boolean {
-    return settings.multilingualConfig?.intelligentMode ||
-      settings.translationDirection === 'intelligent';
+    return (
+      settings.multilingualConfig?.intelligentMode ||
+      settings.translationDirection === 'intelligent'
+    );
   }
 
   /**
@@ -289,7 +292,9 @@ export class TextReplacerService {
       }
       return targetLanguage;
     } else {
-      return this.extractTargetLanguageFromDirection(settings.translationDirection);
+      return this.extractTargetLanguageFromDirection(
+        settings.translationDirection,
+      );
     }
   }
 
@@ -355,7 +360,10 @@ export class TextReplacerService {
   /**
    * 设置缓存结果
    */
-  private setCachedResult(cacheKey: string, result: FullTextAnalysisResponse): void {
+  private setCachedResult(
+    cacheKey: string,
+    result: FullTextAnalysisResponse,
+  ): void {
     this.cache.set(cacheKey, result);
     this.cleanupCache();
   }

@@ -917,11 +917,11 @@ export class FloatingBallManager {
    */
   private async savePosition(): Promise<void> {
     try {
-      const { StorageManager } = await import('../../storageManager');
-      const storageManager = new StorageManager();
-      const settings = await storageManager.getUserSettings();
+      const { StorageService } = await import('../../core/storage');
+      const storageService = StorageService.getInstance();
+      const settings = await storageService.getUserSettings();
       settings.floatingBall.position = this.config.position;
-      await storageManager.saveUserSettings(settings);
+      await storageService.saveUserSettings(settings);
     } catch (error) {
       console.error('保存悬浮球位置失败:', error);
     }

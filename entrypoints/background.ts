@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { DEFAULT_SETTINGS } from '@/src/modules/shared/constants/defaults';
-import { StorageManager } from '@/src/modules/storageManager';
+import { StorageService } from '@/src/modules/core/storage';
 import { ContextMenuManager } from '@/src/modules/contextMenu';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 
@@ -13,9 +13,9 @@ export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
       try {
-        // 使用StorageManager保存默认设置，确保使用序列化格式
-        const storageManager = new StorageManager();
-        await storageManager.saveUserSettings(DEFAULT_SETTINGS);
+        // 使用StorageService保存默认设置，确保使用序列化格式
+        const storageService = StorageService.getInstance();
+        await storageService.saveUserSettings(DEFAULT_SETTINGS);
         console.log('DEFAULT_SETTINGS', DEFAULT_SETTINGS);
       } catch (error) {
         console.error('保存默认设置失败:', error);
@@ -61,9 +61,9 @@ export default defineBackground(() => {
     if (message.type === 'validate-configuration') {
       (async () => {
         try {
-          // 使用StorageManager获取设置
-          const storageManager = new StorageManager();
-          const settings = await storageManager.getUserSettings();
+          // 使用StorageService获取设置
+          const storageService = StorageService.getInstance();
+          const settings = await storageService.getUserSettings();
 
           // 检查多配置系统中的活跃配置
           const activeConfig = settings.apiConfigs?.find(
@@ -215,8 +215,8 @@ export default defineBackground(() => {
   // 独立的API配置验证函数
   async function validateApiConfiguration(): Promise<boolean> {
     try {
-      const storageManager = new StorageManager();
-      const settings = await storageManager.getUserSettings();
+      const storageService = StorageService.getInstance();
+      const settings = await storageService.getUserSettings();
 
       const activeConfig = settings.apiConfigs?.find(
         (config) => config.id === settings.activeApiConfigId,

@@ -65,7 +65,9 @@ export class TextProcessorService {
   /**
    * 获取服务实例（单例模式）
    */
-  public static getInstance(config?: TextProcessorConfig): TextProcessorService {
+  public static getInstance(
+    config?: TextProcessorConfig,
+  ): TextProcessorService {
     if (!TextProcessorService.instance) {
       TextProcessorService.instance = new TextProcessorService(config);
     }

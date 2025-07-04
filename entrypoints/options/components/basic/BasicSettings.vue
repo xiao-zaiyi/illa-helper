@@ -200,7 +200,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
-import { StorageManager } from '@/src/modules/storageManager';
+import { StorageService } from '@/src/modules/core/storage';
 import { StyleManager } from '@/src/modules/styles';
 import {
   UserSettings,
@@ -225,7 +225,7 @@ import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 
 const settings = ref<UserSettings>(DEFAULT_SETTINGS);
-const storageManager = new StorageManager();
+const storageService = StorageService.getInstance();
 const styleManager = new StyleManager();
 
 const emit = defineEmits<{
@@ -233,7 +233,7 @@ const emit = defineEmits<{
 }>();
 
 onMounted(async () => {
-  settings.value = await storageManager.getUserSettings();
+  settings.value = await storageService.getUserSettings();
   styleManager.setTranslationStyle(settings.value.translationStyle);
   // 如果是自定义样式，加载自定义CSS
   if (settings.value.translationStyle === TranslationStyle.CUSTOM) {
@@ -260,7 +260,7 @@ const currentStyleClass = computed(() => {
 watch(
   settings,
   async (newSettings) => {
-    await storageManager.saveUserSettings(newSettings);
+    await storageService.saveUserSettings(newSettings);
     emit('saveMessage', '设置已保存');
     styleManager.setTranslationStyle(newSettings.translationStyle);
     // 如果是自定义样式，更新自定义CSS

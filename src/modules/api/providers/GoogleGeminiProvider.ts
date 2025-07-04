@@ -14,7 +14,7 @@ import {
   getApiTimeout,
   mapParamsForProvider,
 } from '@/src/utils';
-import { rateLimitManager } from '../../rateLimit';
+import { rateLimitManager } from '../../infrastructure/ratelimit';
 
 /**
  * Google Gemini API 提供者实现
