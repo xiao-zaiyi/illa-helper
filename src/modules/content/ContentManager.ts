@@ -12,6 +12,129 @@ import { detectPageLanguage } from './utils/domUtils';
 import { IContentManager, ServiceContainer } from './types';
 
 /**
+ * 翻译显示状态管理器
+ *
+ * 功能：
+ * - 通过全局CSS类控制页面翻译内容的显示/隐藏
+ * - 支持快捷键和悬浮球的状态切换
+ * - 自动同步悬浮球的视觉状态
+ *
+ * 设计理念：
+ * - 使用CSS类控制，避免逐个元素操作，提高性能
+ * - 新添加的翻译内容自动继承当前显示状态
+ * - 状态变化时实时更新悬浮球视觉反馈
+ */
+export class TranslationStateManager {
+  /** 翻译内容是否可见 */
+  private isTranslationVisible = true;
+
+  /** 页面处理服务引用 */
+  private processingService?: ProcessingService;
+
+  /** 悬浮球管理器引用 */
+  private floatingBallManager?: any;
+
+  /** 控制翻译内容隐藏的CSS类名 */
+  private readonly HIDDEN_CLASS = 'wxt-translation-hidden';
+
+  /** 翻译内容选择器 */
+  private readonly TRANSLATION_SELECTOR = '.wxt-translation-term';
+
+  constructor(processingService?: ProcessingService, floatingBallManager?: any) {
+    this.processingService = processingService;
+    this.floatingBallManager = floatingBallManager;
+  }
+
+  /**
+   * 切换翻译显示状态
+   *
+   * 逻辑：
+   * 1. 如果页面无翻译内容，先执行翻译
+   * 2. 如果有翻译内容，直接切换显示状态
+   * 3. 更新悬浮球视觉状态
+   */
+  async toggleTranslationState(): Promise<void> {
+    const hasTranslatedContent = this.hasTranslatedContent();
+
+    if (!hasTranslatedContent) {
+      // 页面无翻译内容，执行翻译
+      await this.executeTranslation();
+    } else {
+      // 页面有翻译内容，切换显示状态
+      this.toggleVisibilityState();
+    }
+
+    // 同步悬浮球状态
+    this.syncFloatingBallState();
+  }
+
+  /**
+   * 执行页面翻译
+   * @private
+   */
+  private async executeTranslation(): Promise<void> {
+    if (this.processingService) {
+      await this.processingService.processPage();
+    }
+    this.isTranslationVisible = true;
+    document.body.classList.remove(this.HIDDEN_CLASS);
+  }
+
+  /**
+   * 切换可见性状态
+   * @private
+   */
+  private toggleVisibilityState(): void {
+    this.isTranslationVisible = !this.isTranslationVisible;
+
+    if (this.isTranslationVisible) {
+      document.body.classList.remove(this.HIDDEN_CLASS);
+    } else {
+      document.body.classList.add(this.HIDDEN_CLASS);
+    }
+  }
+
+  /**
+   * 同步悬浮球状态
+   * @private
+   */
+  private syncFloatingBallState(): void {
+    if (this.floatingBallManager?.updateTranslationStateIndicator) {
+      this.floatingBallManager.updateTranslationStateIndicator();
+    }
+  }
+
+  /**
+   * 检查页面是否有翻译内容
+   * @private
+   */
+  private hasTranslatedContent(): boolean {
+    return document.querySelector(this.TRANSLATION_SELECTOR) !== null;
+  }
+
+  /**
+   * 获取当前显示状态
+   */
+  getTranslationVisibility(): boolean {
+    return this.isTranslationVisible;
+  }
+
+  /**
+   * 更新处理服务引用
+   */
+  updateProcessingService(processingService: ProcessingService): void {
+    this.processingService = processingService;
+  }
+
+  /**
+   * 更新悬浮球管理器引用
+   */
+  updateFloatingBallManager(floatingBallManager: any): void {
+    this.floatingBallManager = floatingBallManager;
+  }
+}
+
+/**
  * Content Script 主管理服务
  * 负责协调所有子服务，管理生命周期
  */
@@ -21,6 +144,7 @@ export class ContentManager implements IContentManager {
   private listenerService?: ListenerService;
   private services?: ServiceContainer;
   private settings?: UserSettings;
+  private translationStateManager?: TranslationStateManager;
 
   constructor() {
     this.configurationService = new ConfigurationService();
@@ -154,6 +278,12 @@ export class ContentManager implements IContentManager {
       this.settings,
     );
 
+    // 创建翻译状态管理器
+    this.translationStateManager = new TranslationStateManager(
+      this.processingService,
+      this.services.floatingBallManager,
+    );
+
     this.listenerService = new ListenerService(
       this.settings,
       this.processingService,
@@ -161,6 +291,7 @@ export class ContentManager implements IContentManager {
       styleManager,
       textReplacer,
       floatingBallManager,
+      this.translationStateManager,
     );
   }
 
@@ -181,17 +312,17 @@ export class ContentManager implements IContentManager {
    * 初始化悬浮球
    */
   private async initializeFloatingBall(): Promise<void> {
-    if (!this.services?.floatingBallManager || !this.processingService) return;
+    if (!this.services?.floatingBallManager || !this.translationStateManager) return;
 
     await this.services.floatingBallManager.init(async () => {
-      // 悬浮球点击翻译回调
+      // 悬浮球点击状态切换回调
       const isConfigValid = await browser.runtime.sendMessage({
         type: 'validate-configuration',
         source: 'user_action',
       });
 
-      if (isConfigValid && this.processingService) {
-        await this.processingService.processPage();
+      if (isConfigValid && this.translationStateManager) {
+        await this.translationStateManager.toggleTranslationState();
       }
     });
   }

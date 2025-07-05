@@ -6,6 +6,7 @@ import { TextReplacerService } from '@/src/modules/core/translation/TextReplacer
 import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { IListenerService } from '../types';
 import { isProcessingResultNode, isDescendant } from '../utils/domUtils';
+import { TranslationStateManager } from '../ContentManager';
 
 /**
  * 监听器服务 - 负责消息监听和DOM观察
@@ -17,6 +18,7 @@ export class ListenerService implements IListenerService {
   private styleManager: StyleManager;
   private textReplacer: TextReplacerService;
   private floatingBallManager: FloatingBallManager;
+  private translationStateManager: TranslationStateManager;
   private domObserver?: MutationObserver;
   private debounceTimer?: number;
 
@@ -27,6 +29,7 @@ export class ListenerService implements IListenerService {
     styleManager: StyleManager,
     textReplacer: TextReplacerService,
     floatingBallManager: FloatingBallManager,
+    translationStateManager: TranslationStateManager,
   ) {
     this.settings = settings;
     this.processingService = processingService;
@@ -34,6 +37,7 @@ export class ListenerService implements IListenerService {
     this.styleManager = styleManager;
     this.textReplacer = textReplacer;
     this.floatingBallManager = floatingBallManager;
+    this.translationStateManager = translationStateManager;
   }
 
   /**
@@ -83,7 +87,8 @@ export class ListenerService implements IListenerService {
     ) {
       await this.handleSettingsUpdate(message.settings);
     } else if (message.type === 'translate-page-command') {
-      await this.processingService.processPage();
+      // 改为状态切换而非直接翻译
+      await this.toggleTranslationState();
     } else if (message.type === 'MANUAL_TRANSLATE') {
       if (this.settings.triggerMode === TriggerMode.MANUAL) {
         const isConfigValid = await browser.runtime.sendMessage({
@@ -98,6 +103,20 @@ export class ListenerService implements IListenerService {
   }
 
   /**
+   * 切换翻译状态
+   */
+  private async toggleTranslationState(): Promise<void> {
+    const isConfigValid = await browser.runtime.sendMessage({
+      type: 'validate-configuration',
+      source: 'user_action',
+    });
+
+    if (isConfigValid) {
+      await this.translationStateManager.toggleTranslationState();
+    }
+  }
+
+  /**
    * 处理设置更新
    */
   private async handleSettingsUpdate(newSettings: UserSettings): Promise<void> {
@@ -105,7 +124,7 @@ export class ListenerService implements IListenerService {
       this.settings.triggerMode !== newSettings.triggerMode ||
       this.settings.isEnabled !== newSettings.isEnabled ||
       this.settings.enablePronunciationTooltip !==
-        newSettings.enablePronunciationTooltip ||
+      newSettings.enablePronunciationTooltip ||
       this.settings.translationDirection !== newSettings.translationDirection ||
       this.settings.userLevel !== newSettings.userLevel ||
       this.settings.useGptApi !== newSettings.useGptApi;
