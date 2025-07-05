@@ -34,17 +34,17 @@ export class OpenAIProvider extends BaseProvider {
 
     const systemPrompt = useIntelligentMode
       ? getSystemPromptByConfig({
-        translationDirection: 'intelligent',
-        targetLanguage: settings.multilingualConfig.targetLanguage,
-        userLevel: settings.userLevel,
-        replacementRate: settings.replacementRate,
-        intelligentMode: true,
-      })
+          translationDirection: 'intelligent',
+          targetLanguage: settings.multilingualConfig.targetLanguage,
+          userLevel: settings.userLevel,
+          replacementRate: settings.replacementRate,
+          intelligentMode: true,
+        })
       : getSystemPrompt(
-        settings.translationDirection,
-        settings.userLevel,
-        settings.replacementRate,
-      );
+          settings.translationDirection,
+          settings.userLevel,
+          settings.replacementRate,
+        );
 
     let requestBody: any = {
       model: this.config.model,
@@ -106,7 +106,6 @@ export class OpenAIProvider extends BaseProvider {
         console.error(`[OpenAI提取] 解析失败:`, parseResult.errors);
         throw new Error(`结构化文本解析失败: ${parseResult.errors.join(', ')}`);
       }
-
 
       // 添加位置信息
       const replacements = addPositionsToReplacements(

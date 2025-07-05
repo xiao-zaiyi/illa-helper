@@ -124,7 +124,7 @@ export class ListenerService implements IListenerService {
       this.settings.triggerMode !== newSettings.triggerMode ||
       this.settings.isEnabled !== newSettings.isEnabled ||
       this.settings.enablePronunciationTooltip !==
-      newSettings.enablePronunciationTooltip ||
+        newSettings.enablePronunciationTooltip ||
       this.settings.translationDirection !== newSettings.translationDirection ||
       this.settings.userLevel !== newSettings.userLevel ||
       this.settings.useGptApi !== newSettings.useGptApi;

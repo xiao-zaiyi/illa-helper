@@ -9,10 +9,7 @@ import { BaseProvider } from '../base/BaseProvider';
 import { mergeCustomParams } from '../utils/apiUtils';
 import { addPositionsToReplacements } from '../utils/textUtils';
 import { getSystemPromptByConfig } from '../../core/translation/PromptService';
-import {
-  getApiTimeout,
-  mapParamsForProvider,
-} from '@/src/utils';
+import { getApiTimeout, mapParamsForProvider } from '@/src/utils';
 import { rateLimitManager } from '../../infrastructure/ratelimit';
 import { StructuredTextParser } from '../utils/structuredTextParser';
 
@@ -92,7 +89,6 @@ export class GoogleGeminiProvider extends BaseProvider {
       console.error('[Gemini] 解析失败:', parseResult.errors);
       throw new Error(`结构化文本解析失败: ${parseResult.errors.join(', ')}`);
     }
-
 
     const replacements = addPositionsToReplacements(
       text,

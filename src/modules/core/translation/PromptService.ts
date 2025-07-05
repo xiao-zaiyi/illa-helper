@@ -21,7 +21,7 @@ export class PromptService {
   /**
    * 私有构造函数，防止外部实例化
    */
-  private constructor() { }
+  private constructor() {}
 
   /**
    * 获取服务实例
@@ -137,7 +137,6 @@ export class PromptService {
 - Ensure grammatical completeness: include necessary connecting words, particles, and structural elements
 - When translating mixed-language text, separate by language and maintain internal coherence
 `;
-
   }
 
   /**

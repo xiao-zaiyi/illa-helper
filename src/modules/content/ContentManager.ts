@@ -40,7 +40,10 @@ export class TranslationStateManager {
   /** 翻译内容选择器 */
   private readonly TRANSLATION_SELECTOR = '.wxt-translation-term';
 
-  constructor(processingService?: ProcessingService, floatingBallManager?: any) {
+  constructor(
+    processingService?: ProcessingService,
+    floatingBallManager?: any,
+  ) {
     this.processingService = processingService;
     this.floatingBallManager = floatingBallManager;
   }
@@ -312,7 +315,8 @@ export class ContentManager implements IContentManager {
    * 初始化悬浮球
    */
   private async initializeFloatingBall(): Promise<void> {
-    if (!this.services?.floatingBallManager || !this.translationStateManager) return;
+    if (!this.services?.floatingBallManager || !this.translationStateManager)
+      return;
 
     await this.services.floatingBallManager.init(async () => {
       // 悬浮球点击状态切换回调

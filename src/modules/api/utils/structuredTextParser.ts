@@ -30,7 +30,6 @@ export class StructuredTextParser {
       errors: [],
     };
 
-
     try {
       // 清理文本
       const cleanedText = this.cleanText(text);
@@ -127,7 +126,6 @@ export class StructuredTextParser {
 
     return null;
   }
-
 
   /**
    * 验证解析结果

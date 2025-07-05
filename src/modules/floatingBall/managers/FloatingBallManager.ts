@@ -180,21 +180,24 @@ export class FloatingBallManager {
   }
 
   /**
- * 创建悬浮球图标
- *
- * 根据翻译状态动态生成不同的视觉效果：
- * - 无翻译内容：默认紫蓝渐变背景 + 蓝色状态点（准备翻译）
- * - 显示翻译：紫蓝渐变背景 + 绿色状态点（翻译模式）
- * - 隐藏翻译：粉红渐变背景 + 红色状态点（原文模式）
- *
- * @returns SVG图标字符串
- */
+   * 创建悬浮球图标
+   *
+   * 根据翻译状态动态生成不同的视觉效果：
+   * - 无翻译内容：默认紫蓝渐变背景 + 蓝色状态点（准备翻译）
+   * - 显示翻译：紫蓝渐变背景 + 绿色状态点（翻译模式）
+   * - 隐藏翻译：粉红渐变背景 + 红色状态点（原文模式）
+   *
+   * @returns SVG图标字符串
+   */
   private createBallIcon(): string {
     const { iconSize } = FLOATING_BALL_STYLES;
 
     // 检查翻译状态
-    const hasTranslatedContent = document.querySelector('.wxt-translation-term') !== null;
-    const isTranslationHidden = document.body.classList.contains('wxt-translation-hidden');
+    const hasTranslatedContent =
+      document.querySelector('.wxt-translation-term') !== null;
+    const isTranslationHidden = document.body.classList.contains(
+      'wxt-translation-hidden',
+    );
 
     // 定义三种状态
     let stateConfig;
@@ -202,24 +205,25 @@ export class FloatingBallManager {
       // 无翻译内容 - 默认状态（准备翻译）
       stateConfig = {
         colors: { start: '#667eea', end: '#764ba2', dot: '#4f7cff' },
-        opacity: '0.9'
+        opacity: '0.9',
       };
     } else if (isTranslationHidden) {
       // 有翻译内容但被隐藏 - 原文模式
       stateConfig = {
         colors: { start: '#f093fb', end: '#f5576c', dot: '#ff6b6b' },
-        opacity: '0.8'
+        opacity: '0.8',
       };
     } else {
       // 有翻译内容且可见 - 翻译模式
       stateConfig = {
         colors: { start: '#667eea', end: '#764ba2', dot: '#00ff88' },
-        opacity: '1'
+        opacity: '1',
       };
     }
 
     // 翻译图标路径（统一使用同一个图标）
-    const iconPath = "M16 10h2l4.4 11h-2.155l-1.201-3h-4.09l-1.199 3h-2.154L16 10zm1 2.885L15.753 16h2.492L17 12.885zM3 4h10v2H9v7h4v2H9v4H7v-4H3v-2h4V6H3V4zM17 3a4 4 0 0 1 4 4v2h-2V7a2 2 0 0 0-2-2h-3V3h3zM5 15v2a2 2 0 0 0 2 2h3v2H7a4 4 0 0 1-4-4v-2h2z";
+    const iconPath =
+      'M16 10h2l4.4 11h-2.155l-1.201-3h-4.09l-1.199 3h-2.154L16 10zm1 2.885L15.753 16h2.492L17 12.885zM3 4h10v2H9v7h4v2H9v4H7v-4H3v-2h4V6H3V4zM17 3a4 4 0 0 1 4 4v2h-2V7a2 2 0 0 0-2-2h-3V3h3zM5 15v2a2 2 0 0 0 2 2h3v2H7a4 4 0 0 1-4-4v-2h2z';
 
     return `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${iconSize}" height="${iconSize}">
@@ -308,8 +312,8 @@ export class FloatingBallManager {
   }
 
   /**
- * 更新悬浮球样式
- */
+   * 更新悬浮球样式
+   */
   private updateBallStyle(): void {
     if (!this.ballElement) return;
 
@@ -1196,17 +1200,17 @@ export class FloatingBallManager {
   }
 
   /**
- * 更新翻译状态指示
- *
- * 提供平滑的视觉过渡效果：
- * 1. 悬浮球缩小 (0.1s)
- * 2. 更新图标和提示文本
- * 3. 悬浮球恢复大小 (0.1s)
- *
- * 性能优化：
- * - 使用requestAnimationFrame确保动画流畅
- * - 一次性更新所有需要变更的属性
- */
+   * 更新翻译状态指示
+   *
+   * 提供平滑的视觉过渡效果：
+   * 1. 悬浮球缩小 (0.1s)
+   * 2. 更新图标和提示文本
+   * 3. 悬浮球恢复大小 (0.1s)
+   *
+   * 性能优化：
+   * - 使用requestAnimationFrame确保动画流畅
+   * - 一次性更新所有需要变更的属性
+   */
   updateTranslationStateIndicator(): void {
     if (!this.ballElement) return;
 
@@ -1232,9 +1236,9 @@ export class FloatingBallManager {
   }
 
   /**
- * 更新悬浮球内容
- * @private
- */
+   * 更新悬浮球内容
+   * @private
+   */
   private updateBallContent(): void {
     if (!this.ballElement) return;
 
@@ -1246,9 +1250,9 @@ export class FloatingBallManager {
   }
 
   /**
- * 结束过渡动画
- * @private
- */
+   * 结束过渡动画
+   * @private
+   */
   private endTransitionAnimation(): void {
     if (!this.ballElement) return;
 
@@ -1263,8 +1267,11 @@ export class FloatingBallManager {
     if (!this.ballElement) return;
 
     // 检查翻译状态
-    const hasTranslatedContent = document.querySelector('.wxt-translation-term') !== null;
-    const isTranslationHidden = document.body.classList.contains('wxt-translation-hidden');
+    const hasTranslatedContent =
+      document.querySelector('.wxt-translation-term') !== null;
+    const isTranslationHidden = document.body.classList.contains(
+      'wxt-translation-hidden',
+    );
 
     // 确定提示文本
     let modeText;
