@@ -4,8 +4,6 @@
 
 import { browser } from 'wxt/browser';
 import { StorageService } from '@/src/modules/core/storage';
-import { ContextMenuManager } from '@/src/modules/contextMenu';
-import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 import { NotificationService } from '@/src/modules/background/services/NotificationService';
 import { ApiProxyService } from '@/src/modules/background/services/ApiProxyService';
 import { CommandService } from '@/src/modules/background/services/CommandService';

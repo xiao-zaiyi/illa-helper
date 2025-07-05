@@ -68,7 +68,9 @@ export class ContextMenuManager {
       // 验证URL
       const validation = validateUrlForRule(url);
       if (!validation.valid) {
-        console.log(`[ContextMenu] URL验证失败 - ${validation.error || 'Unknown error'}`);
+        console.log(
+          `[ContextMenu] URL验证失败 - ${validation.error || 'Unknown error'}`,
+        );
         await this.hideAllDynamicMenus();
         return;
       }
@@ -77,7 +79,9 @@ export class ContextMenuManager {
       const websiteStatus = await this.websiteManager.getWebsiteStatus(url);
       const domain = extractDomain(url);
 
-      console.log(`[ContextMenu] 网站状态 - Domain: ${domain}, Status: ${websiteStatus}`);
+      console.log(
+        `[ContextMenu] 网站状态 - Domain: ${domain}, Status: ${websiteStatus}`,
+      );
 
       // 根据网站状态更新菜单可见性
       await this.updateMenuVisibility(url, domain, websiteStatus);
@@ -86,7 +90,7 @@ export class ContextMenuManager {
         error: error instanceof Error ? error.message : '未知错误',
         url,
         tabId,
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       await this.hideAllDynamicMenus();
     }
@@ -184,7 +188,9 @@ export class ContextMenuManager {
    * 处理菜单点击事件
    */
   private async handleMenuClick(info: any, tab: any): Promise<void> {
-    console.log(`[ContextMenu] 菜单点击事件 - MenuID: ${info.menuItemId}, URL: ${tab?.url}`);
+    console.log(
+      `[ContextMenu] 菜单点击事件 - MenuID: ${info.menuItemId}, URL: ${tab?.url}`,
+    );
 
     if (!tab?.url) {
       console.warn('[ContextMenu] 缺少标签页URL信息');
@@ -207,7 +213,9 @@ export class ContextMenuManager {
 
       // 处理添加/移除操作
       if (typeof info.menuItemId === 'string') {
-        console.log(`[ContextMenu] 处理菜单操作 - Action: ${info.menuItemId}, Domain: ${domain}`);
+        console.log(
+          `[ContextMenu] 处理菜单操作 - Action: ${info.menuItemId}, Domain: ${domain}`,
+        );
         await this.processMenuAction(info.menuItemId, url, domain);
       }
     } catch (error) {
@@ -215,7 +223,7 @@ export class ContextMenuManager {
         error: error instanceof Error ? error.message : '未知错误',
         menuItemId: info.menuItemId,
         url: tab?.url,
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       this.showNotification('操作失败', '处理菜单操作时发生错误');
     }
@@ -275,7 +283,9 @@ export class ContextMenuManager {
     patternType: UrlPatternType,
     url: string,
   ): Promise<void> {
-    console.log(`[ContextMenu] 执行操作 - Action: ${action}, Pattern: ${pattern}, Type: ${patternType}`);
+    console.log(
+      `[ContextMenu] 执行操作 - Action: ${action}, Pattern: ${pattern}, Type: ${patternType}`,
+    );
 
     try {
       const type = action.includes('blacklist') ? 'blacklist' : 'whitelist';
@@ -283,7 +293,9 @@ export class ContextMenuManager {
 
       if (action.startsWith('add-to-')) {
         // 添加规则
-        console.log(`[ContextMenu] 添加规则 - Type: ${type}, Pattern: ${pattern}`);
+        console.log(
+          `[ContextMenu] 添加规则 - Type: ${type}, Pattern: ${pattern}`,
+        );
         await this.websiteManager.addRule(pattern, type, description);
 
         const actionText = type === 'blacklist' ? '黑名单' : '白名单';
@@ -294,7 +306,9 @@ export class ContextMenuManager {
         );
       } else if (action.startsWith('remove-from-')) {
         // 移除规则 - 查找匹配的规则并删除
-        console.log(`[ContextMenu] 移除规则 - Type: ${type}, Pattern: ${pattern}`);
+        console.log(
+          `[ContextMenu] 移除规则 - Type: ${type}, Pattern: ${pattern}`,
+        );
         const rules = await this.websiteManager.getRulesByType(type);
         const domain = extractDomain(url);
         const domainPattern = generateDomainPattern(domain);
@@ -313,7 +327,9 @@ export class ContextMenuManager {
           return false;
         });
 
-        console.log(`[ContextMenu] 找到匹配规则 - Count: ${matchingRules.length}`);
+        console.log(
+          `[ContextMenu] 找到匹配规则 - Count: ${matchingRules.length}`,
+        );
 
         for (const rule of matchingRules) {
           await this.websiteManager.removeRule(rule.id);
@@ -343,7 +359,7 @@ export class ContextMenuManager {
         pattern,
         patternType,
         url,
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       this.showNotification('操作失败', '执行操作时发生错误');
     }

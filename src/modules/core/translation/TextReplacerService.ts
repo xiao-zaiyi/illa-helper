@@ -187,7 +187,6 @@ export class TextReplacerService {
     // 检查缓存
     const cachedResult = this.getCachedResult(cacheKey);
     if (cachedResult) {
-      console.log('缓存命中');
       return cachedResult;
     }
 

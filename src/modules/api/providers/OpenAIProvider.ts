@@ -12,8 +12,9 @@ import {
   getSystemPrompt,
   getSystemPromptByConfig,
 } from '../../core/translation/PromptService';
-import { cleanMarkdownFromResponse, getApiTimeout } from '@/src/utils';
+import { getApiTimeout } from '@/src/utils';
 import { rateLimitManager } from '../../infrastructure/ratelimit';
+import { StructuredTextParser } from '../utils/structuredTextParser';
 
 /**
  * OpenAI API 提供者实现
@@ -33,17 +34,17 @@ export class OpenAIProvider extends BaseProvider {
 
     const systemPrompt = useIntelligentMode
       ? getSystemPromptByConfig({
-          translationDirection: 'intelligent',
-          targetLanguage: settings.multilingualConfig.targetLanguage,
-          userLevel: settings.userLevel,
-          replacementRate: settings.replacementRate,
-          intelligentMode: true,
-        })
+        translationDirection: 'intelligent',
+        targetLanguage: settings.multilingualConfig.targetLanguage,
+        userLevel: settings.userLevel,
+        replacementRate: settings.replacementRate,
+        intelligentMode: true,
+      })
       : getSystemPrompt(
-          settings.translationDirection,
-          settings.userLevel,
-          settings.replacementRate,
-        );
+        settings.translationDirection,
+        settings.userLevel,
+        settings.replacementRate,
+      );
 
     let requestBody: any = {
       model: this.config.model,
@@ -97,13 +98,20 @@ export class OpenAIProvider extends BaseProvider {
         throw new Error('API响应格式错误');
       }
 
-      const cleanedContent = cleanMarkdownFromResponse(
-        data.choices[0].message.content,
-      );
-      const content = JSON.parse(cleanedContent);
+      const rawContent = data.choices[0].message.content;
+      // 使用结构化文本解析器
+      const parseResult = StructuredTextParser.parse(rawContent);
+
+      if (!parseResult.success) {
+        console.error(`[OpenAI提取] 解析失败:`, parseResult.errors);
+        throw new Error(`结构化文本解析失败: ${parseResult.errors.join(', ')}`);
+      }
+
+
+      // 添加位置信息
       const replacements = addPositionsToReplacements(
         originalText,
-        content.replacements || [],
+        parseResult.replacements,
       );
 
       return {

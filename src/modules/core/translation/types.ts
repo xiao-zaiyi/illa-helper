@@ -83,7 +83,7 @@ export interface ProcessingStats {
  */
 export interface PromptConfig {
   translationDirection: string;
-  targetLanguage?: string;
+  targetLanguage: string;
   userLevel: UserLevel;
   replacementRate: number;
   intelligentMode?: boolean;

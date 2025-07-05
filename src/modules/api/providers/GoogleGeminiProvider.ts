@@ -10,11 +10,11 @@ import { mergeCustomParams } from '../utils/apiUtils';
 import { addPositionsToReplacements } from '../utils/textUtils';
 import { getSystemPromptByConfig } from '../../core/translation/PromptService';
 import {
-  extractAndParseJson,
   getApiTimeout,
   mapParamsForProvider,
 } from '@/src/utils';
 import { rateLimitManager } from '../../infrastructure/ratelimit';
+import { StructuredTextParser } from '../utils/structuredTextParser';
 
 /**
  * Google Gemini API 提供者实现
@@ -73,8 +73,6 @@ export class GoogleGeminiProvider extends BaseProvider {
     });
 
     const prompt = `${systemPrompt}\n\n${text}`;
-    console.log('Gemini Prompt:', prompt);
-
     const rateLimiter = rateLimitManager.getLimiter(
       this.config.apiEndpoint || 'google-gemini-native',
       this.config.requestsPerSecond || 0,
@@ -86,14 +84,19 @@ export class GoogleGeminiProvider extends BaseProvider {
     const [result] = await rateLimiter.executeBatch([apiRequestFunction]);
     const response = result.response;
     const responseText = response.text();
-    console.log('Gemini Response Text:', responseText);
 
-    const content = extractAndParseJson(responseText);
-    console.log('Parsed Gemini Content:', content);
+    // 使用结构化文本解析器
+    const parseResult = StructuredTextParser.parse(responseText);
+
+    if (!parseResult.success) {
+      console.error('[Gemini] 解析失败:', parseResult.errors);
+      throw new Error(`结构化文本解析失败: ${parseResult.errors.join(', ')}`);
+    }
+
 
     const replacements = addPositionsToReplacements(
       text,
-      content.replacements || [],
+      parseResult.replacements,
     );
 
     return {

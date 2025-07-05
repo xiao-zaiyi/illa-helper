@@ -2,45 +2,18 @@
  * 提示词生成服务
  * 负责为不同翻译模式和提供商生成系统提示词
  *
- * 功能特性：
- * - 智能多语言翻译提示词
- * - 传统固定方向翻译提示词
- * - Google Gemini 专用提示词
- * - 统一配置接口
- * - 水平调整和比例控制
+ * 重构为统一提示词模板，减少维护成本
  */
 
 import { UserLevel } from '../../shared/types/core';
-import { PromptConfig, PromptOptions } from './types';
+import { PromptConfig } from './types';
 import { languageService } from './LanguageService';
 
-// ==================== 常量定义 ====================
+// ==================== 统一提示词模板 ====================
 
 /**
- * 共享的基础指令
- */
-const BASE_INSTRUCTION =
-  "You are an expert in linguistics and a language teacher. Your task is to process a given text paragraph, identify words or phrases suitable for a user's learning level, and provide translations.Your only task is to translate the text in {{}}, which is important";
-
-/**
- * JSON响应格式的基础要求
- */
-const JSON_FORMAT_BASE = `You MUST respond with a JSON object containing a single key "replacements", which is an array of objects. Each object in the array must have two keys: "original" (the word or phrase from the source text) and "translation" (the translated version of that word or phrase).
-For example:output:
-{"replacements": [{"original": "source_word", "translation": "target_translation"},{"original": "source_word1", "translation": "target_translation2"}]}
-`;
-
-/**
- * 传统模式的响应格式示例
- */
-const TRADITIONAL_FORMAT_EXAMPLES = `Example for zh-to-en: {"replacements": [{"original": "你好", "translation": "Hello"}]}
-Example for en-to-zh: {"replacements": [{"original": "Hello", "translation": "你好"}]}`;
-
-// ==================== 提示词生成服务类 ====================
-
-/**
- * 提示词生成服务
- * 采用单例模式，提供统一的提示词生成功能
+ * 统一的提示词模板
+ * 通过参数控制不同场景的差异
  */
 export class PromptService {
   private static instance: PromptService;
@@ -61,266 +34,225 @@ export class PromptService {
     return PromptService.instance;
   }
 
-  // ==================== 辅助方法 ====================
-
   /**
-   * 生成用户水平调整指令
-   * @param level 用户水平
-   * @param options 生成选项
-   * @returns 水平调整指令
+   * 统一的提示词生成器
+   * @param config 配置参数
+   * @returns 生成的提示词
    */
-  private generateDifficultyAdjustment(
-    level: UserLevel,
-    options: PromptOptions = {},
-  ): string {
-    const proficiencyType = options.isTraditional
-      ? 'English proficiency'
-      : 'proficiency';
-    return `The user's ${proficiencyType} is at the ${UserLevel[level]} level. Please adjust the difficulty and frequency of the selected words accordingly.`;
+  public getUnifiedPrompt(config: PromptConfig): string {
+    const {
+      targetLanguage,
+      translationDirection,
+      userLevel,
+      replacementRate,
+      provider = 'openai',
+      intelligentMode = false,
+    } = config;
+
+    // 1. 基础指令
+    const baseInstruction =
+      "You are an expert in linguistics and a language teacher. Your task is to process a given text paragraph, identify words or phrases suitable for a user's learning level, and provide translations. Your only task is to translate the text in {{}}, which is important";
+
+    // 2. 任务描述（动态生成）
+    const taskDescription = this.generateTaskDescription(
+      targetLanguage,
+      translationDirection,
+      intelligentMode,
+    );
+
+    // 3. 核心规则（通用）
+    const coreRules = this.generateCoreRules(targetLanguage);
+
+    // 4. 用户水平调整
+    const levelAdjustment = this.generateLevelAdjustment(userLevel);
+
+    // 5. 比例控制（根据provider调整详细程度）
+    const ratioControl = this.generateRatioControl(replacementRate, provider);
+
+    // 6. 格式要求（通用）
+    const formatRequirements = this.generateFormatRequirements();
+
+    // 7. 示例（动态生成）
+    const examples = this.generateExamples(
+      targetLanguage,
+      translationDirection,
+    );
+
+    // 组装完整提示词
+    const components = [
+      baseInstruction,
+      taskDescription,
+      coreRules,
+      levelAdjustment,
+      ratioControl,
+      formatRequirements,
+      examples,
+    ].filter((component) => component.trim() !== '');
+
+    return components.join('\n\n');
   }
 
   /**
-   * 生成替换比例控制指令
-   * @param replacementRate 替换比例
-   * @returns 比例控制指令
+   * 生成任务描述
    */
-  private generateRateAdjustment(replacementRate: number): string {
+  private generateTaskDescription(
+    targetLanguage: string,
+    translationDirection: string,
+    intelligentMode: boolean,
+  ): string {
+    const targetLangName =
+      languageService.getTargetLanguageDisplayName(targetLanguage);
+
+    if (intelligentMode || translationDirection === 'intelligent') {
+      return `The user is a native speaker learning other languages. You will be provided with a text that could be in any language. Your task is to select key words or phrases and provide their ${targetLangName} translations.`;
+    } else {
+      const langNames = languageService.getLanguageNames(translationDirection);
+      if (langNames) {
+        const userDesc =
+          langNames.source === 'Chinese'
+            ? 'The user is a native Chinese speaker.'
+            : `The user is a native Chinese speaker learning ${langNames.source}.`;
+        return `${userDesc} The provided text is in ${langNames.source}. Your goal is to select key words or phrases and provide their ${langNames.target} translations.`;
+      }
+      return `The user is a native Chinese speaker. Your goal is to select key words or phrases and provide their ${targetLangName} translations.`;
+    }
+  }
+
+  /**
+   * 生成核心规则
+   */
+  private generateCoreRules(targetLanguage: string): string {
+    const targetLangName =
+      languageService.getTargetLanguageDisplayName(targetLanguage);
+
+    return `CRITICAL RULES:
+- ALL translations must be in ${targetLangName}. Do not translate to any other language.
+- ABSOLUTELY CRITICAL: If a word or phrase in the source text is already written in ${targetLangName}, you MUST completely skip it. Do NOT include it in your response at all.
+- The translation must contain ONLY the direct translation of the word/phrase. Do NOT include explanations, pronunciation guides, or additional context.
+- If you don't follow the rules, my program will crash, so please follow the rules strictly.`;
+  }
+
+  /**
+   * 生成用户水平调整
+   */
+  private generateLevelAdjustment(userLevel: UserLevel): string {
+    return `The user's proficiency is at the ${UserLevel[userLevel]} level. Please adjust the difficulty and frequency of the selected words accordingly.`;
+  }
+
+  /**
+   * 生成比例控制指令
+   */
+  private generateRatioControl(
+    replacementRate: number,
+    provider: string,
+  ): string {
     if (replacementRate <= 0 || replacementRate > 1) {
       return '';
     }
 
     const percentage = Math.round(replacementRate * 100);
-    return `This is a strict rule: you must translate a portion of the text that corresponds to ${percentage}% of the total character count. First, identify all words/phrases suitable for the user's level. Then, from that list, select a subset for translation ensuring the total character length of the *original* words/phrases is as close as possible to the target percentage. For example, for a 1000-character text and a 10% rate, the total length of the words you choose to translate should be very close to 100 characters.`;
+    const basicInstruction = `IMPORTANT: Select words totaling exactly ${percentage}% of the text by character count.`;
+
+    if (provider === 'gemini') {
+      return `${basicInstruction}
+
+RATIO CALCULATION STEPS:
+- Step 1: Count total characters in input text (including spaces, punctuation)
+- Step 2: Calculate target: ${percentage}% × total characters = required character count
+- Step 3: Select words until sum of "original" character lengths equals target
+- Step 4: VERIFY before output: sum of selected original characters ÷ total characters = ${replacementRate.toFixed(2)}
+
+EXAMPLE VERIFICATION:
+Input: "这是测试文本" (6 characters total)
+Target: ${percentage}% = ${Math.round((6 * percentage) / 100)} characters needed
+If selecting "测试" (2 chars): 2÷6 = 33.3% (verify this matches target)`;
+    }
+
+    return `${basicInstruction}
+Example: "这是测试文本" (6 chars) → ${percentage}% = ${Math.round((6 * percentage) / 100)} chars needed.`;
   }
 
   /**
-   * 生成智能模式的响应格式示例
-   * @param targetLanguage 目标语言代码
-   * @returns 格式化的响应示例
+   * 生成格式要求
    */
-  private generateIntelligentFormatExample(targetLanguage: string): string {
-    // 从LANGUAGES对象动态获取目标语言的原生名称作为示例翻译
-    const targetLangInfo = languageService.languages[targetLanguage];
-    const exampleTranslation = targetLangInfo
-      ? targetLangInfo.nativeName
-      : 'target_translation';
+  private generateFormatRequirements(): string {
+    return `You must respond using the simple double-bar format below. NO JSON! NO other format!
 
-    return `Example for any-to-${targetLanguage}: {"replacements": [{"original": "source_word", "translation": "${exampleTranslation}_translation"}]}`;
+MANDATORY OUTPUT FORMAT:
+原文||译文
+
+FORMAT REQUIREMENTS:
+- One replacement per line
+- Use double bars || to separate original and translation
+- No extra text, quotes, or explanations (such as "Here's the translation:" or "Translation as follows:")
+- Just the direct format: original||translation`;
   }
 
   /**
-   * 生成传统模式的任务指令
-   * @param direction 翻译方向
-   * @returns 任务指令字符串
+   * 生成示例
    */
-  private generateTraditionalTaskInstruction(direction: string): string {
-    const langNames = languageService.getLanguageNames(direction);
+  private generateExamples(
+    targetLanguage: string,
+    translationDirection: string,
+  ): string {
+    const targetLangName =
+      languageService.getTargetLanguageDisplayName(targetLanguage);
 
+    if (translationDirection === 'intelligent' || !translationDirection) {
+      return `EXAMPLE:
+If the input text is "你好世界" and the target language is ${targetLangName}, a valid output is:
+你好||Hello
+世界||World`;
+    }
+
+    // 传统模式示例
+    const langNames = languageService.getLanguageNames(translationDirection);
     if (langNames) {
-      const userDescription =
-        langNames.source === 'Chinese'
-          ? 'The user is a native Chinese speaker.'
-          : `The user is a native Chinese speaker learning ${langNames.source}.`;
-
-      return `${userDescription} The provided text is in ${langNames.source}. Your goal is to select key words or phrases and provide their ${langNames.target} translations. In the JSON response, the "original" key must contain the ${langNames.source} word/phrase, and the "translation" key must contain its ${langNames.target} translation.`;
-    } else {
-      // 默认情况（向后兼容）
-      return 'The user is a native Chinese speaker. The provided text is in Chinese. Your goal is to select Chinese words or phrases and provide their ENGLISH translations to create a mixed-language learning environment. In the JSON response, the "original" key must contain the Chinese word/phrase, and the "translation" key must contain its English translation.';
-    }
-  }
-
-  // ==================== 公开方法 ====================
-
-  /**
-   * 智能多语言翻译的系统提示词
-   * @param targetLanguage 目标语言代码
-   * @param level 用户水平
-   * @param replacementRate 替换比例
-   * @returns 智能模式的系统提示词
-   */
-  public getIntelligentSystemPrompt(
-    targetLanguage: string,
-    level: UserLevel,
-    replacementRate: number,
-  ): string {
-    const targetLanguageName =
-      languageService.getTargetLanguageDisplayName(targetLanguage);
-
-    // 核心任务指令
-    const taskInstruction = `The user is a native speaker learning other languages. You will be provided with a text that could be in any language. Your task is to:
-                              1. Select key words or phrases suitable for learning
-                              2. Provide their ${targetLanguageName} translations
-
-                              CRITICAL RULES:
-                              - ALL translations must be in ${targetLanguageName}. Do not translate to any other language.
-                              - ABSOLUTELY CRITICAL: If a word or phrase in the source text is already written in ${targetLanguageName}, you MUST completely skip it. Do NOT include it in your response at all. Only translate words that are clearly in a different language than ${targetLanguageName}.
-                              - For example, if translating to English and you see "Hello" in the source text, skip it entirely. If translating to Chinese and you see "你好" in the source text, skip it entirely.
-                              - The "translation" field must contain ONLY the direct translation of the word/phrase. Do NOT include explanations, pronunciation guides, or additional context.
-                              - If you don't follow the rules, my program will crash, so please follow the rules strictly.
-                              In the JSON response, the "original" key must contain the source word/phrase, and the "translation" key must contain its ${targetLanguageName} translation.
-
-                              WRONG EXAMPLES (DO NOT DO THIS):
-                              - If target is English, DO NOT output: {"original": "Hello", "translation": "Hello"}
-                              - If target is Chinese, DO NOT output: {"original": "你好", "translation": "你好"}
-                              - DO NOT output: {"original": "word", "translation": "word translation with explanation"}
-  `;
-
-    // 响应格式（包含示例）
-    const responseFormat = `${JSON_FORMAT_BASE}
-  ${this.generateIntelligentFormatExample(targetLanguage)}`;
-
-    // 组装完整提示词
-    const components = [
-      BASE_INSTRUCTION,
-      taskInstruction,
-      this.generateDifficultyAdjustment(level),
-      this.generateRateAdjustment(replacementRate),
-      responseFormat,
-    ].filter((component) => component.trim() !== '');
-
-    return components.join('\n\n');
-  }
-
-  /**
-   * 传统固定翻译方向的系统提示词
-   * @param direction 翻译方向 (例如 'zh-to-en')
-   * @param level 用户的英语水平
-   * @param replacementRate 替换比例
-   * @returns 传统模式的系统提示词
-   */
-  public getSystemPrompt(
-    direction: string,
-    level: UserLevel,
-    replacementRate: number,
-  ): string {
-    // 智能模式检查
-    if (direction === 'intelligent') {
-      console.error(
-        '错误：智能模式应该通过getSystemPromptByConfig调用，而不是getSystemPrompt',
-      );
-      throw new Error('智能模式应该通过getSystemPromptByConfig调用');
+      if (translationDirection === 'zh-to-en') {
+        return `EXAMPLE:
+学习||learning
+重要的||important
+技术||technology`;
+      } else if (translationDirection === 'en-to-zh') {
+        return `EXAMPLE:
+Hello||你好
+World||世界
+Technology||技术`;
+      }
     }
 
-    // 生成任务指令
-    const taskInstruction = this.generateTraditionalTaskInstruction(direction);
-
-    // 格式约束指令
-    const formatConstraint = `CRITICAL: The "translation" field must contain ONLY the direct translation of the word/phrase. Do NOT include explanations, pronunciation guides, or additional context.`;
-
-    // 响应格式（包含示例）
-    const responseFormat = `${JSON_FORMAT_BASE}
-  ${TRADITIONAL_FORMAT_EXAMPLES}`;
-
-    // 组装完整提示词
-    const components = [
-      BASE_INSTRUCTION,
-      taskInstruction,
-      this.generateDifficultyAdjustment(level, { isTraditional: true }), // 传统模式使用英语水平描述
-      this.generateRateAdjustment(replacementRate),
-      formatConstraint,
-      responseFormat,
-    ].filter((component) => component.trim() !== '');
-
-    return components.join('\n\n');
+    return `EXAMPLE:
+source_word||target_translation
+another_word||another_translation`;
   }
 
   /**
-   * 为 Google Gemini 设计的专用系统提示词。
-   * 这个版本简化了指令，并强化了JSON输出的要求，以适应Gemini的特点。
-   * @param targetLanguage 目标语言代码
-   * @param level 用户水平
-   * @param replacementRate 替换比例
-   * @returns Gemini 优化的系统提示词
-   */
-  public getGeminiSystemPrompt(
-    targetLanguage: string,
-    level: UserLevel,
-    replacementRate: number,
-  ): string {
-    const targetLanguageName =
-      languageService.getTargetLanguageDisplayName(targetLanguage);
-
-    const taskInstruction = `Your task is to act as a translation engine. You will be given a text in any language. Your goal is to select key words and phrases and provide their translations in ${targetLanguageName}.`;
-
-    const rules = `
-  CRITICAL RULES:
-  1.  **Output Format**: You MUST output a single, valid JSON object. Nothing else. The JSON object must have a single key named "replacements", which is an array of objects.
-  2.  **Object Structure**: Each object in the "replacements" array must contain exactly two keys: "original" (the source word/phrase) and "translation" (the ${targetLanguageName} translation).
-  3.  **No Self-Translation**: If a word in the source text is already in ${targetLanguageName}, you MUST skip it. Do not include it in the output.
-  4.  **Content Purity**: The "translation" value must ONLY be the translated text. Do not add any explanations, comments, or extra information.
-  5.  **Word Selection**: Adjust the number and difficulty of the selected words based on the user's learning level: ${UserLevel[level]}.
-  6.  **Translation Rate**: The total length of the *original* words/phrases you select to translate should be approximately ${Math.round(
-    replacementRate * 100,
-  )}% of the total text length.
-  `;
-
-    const example = `
-  EXAMPLE:
-  If the input text is "你好世界" and the target language is English, a valid output is:
-  {
-    "replacements": [
-      {"original": "你好", "translation": "Hello"},
-      {"original": "世界", "translation": "World"}
-    ]
-  }
-  `;
-
-    return `${taskInstruction}\n\n${rules}\n\n${example}`;
-  }
-
-  /**
-   * 统一的提示词获取入口
-   * @param config 提示词配置对象
-   * @returns 系统提示词
+   * 向后兼容的公共接口
    */
   public getSystemPromptByConfig(config: PromptConfig): string {
-    // Gemini特定路由
-    if (config.provider === 'gemini') {
-      if (!config.targetLanguage) {
-        throw new Error('Gemini 模式下必须提供目标语言');
-      }
-      return this.getGeminiSystemPrompt(
-        config.targetLanguage,
-        config.userLevel,
-        config.replacementRate,
-      );
-    }
-
-    // 智能模式路由
-    if (
-      config.intelligentMode ||
-      config.translationDirection === 'intelligent'
-    ) {
-      if (!config.targetLanguage) {
-        throw new Error('智能模式下必须提供目标语言');
-      }
-      return this.getIntelligentSystemPrompt(
-        config.targetLanguage,
-        config.userLevel,
-        config.replacementRate,
-      );
-    }
-
-    // 传统模式路由
-    return this.getSystemPrompt(
-      config.translationDirection,
-      config.userLevel,
-      config.replacementRate,
-    );
+    return this.getUnifiedPrompt(config);
   }
 }
 
 // ==================== 导出 ====================
 
-// 单例实例导出
 export const promptService = PromptService.getInstance();
 
+// 向后兼容的导出函数
 export const getSystemPrompt = (
   direction: string,
   level: UserLevel,
   replacementRate: number,
 ): string => {
-  return promptService.getSystemPrompt(direction, level, replacementRate);
+  // 从翻译方向推断目标语言
+  const targetLanguage = direction.includes('en') ? 'en' : 'zh';
+
+  return promptService.getUnifiedPrompt({
+    translationDirection: direction,
+    targetLanguage: targetLanguage,
+    userLevel: level,
+    replacementRate: replacementRate,
+  });
 };
 
 export const getGeminiSystemPrompt = (
@@ -328,16 +260,16 @@ export const getGeminiSystemPrompt = (
   level: UserLevel,
   replacementRate: number,
 ): string => {
-  return promptService.getGeminiSystemPrompt(
-    targetLanguage,
-    level,
-    replacementRate,
-  );
+  return promptService.getUnifiedPrompt({
+    targetLanguage: targetLanguage,
+    translationDirection: 'intelligent',
+    userLevel: level,
+    replacementRate: replacementRate,
+    provider: 'gemini',
+    intelligentMode: true,
+  });
 };
 
 export const getSystemPromptByConfig = (config: PromptConfig): string => {
   return promptService.getSystemPromptByConfig(config);
 };
-
-// 默认导出
-export default PromptService;
