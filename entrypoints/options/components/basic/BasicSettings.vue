@@ -195,6 +195,85 @@
         </div>
       </CardContent>
     </Card>
+
+    <!-- 懒加载设置 -->
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h2 class="text-xl font-bold text-foreground">懒加载设置</h2>
+        </CardTitle>
+      </CardHeader>
+      <CardContent class="space-y-6">
+        <div class="flex items-center justify-between">
+          <div class="space-y-1">
+            <Label for="lazy-loading-enabled">启用懒加载翻译</Label>
+            <p class="text-xs text-muted-foreground">
+              滚动到段落时才进行翻译，减少资源消耗和提高性能
+            </p>
+          </div>
+          <Switch
+            id="lazy-loading-enabled"
+            :model-value="settings.lazyLoading.enabled"
+            @update:model-value="settings.lazyLoading.enabled = $event"
+          />
+        </div>
+
+        <!-- 预加载距离设置 -->
+        <div
+          v-if="settings.lazyLoading.enabled"
+          class="space-y-2 border-t border-border pt-6"
+        >
+          <Label for="preload-distance">
+            预加载距离 ({{
+              Math.round(settings.lazyLoading.preloadDistance * 100)
+            }}%)
+          </Label>
+          <Slider
+            id="preload-distance"
+            :model-value="[settings.lazyLoading.preloadDistance]"
+            @update:model-value="
+              settings.lazyLoading.preloadDistance = ($event || [0.5])[0]
+            "
+            :min="0.0"
+            :max="2.0"
+            :step="0.1"
+            class="w-full"
+          />
+          <p class="text-xs text-muted-foreground">
+            较高的值可以捕获更多段落，但会增加资源消耗。推荐范围：50%-100%
+          </p>
+        </div>
+
+        <!-- 性能提示 -->
+        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <div class="flex items-start space-x-2">
+            <svg
+              class="w-5 h-5 text-blue-600 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div>
+              <p class="text-sm font-medium text-blue-900">性能提示</p>
+              <p class="text-sm text-blue-700">
+                {{
+                  settings.lazyLoading.enabled
+                    ? '懒加载已启用，将在您滚动时按需翻译内容，有效减少内存使用和提高页面加载速度。'
+                    : '懒加载未启用，将一次性翻译整个页面。建议在内容较多的页面开启懒加载。'
+                }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   </div>
 </template>
 

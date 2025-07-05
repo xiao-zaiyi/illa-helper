@@ -73,3 +73,11 @@ export type ContextMenuActionType =
 
 // URL模式类型
 export type UrlPatternType = 'domain' | 'exact';
+
+// 懒加载配置接口 - 简化版本
+export interface LazyLoadingConfig {
+  /** 是否启用懒加载 */
+  enabled: boolean;
+  /** 预加载距离（视口百分比，0.5表示提前半屏） */
+  preloadDistance: number;
+}

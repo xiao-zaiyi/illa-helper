@@ -456,6 +456,11 @@ export class StorageService {
           DEFAULT_SETTINGS.multilingualConfig;
       }
 
+      // 确保懒加载配置存在
+      if (!validatedSettings.lazyLoading) {
+        validatedSettings.lazyLoading = DEFAULT_SETTINGS.lazyLoading;
+      }
+
       return validatedSettings;
     } catch (error) {
       console.error(`设置验证异常: ${error}`);

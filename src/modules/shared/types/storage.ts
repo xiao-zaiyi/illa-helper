@@ -11,6 +11,7 @@ import type {
   TranslationPosition,
   ContextMenuActionType,
   UrlPatternType,
+  LazyLoadingConfig,
 } from './core';
 import type { ApiConfigItem, MultilingualConfig } from './api';
 import type { TooltipHotkey, FloatingBallConfig } from './ui';
@@ -44,6 +45,8 @@ export interface UserSettings {
   apiRequestTimeout: number; // 以毫秒为单位
   // 新增：自定义翻译样式CSS
   customTranslationCSS: string;
+  // 新增：懒加载配置
+  lazyLoading: LazyLoadingConfig;
 }
 
 // 右键菜单消息接口

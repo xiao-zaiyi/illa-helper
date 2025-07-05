@@ -8,6 +8,7 @@ import { StyleManager } from '@/src/modules/styles';
 import { TextProcessorService } from '@/src/modules/core/translation/TextProcessorService';
 import { TextReplacerService } from '@/src/modules/core/translation/TextReplacerService';
 import { FloatingBallManager } from '@/src/modules/floatingBall';
+import { LazyLoadingService } from './services/LazyLoadingService';
 
 /**
  * Content Script 主服务接口
@@ -55,6 +56,7 @@ export interface ServiceContainer {
   textProcessor: TextProcessorService;
   textReplacer: TextReplacerService;
   floatingBallManager: FloatingBallManager;
+  lazyLoadingService?: LazyLoadingService;
 }
 
 /**

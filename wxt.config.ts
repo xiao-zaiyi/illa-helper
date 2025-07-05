@@ -10,7 +10,7 @@ export default defineConfig({
       email: 'xiao1932794922@gmail.com',
     },
     description: `浸入式学语言助手(illa-helper) extension turns browsing into language learning. AI uses "i+1" theory, supports 20+ languages.`,
-    version: '1.7.5',
+    version: '1.7.6',
     permissions: ['storage', 'notifications', 'contextMenus', 'activeTab'],
     host_permissions: ['<all_urls>'],
     browser_specific_settings: {

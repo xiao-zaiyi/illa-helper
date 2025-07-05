@@ -1,3 +1,4 @@
+import { browser } from 'wxt/browser';
 import { UserSettings, TriggerMode } from '@/src/modules/shared/types';
 import { StyleManager } from '@/src/modules/styles';
 import { TextProcessorService } from '@/src/modules/core/translation/TextProcessorService';
@@ -10,6 +11,8 @@ import { ProcessingService } from './services/ProcessingService';
 import { ListenerService } from './services/ListenerService';
 import { detectPageLanguage } from './utils/domUtils';
 import { IContentManager, ServiceContainer } from './types';
+import { LazyLoadingService } from './services/LazyLoadingService';
+import { ContentSegment } from '../processing/ProcessingStateManager';
 
 /**
  * 翻译显示状态管理器
@@ -206,9 +209,29 @@ export class ContentManager implements IContentManager {
   destroy(): void {
     try {
       this.listenerService?.destroy();
+      this.services?.lazyLoadingService?.destroy();
       console.log('[ContentManager] 服务已销毁');
     } catch (error) {
       console.error('[ContentManager] 销毁服务时出错:', error);
+    }
+  }
+
+  /**
+   * 更新设置
+   */
+  updateSettings(newSettings: UserSettings): void {
+    this.settings = newSettings;
+
+    // 更新ProcessingService设置
+    this.processingService?.updateSettings(newSettings);
+
+    // 更新配置服务
+    if (this.services) {
+      this.configurationService.updateConfiguration(
+        newSettings,
+        this.services.styleManager,
+        this.services.textReplacer,
+      );
     }
   }
 
@@ -266,19 +289,24 @@ export class ContentManager implements IContentManager {
       this.settings.floatingBall,
     );
 
+    // 创建懒加载服务
+    const lazyLoadingService = this.initializeLazyLoading(this.settings);
+
     // 保存服务容器
     this.services = {
       styleManager,
       textProcessor,
       textReplacer,
       floatingBallManager,
+      lazyLoadingService,
     };
 
     // 创建业务服务
     this.processingService = new ProcessingService(
       textProcessor,
       textReplacer,
-      this.settings,
+      this.settings!,
+      lazyLoadingService,
     );
 
     // 创建翻译状态管理器
@@ -356,5 +384,30 @@ export class ContentManager implements IContentManager {
         console.error('[ContentManager] 初始页面处理失败:', error);
       }
     }
+  }
+
+  /**
+   * 初始化懒加载服务
+   */
+  private initializeLazyLoading(
+    settings: UserSettings,
+  ): LazyLoadingService | undefined {
+    if (!settings.lazyLoading || !settings.lazyLoading.enabled) {
+      return undefined;
+    }
+
+    const lazyLoadingService = new LazyLoadingService(settings.lazyLoading);
+    lazyLoadingService.initialize();
+
+    // 设置处理回调
+    lazyLoadingService.setProcessingCallback(
+      async (segments: ContentSegment[]) => {
+        if (this.processingService) {
+          await this.processingService.processSegmentsLazy(segments);
+        }
+      },
+    );
+
+    return lazyLoadingService;
   }
 }

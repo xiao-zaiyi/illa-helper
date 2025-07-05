@@ -511,6 +511,41 @@ const openOptionsBasePage = () => {
               </div>
             </div>
           </div>
+
+          <!-- 懒加载设置 -->
+          <div class="topping-settings-card">
+            <div class="setting-group">
+              <label>懒加载翻译</label>
+              <div class="toggle-container">
+                <input
+                  type="checkbox"
+                  v-model="settings.lazyLoading.enabled"
+                  id="lazy-loading-toggle"
+                  class="toggle-input"
+                />
+                <label for="lazy-loading-toggle" class="toggle-label">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <!-- 预加载距离调整 -->
+            <div v-if="settings.lazyLoading.enabled" class="setting-group">
+              <label>
+                预加载距离:
+                {{ Math.round(settings.lazyLoading.preloadDistance * 100) }}%
+              </label>
+              <input
+                type="range"
+                v-model.number="settings.lazyLoading.preloadDistance"
+                min="0.0"
+                max="2.0"
+                step="0.1"
+              />
+              <p class="setting-note" style="margin-top: 2px; font-size: 11px">
+                较高值可捕获更多段落，但会增加资源消耗
+              </p>
+            </div>
+          </div>
         </div>
 
         <div class="setting-group api-settings">

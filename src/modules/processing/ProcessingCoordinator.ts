@@ -78,6 +78,7 @@ export class ProcessingCoordinator {
     originalWordDisplayMode: OriginalWordDisplayMode,
     translationPosition: TranslationPosition,
     showParentheses: boolean,
+    isLazyLoading: boolean = false,
   ): Promise<ProcessingResult> {
     const startTime = Date.now();
 
@@ -90,6 +91,7 @@ export class ProcessingCoordinator {
         translationPosition,
         showParentheses,
         startTime,
+        isLazyLoading,
       );
     }));
   }
@@ -104,6 +106,7 @@ export class ProcessingCoordinator {
     translationPosition: TranslationPosition,
     showParentheses: boolean,
     startTime: number,
+    isLazyLoading: boolean = false,
   ): Promise<ProcessingResult> {
     let processedCount = 0;
     let skippedCount = 0;
@@ -582,8 +585,8 @@ export class ProcessingCoordinator {
       for (const element of segment.elements) {
         const translationElements = element.querySelectorAll
           ? element.querySelectorAll(
-              '.wxt-translation-term:not([data-pronunciation-added])',
-            )
+            '.wxt-translation-term:not([data-pronunciation-added])',
+          )
           : [];
         allTranslationElements.push(...Array.from(translationElements));
       }

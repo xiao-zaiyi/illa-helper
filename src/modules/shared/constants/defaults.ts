@@ -10,6 +10,7 @@ import type {
 } from '../types/api';
 import type { FloatingBallConfig, TooltipHotkey } from '../types/ui';
 import type { UserSettings } from '../types/storage';
+import type { LazyLoadingConfig } from '../types/core';
 import {
   UserLevel,
   TranslationStyle,
@@ -54,6 +55,12 @@ export const DEFAULT_FLOATING_BALL_CONFIG: FloatingBallConfig = {
   opacity: 0.8, // 80% 透明度
 };
 
+// 默认懒加载配置 - 简化版本
+export const DEFAULT_LAZY_LOADING_CONFIG: LazyLoadingConfig = {
+  enabled: true, //  懒加载开关
+  preloadDistance: 0.5, // 固定提前半屏预加载
+};
+
 // 创建默认API配置项的函数
 function createDefaultApiConfigItem(): ApiConfigItem {
   return {
@@ -88,4 +95,5 @@ export const DEFAULT_SETTINGS: UserSettings = {
   showParentheses: true,
   apiRequestTimeout: 0, // 无限制超时
   customTranslationCSS: '',
+  lazyLoading: DEFAULT_LAZY_LOADING_CONFIG,
 };

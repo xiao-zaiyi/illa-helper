@@ -373,6 +373,14 @@ export class TextProcessorService {
       config: this.getConfig(),
     };
   }
+
+  /**
+   * 获取发音服务实例
+   * @returns 发音服务实例
+   */
+  public getPronunciationService(): PronunciationService | undefined {
+    return this.pronunciationService;
+  }
 }
 
 // 导出服务实例获取器（简化外部使用）
