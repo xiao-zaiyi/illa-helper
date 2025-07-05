@@ -21,7 +21,7 @@ export class PromptService {
   /**
    * 私有构造函数，防止外部实例化
    */
-  private constructor() {}
+  private constructor() { }
 
   /**
    * 获取服务实例
@@ -125,11 +125,19 @@ export class PromptService {
     const targetLangName =
       languageService.getTargetLanguageDisplayName(targetLanguage);
 
-    return `CRITICAL RULES:
+    return `## CRITICAL RULES:
 - ALL translations must be in ${targetLangName}. Do not translate to any other language.
 - ABSOLUTELY CRITICAL: If a word or phrase in the source text is already written in ${targetLangName}, you MUST completely skip it. Do NOT include it in your response at all.
 - The translation must contain ONLY the direct translation of the word/phrase. Do NOT include explanations, pronunciation guides, or additional context.
-- If you don't follow the rules, my program will crash, so please follow the rules strictly.`;
+- If you don't follow the rules, my program will crash, so please follow the rules strictly.
+
+ ## WORD ORDER GUIDELINES:
+- CRITICAL: Maintain proper word order for the target language
+- NEVER mix languages within a single sentence unless creating parallel translations
+- Ensure grammatical completeness: include necessary connecting words, particles, and structural elements
+- When translating mixed-language text, separate by language and maintain internal coherence
+`;
+
   }
 
   /**
@@ -156,7 +164,7 @@ export class PromptService {
     if (provider === 'gemini') {
       return `${basicInstruction}
 
-RATIO CALCULATION STEPS:
+## RATIO CALCULATION STEPS:
 - Step 1: Count total characters in input text (including spaces, punctuation)
 - Step 2: Calculate target: ${percentage}% × total characters = required character count
 - Step 3: Select words until sum of "original" character lengths equals target
@@ -200,9 +208,9 @@ FORMAT REQUIREMENTS:
 
     if (translationDirection === 'intelligent' || !translationDirection) {
       return `EXAMPLE:
-If the input text is "你好世界" and the target language is ${targetLangName}, a valid output is:
-你好||Hello
-世界||World`;
+              If the input text is "你好世界" and the target language is ${targetLangName}, a valid output is:
+              你好||Hello
+              世界||World`;
     }
 
     // 传统模式示例
@@ -210,20 +218,20 @@ If the input text is "你好世界" and the target language is ${targetLangName}
     if (langNames) {
       if (translationDirection === 'zh-to-en') {
         return `EXAMPLE:
-学习||learning
-重要的||important
-技术||technology`;
+                学习||learning
+                重要的||important
+                技术||technology`;
       } else if (translationDirection === 'en-to-zh') {
         return `EXAMPLE:
-Hello||你好
-World||世界
-Technology||技术`;
+                Hello||你好
+                World||世界
+                Technology||技术`;
       }
     }
 
     return `EXAMPLE:
-source_word||target_translation
-another_word||another_translation`;
+            source_word||target_translation
+            another_word||another_translation`;
   }
 
   /**
