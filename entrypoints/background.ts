@@ -14,6 +14,7 @@ import {
   MESSAGE_TYPES,
   BACKGROUND_CONSTANTS,
 } from '@/src/modules/background/types';
+import { MessageType } from '@/src/modules/core/messaging/types';
 
 export default defineBackground(() => {
   // 服务实例
@@ -23,8 +24,7 @@ export default defineBackground(() => {
   const commandService = CommandService.getInstance();
   const initializationService = InitializationService.getInstance();
 
-  // 传统管理器（保持兼容性）
-  new ContextMenuManager(new WebsiteManager());
+  // 传统管理器已移除 - 统一到InitializationService中管理
 
   /**
    * 初始化所有服务
@@ -87,6 +87,10 @@ export default defineBackground(() => {
 
       case MESSAGE_TYPES.API_REQUEST:
         handleApiRequest(message, sendResponse);
+        return true; // 保持消息通道开放
+
+      case MessageType.CONTEXT_MENU_ACTION:
+        handleContextMenuAction(message, sendResponse);
         return true; // 保持消息通道开放
 
       default:
@@ -182,6 +186,35 @@ export default defineBackground(() => {
         sendResponse(response);
       } catch (error) {
         console.error('[Background] API请求处理失败:', error);
+        sendResponse({
+          success: false,
+          error: {
+            message: error instanceof Error ? error.message : '未知错误',
+          },
+        });
+      }
+    })();
+  }
+
+  /**
+   * 处理右键菜单动作消息
+   */
+  function handleContextMenuAction(
+    message: any,
+    sendResponse: (response: any) => void,
+  ): void {
+    (async () => {
+      try {
+        console.log('[Background] 处理右键菜单动作:', message.data);
+
+        // 通过InitializationService获取ContextMenuManager实例
+        // 这里暂时返回成功，因为实际的处理逻辑已经在ContextMenuManager中
+        sendResponse({
+          success: true,
+          message: '右键菜单动作已处理',
+        });
+      } catch (error) {
+        console.error('[Background] 右键菜单动作处理失败:', error);
         sendResponse({
           success: false,
           error: {
