@@ -73,6 +73,13 @@ export const MENU_ACTIONS = [
     label: '选项',
     color: '#6A88E0',
   },
+  // 加入黑名单
+  {
+    id: 'blacklist',
+    icon: '⛔',
+    label: '加入黑名单',
+    color: '#EF4444',
+  },
   {
     id: 'close',
     icon: '✕',

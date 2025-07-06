@@ -17,6 +17,7 @@ export type FloatingBallActionType =
   | 'settings' // 打开设置
   | 'close' // 关闭悬浮球
   | 'toggle_menu' // 切换菜单
+  | 'blacklist' // 加入黑名单
   | 'options'; // 打开选项
 
 // 悬浮球状态
