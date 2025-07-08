@@ -206,7 +206,6 @@ export async function testOpenAICompatibleConnection(
             'Hello, this is a connection test. Please respond with "OK" and output JSON format.',
         },
       ],
-      response_format: { type: 'json_object' },
       max_tokens: 10,
     };
 

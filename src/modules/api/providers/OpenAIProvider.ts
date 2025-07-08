@@ -52,8 +52,7 @@ export class OpenAIProvider extends BaseProvider {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `{{ ${text} }}` },
       ],
-      temperature: this.config.temperature,
-      response_format: { type: 'json_object' },
+      temperature: this.config.temperature
     };
 
     if (this.config.includeThinkingParam) {
