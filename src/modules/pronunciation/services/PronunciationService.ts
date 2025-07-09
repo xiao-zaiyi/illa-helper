@@ -18,6 +18,7 @@ import {
 import { ApiConfig } from '../../shared/types/api';
 import { DEFAULT_API_CONFIG } from '../../shared/constants/defaults';
 import { StorageService } from '../../core/storage';
+import { OriginalWordDisplayMode } from '../../shared/types/core';
 import { safeSetInnerHTML } from '@/src/utils';
 
 /**
@@ -200,7 +201,9 @@ export class PronunciationService {
     // 创建AI翻译提供者，优先使用传入的API配置，否则使用默认配置
     const effectiveApiConfig = apiConfig || DEFAULT_API_CONFIG;
     this.aiTranslationProvider = new AITranslationProvider(effectiveApiConfig);
-    this.tooltipRenderer = new TooltipRenderer(this.config.uiConfig);
+    // 创建TooltipRenderer实例，传入UI配置和默认的原文显示模式
+    // 注意：实际的原文显示模式会在运行时从StorageService获取
+    this.tooltipRenderer = new TooltipRenderer(this.config.uiConfig, OriginalWordDisplayMode.HIDDEN);
     this.storageService = StorageService.getInstance();
 
     // 始终创建Web Speech作为备用TTS提供者
@@ -220,6 +223,9 @@ export class PronunciationService {
     document.addEventListener('keydown', this.handleDocumentKeyDown);
     document.addEventListener('keyup', this.handleDocumentKeyUp);
     window.addEventListener('blur', this.handleWindowBlur);
+
+    // 初始化时获取原文显示模式
+    this.updateOriginalWordDisplayMode();
   }
 
   /**
@@ -247,6 +253,12 @@ export class PronunciationService {
         word: word.toLowerCase().trim(),
         element,
       };
+
+      // 读取原文信息（如果存在）
+      const originalText = element.getAttribute('data-original-text');
+      if (originalText) {
+        elementData.originalText = originalText;
+      }
 
       // 存储元素数据
       this.elementDataMap.set(element, elementData);
@@ -499,6 +511,29 @@ export class PronunciationService {
         pitch: config.ttsConfig.pitch,
         volume: config.ttsConfig.volume,
       });
+    }
+
+    // 更新UI配置时，同时获取并更新原文显示模式
+    if (config.uiConfig) {
+      this.tooltipRenderer.updateConfig(config.uiConfig);
+      // 异步更新原文显示模式
+      this.updateOriginalWordDisplayMode();
+    }
+  }
+
+  /**
+   * 更新原文显示模式
+   * 从存储服务获取当前设置并更新TooltipRenderer
+   */
+  private async updateOriginalWordDisplayMode(): Promise<void> {
+    try {
+      const userSettings = await this.storageService.getUserSettings();
+      const mode = userSettings.originalWordDisplayMode || OriginalWordDisplayMode.VISIBLE;
+      this.tooltipRenderer.updateOriginalWordDisplayMode(mode);
+    } catch (error) {
+      console.error('更新原文显示模式失败:', error);
+      // 发生错误时使用默认值
+      this.tooltipRenderer.updateOriginalWordDisplayMode(OriginalWordDisplayMode.VISIBLE);
     }
   }
 

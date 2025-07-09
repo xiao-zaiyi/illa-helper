@@ -24,18 +24,23 @@
 import { PronunciationElementData } from '../types';
 import { PronunciationUIConfig, SVG_ICONS } from '../config';
 import { DOMUtils } from '../utils';
+import { OriginalWordDisplayMode } from '../../shared/types/core';
 
 export class TooltipRenderer {
   /** UI配置对象，控制悬浮框的显示选项和主题 */
   private uiConfig: PronunciationUIConfig;
+  /** 原文显示模式 */
+  private originalWordDisplayMode: OriginalWordDisplayMode;
 
   /**
    * 构造函数
    *
    * @param uiConfig - UI配置对象，包含显示选项、主题设置等
+   * @param originalWordDisplayMode - 原文显示模式，控制是否在悬浮框中显示原文
    */
-  constructor(uiConfig: PronunciationUIConfig) {
+  constructor(uiConfig: PronunciationUIConfig, originalWordDisplayMode: OriginalWordDisplayMode) {
     this.uiConfig = uiConfig;
+    this.originalWordDisplayMode = originalWordDisplayMode;
   }
 
   /**
@@ -52,7 +57,7 @@ export class TooltipRenderer {
     const isPhrase = words.length > 1;
 
     if (isPhrase) {
-      return this.createPhraseTooltipHTML(elementData.word, words);
+      return this.createPhraseTooltipHTML(elementData);
     } else {
       return this.createWordTooltipHTML(elementData);
     }
@@ -60,29 +65,35 @@ export class TooltipRenderer {
 
   /**
    * 创建短语悬浮框HTML
-   * @param phrase 短语文本
-   * @param words 单词数组
+   * @param elementData 元素数据
    */
-  private createPhraseTooltipHTML(phrase: string, words: string[]): string {
+  private createPhraseTooltipHTML(elementData: PronunciationElementData): string {
+    const words = DOMUtils.extractWords(elementData.word);
     const interactiveWordList = DOMUtils.createInteractiveWordList(words);
+
+    // 原文显示逻辑：只有在原文显示模式为HIDDEN且存在原文时才显示
+    let originalTextSection = '';
+    if (this.shouldShowOriginalText() && elementData.originalText) {
+      originalTextSection = `<div class="wxt-phrase-original">原文：${elementData.originalText}</div>`;
+    }
 
     return `
       <div class="wxt-tooltip-card">
-        <div class="wxt-tooltip-header">
-          <div class="wxt-word-info">
-            <div class="wxt-phrase-text">${phrase}</div>
+        <div class="wxt-tooltip-header wxt-phrase-tooltip-header">
+          <div class="wxt-phrase-info-card">
+            <div class="wxt-phrase-title">${elementData.word}</div>
+            ${originalTextSection}
           </div>
-          ${
-            this.uiConfig.showPlayButton
-              ? `
-            <button class="wxt-audio-btn" title="朗读">
-              ${SVG_ICONS.SPEAKER}
-            </button>
-          `
-              : ''
-          }
+          ${this.uiConfig.showPlayButton
+        ? `
+          <button class="wxt-audio-btn wxt-phrase-audio-btn" title="朗读短语">
+            ${SVG_ICONS.SPEAKER}
+          </button>
+        `
+        : ''
+      }
         </div>
-        <div class="wxt-tooltip-body">
+        <div class="wxt-tooltip-body wxt-phrase-tooltip-body">
           <div class="wxt-phrase-words">${interactiveWordList}</div>
         </div>
         <div class="wxt-tooltip-arrow"></div>
@@ -112,29 +123,34 @@ export class TooltipRenderer {
       phoneticDisplay = `<div class="wxt-phonetic-row"><div class="wxt-phonetic-loading">获取音标中...</div></div>`;
     }
 
+    // 原文显示逻辑：只有在原文显示模式为HIDDEN且存在原文时才显示
+    let originalTextDisplay = '';
+    if (this.shouldShowOriginalText() && elementData.originalText) {
+      originalTextDisplay = this.createOriginalTextHTML(elementData.originalText);
+    }
+
     return `
       <div class="wxt-tooltip-card">
         <div class="wxt-tooltip-header">
           <div class="wxt-word-info">
             <div class="wxt-word-main">${elementData.word}</div>
+            ${originalTextDisplay}
             ${phoneticDisplay}
             <div class="wxt-meaning-container">
-              ${
-                aiTranslation
-                  ? `<div class="wxt-meaning-text">${aiTranslation.explain}</div>`
-                  : `<div class="wxt-meaning-loading">获取词义中...</div>`
-              }
+              ${aiTranslation
+        ? `<div class="wxt-meaning-text">${aiTranslation.explain}</div>`
+        : `<div class="wxt-meaning-loading">获取词义中...</div>`
+      }
             </div>
           </div>
-          ${
-            this.uiConfig.showPlayButton
-              ? `
+          ${this.uiConfig.showPlayButton
+        ? `
             <button class="wxt-audio-btn" title="朗读单词">
               ${SVG_ICONS.SPEAKER}
             </button>
           `
-              : ''
-          }
+        : ''
+      }
         </div>
         <div class="wxt-tooltip-arrow"></div>
       </div>
@@ -283,10 +299,34 @@ export class TooltipRenderer {
   }
 
   /**
+   * 判断是否应该显示原文
+   * 只有在原文显示模式为HIDDEN时才在悬浮框中显示原文
+   */
+  private shouldShowOriginalText(): boolean {
+    return this.originalWordDisplayMode === OriginalWordDisplayMode.HIDDEN;
+  }
+
+  /**
+   * 创建原文显示HTML
+   * @param originalText 原文文本
+   */
+  private createOriginalTextHTML(originalText: string): string {
+    return `<div class="wxt-original-text">原文: ${originalText}</div>`;
+  }
+
+  /**
    * 更新UI配置
    * @param uiConfig 新的UI配置
    */
   updateConfig(uiConfig: PronunciationUIConfig): void {
     this.uiConfig = uiConfig;
+  }
+
+  /**
+   * 更新原文显示模式
+   * @param mode 新的原文显示模式
+   */
+  updateOriginalWordDisplayMode(mode: OriginalWordDisplayMode): void {
+    this.originalWordDisplayMode = mode;
   }
 }

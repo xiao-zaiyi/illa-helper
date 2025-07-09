@@ -447,6 +447,9 @@ export class ProcessingCoordinator {
       const translationSpan = document.createElement('span');
       translationSpan.className = `wxt-translation-term ${styleManager.getCurrentStyleClass()}`;
 
+      // 保存原文信息到DOM属性，供悬浮框系统使用
+      translationSpan.setAttribute('data-original-text', replacement.original);
+
       // 根据新设置决定是否添加括号
       if (showParentheses) {
         translationSpan.textContent = ` (${replacement.translation}) `;

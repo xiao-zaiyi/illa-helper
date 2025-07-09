@@ -62,6 +62,12 @@ export const TOOLTIP_STYLES = `
   position: relative;
 }
 
+/* 短语悬浮框header特殊布局 */
+.wxt-phrase-tooltip-header {
+  align-items: flex-start;
+  gap: 12px;
+}
+
 .wxt-tooltip-header::after {
   content: '';
   position: absolute;
@@ -76,9 +82,34 @@ export const TOOLTIP_STYLES = `
   font-size: 12px;
 }
 
+/* 短语悬浮框的body样式 */
+.wxt-phrase-tooltip-body {
+  padding: 8px 16px 12px 16px;
+}
+
 .wxt-phrase-words {
-  padding: 3px 2px;
+  padding: 6px 8px;
   font-size: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin: 0;
+  position: relative;
+  min-height: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+}
+
+.wxt-phrase-words::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
 }
 
 .wxt-word-info {
@@ -233,15 +264,50 @@ export const TOOLTIP_STYLES = `
   border-right: none;
 }
 
-/* 短语相关样式 */
-.wxt-phrase-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: #ffffff;
-  margin: 2px 0 0 0;
-  line-height: 1.3;
-  opacity: 0.95;
+/* ===== 短语悬浮框专用样式 ===== */
+
+/* 短语信息容器 - 简洁版 */
+.wxt-phrase-info-card {
+  flex: 1;
+  min-width: 0;
 }
+
+/* 短语标题 */
+.wxt-phrase-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 短语原文显示 */
+.wxt-phrase-original {
+  font-size: 10px;
+  color: #64ffda;
+  font-style: italic;
+  opacity: 0.9;
+  background: linear-gradient(135deg, rgba(100, 255, 218, 0.12) 0%, rgba(52, 211, 153, 0.08) 100%);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  display: inline-block;
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(100, 255, 218, 0.1);
+}
+
+/* 短语音频按钮 */
+.wxt-phrase-audio-btn {
+  width: 32px !important;
+  height: 32px !important;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+
 
 .wxt-word-list {
   line-height: 1.6;
@@ -252,23 +318,41 @@ export const TOOLTIP_STYLES = `
 .wxt-interactive-word {
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 5px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-block;
-  margin: 1px 2px;
+  margin: 2px 2px;
   color: #e5e5e7;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   font-weight: 500;
   font-size: 11px;
+  line-height: 1.2;
+  position: relative;
+  overflow: hidden;
+}
+
+.wxt-interactive-word::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.1), transparent);
+  transition: left 0.3s ease;
 }
 
 .wxt-interactive-word:hover {
-  background: rgba(52, 211, 153, 0.15);
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.2) 0%, rgba(52, 211, 153, 0.1) 100%);
   color: #34d399;
   transform: translateY(-1px);
-  border-color: rgba(52, 211, 153, 0.3);
-  box-shadow: 0 2px 8px rgba(52, 211, 153, 0.2);
+  border-color: rgba(52, 211, 153, 0.4);
+  box-shadow: 0 3px 12px rgba(52, 211, 153, 0.25);
+}
+
+.wxt-interactive-word:hover::before {
+  left: 100%;
 }
 
 /* 单词悬浮框样式(更小更简洁) */
@@ -433,6 +517,31 @@ export const TOOLTIP_STYLES = `
     0 1px 4px rgba(100, 255, 218, 0.2),
     0 0 0 1px rgba(255, 255, 255, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* 原文显示样式 */
+.wxt-original-text {
+  font-size: 10px;
+  color: #a0a0a0;
+  font-style: italic;
+  margin: 6px 0 0 0;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0.85;
+  text-align: center;
+  position: relative;
+}
+
+/* 单词悬浮框中的原文样式 */
+.wxt-tooltip-header .wxt-original-text {
+  margin: 6px 0 6px 0;
+  font-size: 10px;
+  background: linear-gradient(135deg, rgba(100, 255, 218, 0.08) 0%, rgba(52, 211, 153, 0.08) 100%);
+  border-color: rgba(100, 255, 218, 0.15);
+  color: #64ffda;
+  opacity: 0.9;
 }
 
 /* 词义容器样式 */

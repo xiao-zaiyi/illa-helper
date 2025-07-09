@@ -11,6 +11,7 @@ export interface PronunciationElementData {
   phonetic?: PhoneticInfo;
   tooltip?: HTMLElement;
   isMouseOver?: boolean; // 标记鼠标是否在元素上
+  originalText?: string; // 新增：原文信息，存储翻译前的原始词汇
 }
 
 // 悬浮框类型
