@@ -12,6 +12,7 @@ import { getSystemPromptByConfig } from '../../core/translation/PromptService';
 import { getApiTimeout } from '@/src/utils';
 import { rateLimitManager } from '../../infrastructure/ratelimit';
 import { StructuredTextParser } from '../utils/structuredTextParser';
+import { languageService } from '../../core/translation/LanguageService';
 
 /**
  * OpenAI API 提供者实现
@@ -38,7 +39,7 @@ export class OpenAIProvider extends BaseProvider {
         { role: 'system', content: systemPrompt },
         {
           role: 'user',
-          content: `Translate to ${settings.multilingualConfig.targetLanguage} (original||translation): ${text}`,
+          content: `Translate to ${languageService.getTargetLanguageDisplayName(settings.multilingualConfig.targetLanguage)} (original||translation): ${text}`,
         },
       ],
       temperature: this.config.temperature,

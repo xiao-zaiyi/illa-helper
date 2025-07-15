@@ -12,6 +12,7 @@ import { getSystemPromptByConfig } from '../../core/translation/PromptService';
 import { getApiTimeout, mapParamsForProvider } from '@/src/utils';
 import { rateLimitManager } from '../../infrastructure/ratelimit';
 import { StructuredTextParser } from '../utils/structuredTextParser';
+import { languageService } from '../../core/translation/LanguageService';
 
 /**
  * Google Gemini API 提供者实现
@@ -66,7 +67,7 @@ export class GoogleGeminiProvider extends BaseProvider {
       provider: 'gemini', // 指定为gemini获取特定prompt
     });
 
-    const prompt = `${systemPrompt}\n\nTranslate to ${settings.multilingualConfig.targetLanguage} (original||translation): ${text}`;
+    const prompt = `${systemPrompt}\n\nTranslate to ${languageService.getTargetLanguageDisplayName(settings.multilingualConfig.targetLanguage)} (original||translation): ${text}`;
     const rateLimiter = rateLimitManager.getLimiter(
       this.config.apiEndpoint || 'google-gemini-native',
       this.config.requestsPerSecond || 0,

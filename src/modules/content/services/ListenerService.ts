@@ -126,7 +126,11 @@ export class ListenerService implements IListenerService {
       this.settings.enablePronunciationTooltip !==
         newSettings.enablePronunciationTooltip ||
       this.settings.userLevel !== newSettings.userLevel ||
-      this.settings.useGptApi !== newSettings.useGptApi;
+      this.settings.useGptApi !== newSettings.useGptApi ||
+      this.settings.multilingualConfig.targetLanguage !==
+        newSettings.multilingualConfig.targetLanguage ||
+      this.settings.multilingualConfig.nativeLanguage !==
+        newSettings.multilingualConfig.nativeLanguage;
 
     if (needsPageReload) {
       window.location.reload();
