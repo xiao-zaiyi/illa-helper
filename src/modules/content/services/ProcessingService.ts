@@ -59,8 +59,8 @@ export class ProcessingService implements IProcessingService {
       this.textReplacer,
       this.processingParams.originalWordDisplayMode,
       this.processingParams.maxLength,
-              this.processingParams.translationPosition,
-        this.processingParams.showParentheses,
+      this.processingParams.translationPosition,
+      this.processingParams.showParentheses,
     );
   }
 
