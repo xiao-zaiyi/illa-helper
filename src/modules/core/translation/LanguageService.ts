@@ -1,26 +1,24 @@
 /**
- * 语言管理服务
- * 负责语言支持、翻译方向管理、语言验证等功能
+ * 语言管理服务 - 简化版本
+ * 负责语言支持、语言验证等功能
  *
  * 功能特性：
  * - 30+ 主流语言支持
- * - 智能翻译模式管理
- * - 翻译方向选项
  * - 语言验证和标准化
  * - 性能优化缓存
  */
 
-import { LanguageOption, MultilingualConfig } from '../../shared/types/api';
-import { Language, LanguageNames, TranslationDirectionOption } from './types';
+import { LanguageOption } from '../../shared/types/api';
+import { Language } from './types';
 
 // ==================== 语言数据定义 ====================
 
 /**
  * 支持的语言数据
- * 扩展到30+主流语言
+ * 扩展到45+主流语言
  */
 const LANGUAGE_DEFINITIONS: { [key: string]: Language } = {
-  // 常用语言 (优先级高)
+  // 常用语言 (优先级高) - 世界主要语言
   en: { code: 'en', name: 'English', nativeName: 'English', isPopular: true },
   zh: { code: 'zh', name: 'Chinese', nativeName: '中文', isPopular: true },
   ja: { code: 'ja', name: 'Japanese', nativeName: '日本語', isPopular: true },
@@ -29,20 +27,61 @@ const LANGUAGE_DEFINITIONS: { [key: string]: Language } = {
   de: { code: 'de', name: 'German', nativeName: 'Deutsch', isPopular: true },
   es: { code: 'es', name: 'Spanish', nativeName: 'Español', isPopular: true },
   ru: { code: 'ru', name: 'Russian', nativeName: 'Русский', isPopular: true },
+  pt: {
+    code: 'pt',
+    name: 'Portuguese',
+    nativeName: 'Português',
+    isPopular: true,
+  },
+  it: { code: 'it', name: 'Italian', nativeName: 'Italiano', isPopular: true },
+  hi: { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', isPopular: true },
+  ar: { code: 'ar', name: 'Arabic', nativeName: 'العربية', isPopular: true },
 
-  // 其他主流语言
-  hi: { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
-  ar: { code: 'ar', name: 'Arabic', nativeName: 'العربية' },
-  pt: { code: 'pt', name: 'Portuguese', nativeName: 'Português' },
-  it: { code: 'it', name: 'Italian', nativeName: 'Italiano' },
+  // 欧洲语言
   nl: { code: 'nl', name: 'Dutch', nativeName: 'Nederlands' },
   no: { code: 'no', name: 'Norwegian', nativeName: 'Norsk' },
   da: { code: 'da', name: 'Danish', nativeName: 'Dansk' },
   fi: { code: 'fi', name: 'Finnish', nativeName: 'Suomi' },
+  sv: { code: 'sv', name: 'Swedish', nativeName: 'Svenska' },
+  pl: { code: 'pl', name: 'Polish', nativeName: 'Polski' },
+  el: { code: 'el', name: 'Greek', nativeName: 'Ελληνικά' },
+  he: { code: 'he', name: 'Hebrew', nativeName: 'עברית' },
+  cs: { code: 'cs', name: 'Czech', nativeName: 'Čeština' },
+  hu: { code: 'hu', name: 'Hungarian', nativeName: 'Magyar' },
+  ro: { code: 'ro', name: 'Romanian', nativeName: 'Română' },
+  uk: { code: 'uk', name: 'Ukrainian', nativeName: 'Українська' },
+  bg: { code: 'bg', name: 'Bulgarian', nativeName: 'Български' },
+  hr: { code: 'hr', name: 'Croatian', nativeName: 'Hrvatski' },
+  sk: { code: 'sk', name: 'Slovak', nativeName: 'Slovenčina' },
+  sl: { code: 'sl', name: 'Slovenian', nativeName: 'Slovenščina' },
+  et: { code: 'et', name: 'Estonian', nativeName: 'Eesti' },
+  lv: { code: 'lv', name: 'Latvian', nativeName: 'Latviešu' },
+  lt: { code: 'lt', name: 'Lithuanian', nativeName: 'Lietuvių' },
+  ca: { code: 'ca', name: 'Catalan', nativeName: 'Català' },
+
+  // 亚洲语言
   tr: { code: 'tr', name: 'Turkish', nativeName: 'Türkçe' },
   th: { code: 'th', name: 'Thai', nativeName: 'ไทย' },
   vi: { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt' },
   id: { code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia' },
+  ms: { code: 'ms', name: 'Malay', nativeName: 'Bahasa Melayu' },
+  tl: { code: 'tl', name: 'Filipino', nativeName: 'Filipino' },
+  ur: { code: 'ur', name: 'Urdu', nativeName: 'اردو' },
+  bn: { code: 'bn', name: 'Bengali', nativeName: 'বাংলা' },
+  ta: { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்' },
+  te: { code: 'te', name: 'Telugu', nativeName: 'తెలుగు' },
+  fa: { code: 'fa', name: 'Persian', nativeName: 'فارسی' },
+  kk: { code: 'kk', name: 'Kazakh', nativeName: 'Қазақша' },
+  ky: { code: 'ky', name: 'Kyrgyz', nativeName: 'Кыргызча' },
+  uz: { code: 'uz', name: 'Uzbek', nativeName: "O'zbek" },
+
+  // 其他地区语言
+  sw: { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili' },
+  am: { code: 'am', name: 'Amharic', nativeName: 'አማርኛ' },
+  zu: { code: 'zu', name: 'Zulu', nativeName: 'IsiZulu' },
+  af: { code: 'af', name: 'Afrikaans', nativeName: 'Afrikaans' },
+  is: { code: 'is', name: 'Icelandic', nativeName: 'Íslenska' },
+  mt: { code: 'mt', name: 'Maltese', nativeName: 'Malti' },
 };
 
 /**
@@ -50,17 +89,67 @@ const LANGUAGE_DEFINITIONS: { [key: string]: Language } = {
  * 处理常见的语言代码变体
  */
 const LANGUAGE_CODE_NORMALIZATION: { [key: string]: string } = {
+  // 中文变体
   'zh-cn': 'zh',
   'zh-tw': 'zh',
   'zh-hk': 'zh',
+  'zh-sg': 'zh',
+  cmn: 'zh',
+  chs: 'zh',
+  cht: 'zh',
+
+  // 英文变体
   'en-us': 'en',
   'en-gb': 'en',
+  'en-au': 'en',
+  'en-ca': 'en',
+  'en-nz': 'en',
+  'en-za': 'en',
+  'en-ie': 'en',
+
+  // 葡萄牙语变体
   'pt-br': 'pt',
   'pt-pt': 'pt',
+
+  // 西班牙语变体
   'es-es': 'es',
   'es-mx': 'es',
+  'es-ar': 'es',
+  'es-co': 'es',
+  'es-cl': 'es',
+  'es-pe': 'es',
+  'es-ve': 'es',
+
+  // 法语变体
   'fr-fr': 'fr',
   'fr-ca': 'fr',
+  'fr-be': 'fr',
+  'fr-ch': 'fr',
+
+  // 德语变体
+  'de-de': 'de',
+  'de-at': 'de',
+  'de-ch': 'de',
+
+  // 阿拉伯语变体
+  'ar-sa': 'ar',
+  'ar-eg': 'ar',
+  'ar-ae': 'ar',
+  'ar-ma': 'ar',
+  'ar-iq': 'ar',
+  'ar-dz': 'ar',
+  'ar-ly': 'ar',
+
+  // 其他常见变体
+  nb: 'no', // 挪威语变体
+  nn: 'no', // 挪威语变体
+  fil: 'tl', // 菲律宾语变体
+  iw: 'he', // 希伯来语旧代码
+  ji: 'he', // 意第绪语映射到希伯来语
+  jw: 'ms', // 爪哇语映射到马来语
+  in: 'id', // 印尼语旧代码
+  mo: 'ro', // 摩尔多瓦语映射到罗马尼亚语
+  sh: 'hr', // 塞尔维亚-克罗地亚语映射到克罗地亚语
 };
 
 // ==================== 语言管理服务类 ====================
@@ -74,9 +163,6 @@ export class LanguageService {
 
   // 缓存机制，提高性能
   private _targetLanguageOptionsCache: LanguageOption[] | null = null;
-  private _translationDirectionOptionsCache:
-    | TranslationDirectionOption[]
-    | null = null;
   private _popularLanguagesCache: Language[] | null = null;
   private _otherLanguagesCache: Language[] | null = null;
 
@@ -192,45 +278,7 @@ export class LanguageService {
     return this._targetLanguageOptionsCache;
   }
 
-  /**
-   * 获取翻译方向选项
-   * @returns 翻译方向选项数组
-   */
-  public getTranslationDirectionOptions(): TranslationDirectionOption[] {
-    if (!this._translationDirectionOptionsCache) {
-      const options: TranslationDirectionOption[] = [
-        { value: 'intelligent', label: '🧠智能模式' },
-        { value: 'zh-to-en', label: '中译英文' },
-        { value: 'en-to-zh', label: '英译中文' },
-      ];
-
-      // 添加其他常用语言的传统翻译选项
-      const popularLanguageCodes = ['ja', 'ko', 'fr', 'de', 'es', 'ru'];
-      for (const langCode of popularLanguageCodes) {
-        const language = LANGUAGE_DEFINITIONS[langCode];
-        if (language) {
-          options.push({
-            value: `zh-to-${langCode}`,
-            label: `中文译${language.nativeName}`,
-          });
-        }
-      }
-
-      this._translationDirectionOptionsCache = options;
-    }
-    return this._translationDirectionOptionsCache;
-  }
-
   // ==================== 翻译模式管理 ====================
-
-  /**
-   * 判断是否启用智能模式
-   * @param config 多语言配置
-   * @returns 是否启用智能模式
-   */
-  public isIntelligentModeEnabled(config: MultilingualConfig): boolean {
-    return config.intelligentMode === true;
-  }
 
   /**
    * 获取目标语言显示名称（智能模式用）
@@ -244,34 +292,6 @@ export class LanguageService {
       : languageCode.toUpperCase();
   }
 
-  /**
-   * 获取翻译方向的语言名称对（传统模式用）
-   * @param direction 翻译方向字符串
-   * @returns 语言名称对或null
-   */
-  public getLanguageNames(direction: string): LanguageNames | null {
-    if (direction === 'intelligent') {
-      return null;
-    }
-
-    const parts = direction.split('-to-');
-    if (parts.length !== 2) {
-      return null;
-    }
-
-    const sourceLang = this.getLanguage(parts[0]);
-    const targetLang = this.getLanguage(parts[1]);
-
-    if (!sourceLang || !targetLang) {
-      return null;
-    }
-
-    return {
-      source: sourceLang.name,
-      target: targetLang.name,
-    };
-  }
-
   // ==================== 工具方法 ====================
 
   /**
@@ -279,7 +299,6 @@ export class LanguageService {
    */
   public clearCache(): void {
     this._targetLanguageOptionsCache = null;
-    this._translationDirectionOptionsCache = null;
     this._popularLanguagesCache = null;
     this._otherLanguagesCache = null;
   }
@@ -300,16 +319,15 @@ export class LanguageService {
     return this.getPopularLanguages().map((lang) => lang.code);
   }
 
+  // ==================== 母语相关方法 ====================
+
   /**
-   * 验证翻译方向字符串是否有效
-   * @param direction 翻译方向
-   * @returns 是否有效
+   * 获取母语选择选项
+   * @returns 母语选择选项数组
    */
-  public isValidTranslationDirection(direction: string): boolean {
-    if (direction === 'intelligent') {
-      return true;
-    }
-    return this.getLanguageNames(direction) !== null;
+  public getNativeLanguageOptions(): LanguageOption[] {
+    // 复用现有的目标语言选项
+    return this.getTargetLanguageOptions();
   }
 }
 

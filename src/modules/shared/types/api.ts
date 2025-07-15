@@ -61,14 +61,12 @@ export interface ReplacementConfig {
   apiConfig: ApiConfig;
   inlineTranslation: boolean;
   translationStyle: import('./core').TranslationStyle;
-  translationDirection: string;
 }
 
-// 多语言翻译配置接口
+// 多语言翻译配置接口 - 极简化版本
 export interface MultilingualConfig {
-  intelligentMode: boolean;
-  targetLanguage: string;
-  sourceLanguageOverride?: string; // 用户手动指定源语言时使用
+  nativeLanguage: string; // 母语 (用户固定设置)
+  targetLanguage: string; // 目标语言 (用户学习目标)
 }
 
 // 语言选项接口

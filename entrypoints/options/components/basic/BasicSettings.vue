@@ -31,6 +31,60 @@
             @update:model-value="settings.showParentheses = $event"
           />
         </div>
+
+        <!-- 母语设置 -->
+        <div class="border-t border-border pt-6">
+          <Label class="text-sm mb-3">母语设置</Label>
+          <div class="space-y-4">
+            <!-- 母语选择 -->
+            <div class="space-y-2">
+              <Select
+                id="native-language"
+                :model-value="settings.multilingualConfig.nativeLanguage"
+                @update:model-value="
+                  settings.multilingualConfig.nativeLanguage = $event as string
+                "
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择您的母语" />
+                </SelectTrigger>
+                <SelectContent class="max-h-60">
+                  <!-- 常用语言组 -->
+                  <div
+                    class="px-2 py-1.5 text-xs font-medium text-muted-foreground"
+                  >
+                    常用语言
+                  </div>
+                  <SelectItem
+                    v-for="lang in popularNativeLanguages"
+                    :key="lang.code"
+                    :value="lang.code"
+                  >
+                    {{ lang.name }} - {{ lang.nativeName }}
+                  </SelectItem>
+
+                  <!-- 分隔线 -->
+                  <div class="border-t border-border my-1"></div>
+
+                  <!-- 其他语言组 -->
+                  <div
+                    class="px-2 py-1.5 text-xs font-medium text-muted-foreground"
+                  >
+                    其他语言
+                  </div>
+                  <SelectItem
+                    v-for="lang in otherNativeLanguages"
+                    :key="lang.code"
+                    :value="lang.code"
+                  >
+                    {{ lang.name }} - {{ lang.nativeName }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
         <div class="border-t border-border pt-6">
           <Label class="text-sm mb-2">翻译位置</Label>
           <RadioGroup
@@ -175,7 +229,7 @@
             :model-value="[settings.userLevel]"
             @update:model-value="settings.userLevel = ($event || [1])[0]"
             :min="1"
-            :max="5"
+            :max="6"
             :step="1"
           />
         </div>
@@ -281,6 +335,7 @@
 import { ref, watch, onMounted, computed } from 'vue';
 import { StorageService } from '@/src/modules/core/storage';
 import { StyleManager } from '@/src/modules/styles';
+import { LanguageService } from '@/src/modules/core/translation/LanguageService';
 import {
   UserSettings,
   DEFAULT_SETTINGS,
@@ -291,6 +346,7 @@ import { getUserLevelLabel } from '@/src/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
@@ -306,10 +362,26 @@ import { Textarea } from '@/components/ui/textarea';
 const settings = ref<UserSettings>(DEFAULT_SETTINGS);
 const storageService = StorageService.getInstance();
 const styleManager = new StyleManager();
+const languageService = LanguageService.getInstance();
 
 const emit = defineEmits<{
   saveMessage: [message: string];
 }>();
+
+// 获取母语选项
+const nativeLanguageOptions = computed(() => {
+  return languageService.getNativeLanguageOptions();
+});
+
+// 常用母语选项 (基于isPopular属性)
+const popularNativeLanguages = computed(() => {
+  return nativeLanguageOptions.value.filter((lang) => lang.isPopular);
+});
+
+// 其他母语选项
+const otherNativeLanguages = computed(() => {
+  return nativeLanguageOptions.value.filter((lang) => !lang.isPopular);
+});
 
 onMounted(async () => {
   settings.value = await storageService.getUserSettings();

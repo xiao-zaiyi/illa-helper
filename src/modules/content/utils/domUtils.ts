@@ -1,3 +1,6 @@
+import { browser } from 'wxt/browser';
+import { languageService } from '../../core/translation/LanguageService';
+
 /**
  * 检查节点是否是处理结果节点（翻译、发音等功能元素）
  */
@@ -46,19 +49,26 @@ export function isDescendant(node: Node, nodeSet: Set<Node>): boolean {
 
 /**
  * 使用 browser.i18n.detectLanguage API 自动检测页面主要语言
+ * @returns 检测到的语言代码（标准化后）
  */
 export async function detectPageLanguage(): Promise<string> {
   try {
     const textSample = document.body.innerText.substring(0, 1000);
-    if (!textSample.trim()) return 'zh-to-en';
+    if (!textSample.trim()) {
+      return 'zh'; // 默认返回中文
+    }
 
     const result = await browser.i18n.detectLanguage(textSample);
 
-    if (result?.languages?.[0]?.language === 'en') {
-      return 'en-to-zh';
+    if (result?.languages?.[0]?.language) {
+      const detectedLang = result.languages[0].language;
+      // 使用LanguageService进行语言代码标准化
+      return languageService.normalizeLanguageCode(detectedLang);
     }
-    return 'zh-to-en';
-  } catch (_) {
-    return 'zh-to-en'; // 出错时默认
+
+    return 'zh'; // 检测失败时默认返回中文
+  } catch (error) {
+    console.warn('页面语言检测失败:', error);
+    return 'zh'; // 出错时默认返回中文
   }
 }

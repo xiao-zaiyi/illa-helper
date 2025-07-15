@@ -28,7 +28,6 @@ export interface UserSettings {
   translationStyle: TranslationStyle;
   triggerMode: TriggerMode;
   maxLength?: number;
-  translationDirection: string;
   originalWordDisplayMode: OriginalWordDisplayMode;
   enablePronunciationTooltip: boolean;
   // 新增：多语言智能翻译设置

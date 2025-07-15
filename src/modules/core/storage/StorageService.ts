@@ -133,7 +133,7 @@ export class StorageService {
   // ==================== 核心存储功能 ====================
 
   /**
-   * 获取用户设置
+   * 获取用户设置 - 简化版本，强制重置旧格式
    * @returns 用户设置
    */
   public async getUserSettings(): Promise<UserSettings> {
@@ -147,6 +147,15 @@ export class StorageService {
       }
 
       const userSettings: UserSettings = JSON.parse(serializedData);
+
+      // 检查是否为旧格式配置，如果是则强制重置
+      if (this.isOldFormatConfig(userSettings)) {
+        console.log('[StorageService] 检测到旧格式配置，强制重置为新格式');
+        await this.saveUserSettings(DEFAULT_SETTINGS);
+        this.emitEvent(StorageEventType.SETTINGS_LOADED, DEFAULT_SETTINGS);
+        return DEFAULT_SETTINGS;
+      }
+
       const validatedSettings = this.validateAndFixSettings(userSettings);
 
       if (this.hasConfigurationChanged(userSettings, validatedSettings)) {
@@ -391,23 +400,22 @@ export class StorageService {
   }
 
   /**
-   * 获取配置统计信息
+   * 获取配置统计信息 - 简化版本
    */
   public async getConfigStats(): Promise<ConfigurationStats> {
     try {
       const settings = await this.getUserSettings();
 
       return {
-        intelligentModeEnabled:
-          settings.multilingualConfig?.intelligentMode || false,
-        targetLanguage: settings.multilingualConfig?.targetLanguage || 'en',
+        intelligentModeEnabled: true, // 简化后默认启用
+        targetLanguage: settings.multilingualConfig.targetLanguage,
         totalKeys: Object.keys(settings).length,
         apiConfigsCount: settings.apiConfigs.length,
       };
     } catch (error) {
       console.error('获取配置统计失败:', error);
       return {
-        intelligentModeEnabled: false,
+        intelligentModeEnabled: true,
         targetLanguage: 'en',
         totalKeys: 0,
         apiConfigsCount: 0,
@@ -416,6 +424,25 @@ export class StorageService {
   }
 
   // ==================== 数据验证 ====================
+
+  /**
+   * 检查是否为旧格式配置
+   * @param settings 用户设置
+   * @returns 是否为旧格式
+   */
+  private isOldFormatConfig(settings: UserSettings): boolean {
+    // 检查MultilingualConfig是否包含旧字段
+    const config = settings.multilingualConfig;
+    if (!config) return false;
+
+    // 如果包含旧字段，认为是旧格式
+    const hasOldFields =
+      'intelligentMode' in config ||
+      'enableNativeSwitch' in config ||
+      'sourceLanguageOverride' in config;
+
+    return hasOldFields;
+  }
 
   /**
    * 验证和修复设置

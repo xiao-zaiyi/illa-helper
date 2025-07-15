@@ -221,7 +221,7 @@ export class TextProcessorService {
     showParentheses: boolean,
   ): Promise<void> {
     try {
-      // 第一步：更新内容分段器配置
+      // 更新内容分段器配置
       this.updateSegmentConfig({
         maxSegmentLength: maxLength,
         minSegmentLength: 20,
@@ -229,20 +229,20 @@ export class TextProcessorService {
         mergeSmallSegments: true,
       });
 
-      // 第二步：使用智能分段器将根节点分割为内容段落
+      // 使用智能分段器将根节点分割为内容段落
       const segments = this.contentSegmenter.segmentContent(root);
       if (segments.length === 0) {
         return;
       }
 
-      // 第三步：使用处理协调器进行统一处理
-      // 发音功能现在会在每个段落处理完成后立即添加
+      // 使用处理协调器进行统一处理
       await this.processingCoordinator.processSegments(
         segments,
         textReplacer,
         originalWordDisplayMode,
         translationPosition,
         showParentheses,
+        false, // isLazyLoading
       );
     } catch (error) {
       console.warn('文本处理过程中发生错误:', error);

@@ -3,24 +3,44 @@
  * 包含项目中使用的基础枚举和核心类型
  */
 
-// 用户英语水平枚举
+// 用户语言水平枚举 - CEFR标准
 export enum UserLevel {
-  BEGINNER = 1,
-  ELEMENTARY = 2,
-  INTERMEDIATE = 3,
-  ADVANCED = 4,
-  PROFICIENT = 5,
+  A1 = 1, // 入门级
+  A2 = 2, // 初级
+  B1 = 3, // 中级
+  B2 = 4, // 中高级
+  C1 = 5, // 高级
+  C2 = 6, // 精通级
 }
 
 /**
- * UserLevel 选项配置，包含值和中文标签
+ * UserLevel 选项配置，包含CEFR标准和具体指导
  */
 export const USER_LEVEL_OPTIONS = [
-  { value: UserLevel.BEGINNER, label: '初级' },
-  { value: UserLevel.ELEMENTARY, label: '基础' },
-  { value: UserLevel.INTERMEDIATE, label: '中级' },
-  { value: UserLevel.ADVANCED, label: '高级' },
-  { value: UserLevel.PROFICIENT, label: '精通' },
+  {
+    value: UserLevel.A1,
+    label: 'A1 入门',
+  },
+  {
+    value: UserLevel.A2,
+    label: 'A2 初级',
+  },
+  {
+    value: UserLevel.B1,
+    label: 'B1 中级',
+  },
+  {
+    value: UserLevel.B2,
+    label: 'B2 中高级',
+  },
+  {
+    value: UserLevel.C1,
+    label: 'C1 高级',
+  },
+  {
+    value: UserLevel.C2,
+    label: 'C2 精通',
+  },
 ];
 
 // 翻译样式枚举

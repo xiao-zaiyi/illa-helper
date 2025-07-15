@@ -29,7 +29,6 @@ export class GoogleGeminiProvider extends BaseProvider {
 
     // 基础生成配置
     const baseGenerationConfig: any = {
-      responseMimeType: 'application/json',
       temperature: this.config.temperature,
     };
 
@@ -61,11 +60,9 @@ export class GoogleGeminiProvider extends BaseProvider {
     );
 
     const systemPrompt = getSystemPromptByConfig({
-      translationDirection: 'intelligent',
       targetLanguage: settings.multilingualConfig.targetLanguage,
       userLevel: settings.userLevel,
       replacementRate: settings.replacementRate,
-      intelligentMode: true,
       provider: 'gemini', // 指定为gemini获取特定prompt
     });
 

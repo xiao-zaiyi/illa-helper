@@ -130,11 +130,12 @@ watch(
 // 统一的保存和通知函数
 const saveAndNotifySettings = async () => {
   try {
+    // 简化验证：确保语言设置完整
     if (
-      settings.value.translationDirection === 'intelligent' &&
-      !settings.value.multilingualConfig?.targetLanguage?.trim()
+      !settings.value.multilingualConfig.targetLanguage.trim() ||
+      !settings.value.multilingualConfig.nativeLanguage.trim()
     ) {
-      showSavedMessage('请选择目标语言后再保存设置');
+      showSavedMessage('请选择目标语言和母语后再保存设置');
       return;
     }
 
@@ -176,43 +177,13 @@ const showApiSettings = ref(true);
 const toggleApiSettings = () =>
   (showApiSettings.value = !showApiSettings.value);
 
-const intelligentModeEnabled = computed(
-  () => settings.value.translationDirection === 'intelligent',
-);
-
-watch(
-  () => settings.value.translationDirection,
-  (newDirection) => {
-    if (isInitializing) return;
-
-    if (newDirection === 'intelligent') {
-      if (!settings.value.multilingualConfig) {
-        settings.value.multilingualConfig = {
-          intelligentMode: true,
-          targetLanguage: '',
-        };
-      } else {
-        settings.value.multilingualConfig.intelligentMode = true;
-      }
-    } else if (settings.value.multilingualConfig) {
-      settings.value.multilingualConfig.intelligentMode = false;
-    }
-  },
-);
+// 简化后移除智能模式相关的响应式逻辑
 
 const targetLanguageOptions = computed(() =>
   languageService.getTargetLanguageOptions(),
 );
-const directionOptions = computed(() =>
-  languageService.getTranslationDirectionOptions(),
-);
 
-const onTargetLanguageChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  if (settings.value.multilingualConfig) {
-    settings.value.multilingualConfig.targetLanguage = target.value;
-  }
-};
+// 简化后直接使用v-model，不需要单独的事件处理函数
 
 // 多配置支持
 const activeConfig = computed(() => {
@@ -270,6 +241,13 @@ const openOptionsPage = () => {
 const openOptionsBasePage = () => {
   browser.tabs.create({ url: 'options.html#basic' });
 };
+
+// 母语设置选项
+const nativeLanguageOptions = computed(() =>
+  languageService.getNativeLanguageOptions(),
+);
+
+// 简化后使用v-model，删除旧的事件处理函数
 </script>
 
 <template>
@@ -304,54 +282,62 @@ const openOptionsBasePage = () => {
         <div class="settings-card">
           <div class="adaptive-settings-grid">
             <div class="setting-group">
-              <label>翻译模式</label>
-              <select v-model="settings.translationDirection">
-                <option
-                  v-for="option in directionOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </option>
+              <label>母语</label>
+              <select v-model="settings.multilingualConfig.nativeLanguage">
+                <option value="" disabled>请选择母语</option>
+                <optgroup label="常用语言">
+                  <option
+                    v-for="option in nativeLanguageOptions.filter(
+                      (opt) => opt.isPopular,
+                    )"
+                    :key="option.code"
+                    :value="option.code"
+                  >
+                    {{ option.name }} - {{ option.nativeName }}
+                  </option>
+                </optgroup>
+                <optgroup label="其他语言">
+                  <option
+                    v-for="option in nativeLanguageOptions.filter(
+                      (opt) => !opt.isPopular,
+                    )"
+                    :key="option.code"
+                    :value="option.code"
+                  >
+                    {{ option.name }} - {{ option.nativeName }}
+                  </option>
+                </optgroup>
               </select>
             </div>
 
-            <Transition name="slide-down" mode="out-in">
-              <div
-                v-if="intelligentModeEnabled && settings.multilingualConfig"
-                class="setting-group target-language-group"
-              >
-                <label>目标语言</label>
-                <select
-                  :value="settings.multilingualConfig.targetLanguage"
-                  @change="onTargetLanguageChange"
-                >
-                  <option value="" disabled>请选择目标语言</option>
-                  <optgroup label="常用语言">
-                    <option
-                      v-for="option in targetLanguageOptions.filter(
-                        (opt) => opt.isPopular,
-                      )"
-                      :key="option.code"
-                      :value="option.code"
-                    >
-                      {{ option.nativeName }}
-                    </option>
-                  </optgroup>
-                  <optgroup label="其他语言">
-                    <option
-                      v-for="option in targetLanguageOptions.filter(
-                        (opt) => !opt.isPopular,
-                      )"
-                      :key="option.code"
-                      :value="option.code"
-                    >
-                      {{ option.nativeName }}
-                    </option>
-                  </optgroup>
-                </select>
-              </div>
-            </Transition>
+            <div class="setting-group">
+              <label>目标语言</label>
+              <select v-model="settings.multilingualConfig.targetLanguage">
+                <option value="" disabled>请选择目标语言</option>
+                <optgroup label="常用语言">
+                  <option
+                    v-for="option in targetLanguageOptions.filter(
+                      (opt) => opt.isPopular,
+                    )"
+                    :key="option.code"
+                    :value="option.code"
+                  >
+                    {{ option.name }} - {{ option.nativeName }}
+                  </option>
+                </optgroup>
+                <optgroup label="其他语言">
+                  <option
+                    v-for="option in targetLanguageOptions.filter(
+                      (opt) => !opt.isPopular,
+                    )"
+                    :key="option.code"
+                    :value="option.code"
+                  >
+                    {{ option.name }} - {{ option.nativeName }}
+                  </option>
+                </optgroup>
+              </select>
+            </div>
 
             <div class="setting-group">
               <label>语言水平</label>
@@ -382,10 +368,12 @@ const openOptionsBasePage = () => {
                 v-if="settings.translationStyle === 'custom'"
                 class="custom-style-tip"
               >
-                <p class="tip-text">💡 自定义样式已选择</p>
-                <button @click="openOptionsBasePage" class="tip-link-btn">
-                  前往设置中心编辑CSS →
-                </button>
+                <p class="tip-text">
+                  💡
+                  <button @click="openOptionsBasePage" class="tip-link-btn">
+                    设置CSS
+                  </button>
+                </p>
               </div>
             </div>
 
@@ -1453,5 +1441,91 @@ footer p {
 
 .tip-link-btn:hover {
   color: var(--primary-hover-color);
+}
+
+/* 母语设置样式 */
+.native-language-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.native-language-group .setting-group {
+  flex: 1 1 calc(50% - 6px);
+  min-width: 140px;
+}
+
+.native-language-group .setting-group.target-language-group {
+  flex: 1 1 calc(50% - 6px);
+  min-width: 140px;
+}
+
+.switch-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.switch-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--label-color);
+  cursor: pointer;
+}
+
+.switch-checkbox {
+  display: none;
+}
+
+.switch-slider {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background-color: var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.switch-slider::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background-color: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.switch-checkbox:checked + .switch-slider {
+  background-color: var(--primary-color);
+}
+
+.switch-checkbox:checked + .switch-slider::before {
+  transform: translateX(20px);
+}
+
+.switch-description {
+  font-size: 11px;
+  color: var(--label-color);
+  margin-top: 4px;
+}
+
+/* 简化提示样式 */
+.simple-explanation {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 8px;
+  line-height: 1.4;
 }
 </style>

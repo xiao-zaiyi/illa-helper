@@ -48,7 +48,6 @@ export class ConfigurationService implements IConfigurationService {
       },
       inlineTranslation: true,
       translationStyle: settings.translationStyle,
-      translationDirection: settings.translationDirection,
     };
   }
 

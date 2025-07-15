@@ -7,7 +7,8 @@ import { ContentSegment } from '../../processing/ProcessingStateManager';
 import { ProcessingCoordinator } from '../../processing/ProcessingCoordinator';
 
 /**
- * 页面处理服务 - 负责页面翻译处理逻辑
+ * 页面处理服务
+ * 负责页面翻译处理逻辑
  */
 export class ProcessingService implements IProcessingService {
   private textProcessor: TextProcessorService;
@@ -58,8 +59,8 @@ export class ProcessingService implements IProcessingService {
       this.textReplacer,
       this.processingParams.originalWordDisplayMode,
       this.processingParams.maxLength,
-      this.processingParams.translationPosition,
-      this.processingParams.showParentheses,
+              this.processingParams.translationPosition,
+        this.processingParams.showParentheses,
     );
   }
 

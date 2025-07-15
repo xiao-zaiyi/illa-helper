@@ -8,10 +8,7 @@ import { BaseProvider } from '../base/BaseProvider';
 import { mergeCustomParams } from '../utils/apiUtils';
 import { addPositionsToReplacements } from '../utils/textUtils';
 import { sendApiRequest } from '../utils/requestUtils';
-import {
-  getSystemPrompt,
-  getSystemPromptByConfig,
-} from '../../core/translation/PromptService';
+import { getSystemPromptByConfig } from '../../core/translation/PromptService';
 import { getApiTimeout } from '@/src/utils';
 import { rateLimitManager } from '../../infrastructure/ratelimit';
 import { StructuredTextParser } from '../utils/structuredTextParser';
@@ -28,23 +25,12 @@ export class OpenAIProvider extends BaseProvider {
     text: string,
     settings: UserSettings,
   ): Promise<FullTextAnalysisResponse> {
-    const useIntelligentMode =
-      settings.multilingualConfig?.intelligentMode ||
-      settings.translationDirection === 'intelligent';
-
-    const systemPrompt = useIntelligentMode
-      ? getSystemPromptByConfig({
-          translationDirection: 'intelligent',
-          targetLanguage: settings.multilingualConfig.targetLanguage,
-          userLevel: settings.userLevel,
-          replacementRate: settings.replacementRate,
-          intelligentMode: true,
-        })
-      : getSystemPrompt(
-          settings.translationDirection,
-          settings.userLevel,
-          settings.replacementRate,
-        );
+    // 简化后统一使用智能模式
+    const systemPrompt = getSystemPromptByConfig({
+      targetLanguage: settings.multilingualConfig.targetLanguage,
+      userLevel: settings.userLevel,
+      replacementRate: settings.replacementRate,
+    });
 
     let requestBody: any = {
       model: this.config.model,
@@ -52,7 +38,7 @@ export class OpenAIProvider extends BaseProvider {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `{{ ${text} }}` },
       ],
-      temperature: this.config.temperature
+      temperature: this.config.temperature,
     };
 
     if (this.config.includeThinkingParam) {

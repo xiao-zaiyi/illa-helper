@@ -588,8 +588,8 @@ export class ProcessingCoordinator {
       for (const element of segment.elements) {
         const translationElements = element.querySelectorAll
           ? element.querySelectorAll(
-            '.wxt-translation-term:not([data-pronunciation-added])',
-          )
+              '.wxt-translation-term:not([data-pronunciation-added])',
+            )
           : [];
         allTranslationElements.push(...Array.from(translationElements));
       }

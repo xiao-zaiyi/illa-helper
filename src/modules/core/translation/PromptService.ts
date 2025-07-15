@@ -1,32 +1,20 @@
 /**
- * 提示词生成服务
- * 负责为不同翻译模式和提供商生成系统提示词
- *
- * 重构为统一提示词模板，减少维护成本
+ * 提示词生成服务 - 重构版本
+ * 专注于智能翻译模式，简化代码结构
  */
 
 import { UserLevel } from '../../shared/types/core';
 import { PromptConfig } from './types';
 import { languageService } from './LanguageService';
 
-// ==================== 统一提示词模板 ====================
-
 /**
- * 统一的提示词模板
- * 通过参数控制不同场景的差异
+ * 提示词服务 - 单例模式
  */
 export class PromptService {
   private static instance: PromptService;
 
-  /**
-   * 私有构造函数，防止外部实例化
-   */
   private constructor() {}
 
-  /**
-   * 获取服务实例
-   * @returns PromptService 实例
-   */
   public static getInstance(): PromptService {
     if (!PromptService.instance) {
       PromptService.instance = new PromptService();
@@ -35,209 +23,141 @@ export class PromptService {
   }
 
   /**
-   * 统一的提示词生成器
-   * @param config 配置参数
-   * @returns 生成的提示词
+   * 生成统一提示词
    */
   public getUnifiedPrompt(config: PromptConfig): string {
-    const {
-      targetLanguage,
-      translationDirection,
-      userLevel,
-      replacementRate,
-      provider = 'openai',
-      intelligentMode = false,
-    } = config;
+    const { targetLanguage, userLevel, replacementRate } = config;
 
-    // 1. 基础指令
-    const baseInstruction =
-      "You are an expert in linguistics and a language teacher. Your task is to process a given text paragraph, identify words or phrases suitable for a user's learning level, and provide translations. Your only task is to translate the text in {{}}, which is important";
-
-    // 2. 任务描述（动态生成）
-    const taskDescription = this.generateTaskDescription(
-      targetLanguage,
-      translationDirection,
-      intelligentMode,
-    );
-
-    // 3. 核心规则（通用）
-    const coreRules = this.generateCoreRules(targetLanguage);
-
-    // 4. 用户水平调整
-    const levelAdjustment = this.generateLevelAdjustment(userLevel);
-
-    // 5. 比例控制（根据provider调整详细程度）
-    const ratioControl = this.generateRatioControl(replacementRate, provider);
-
-    // 6. 格式要求（通用）
-    const formatRequirements = this.generateFormatRequirements();
-
-    // 7. 示例（动态生成）
-    const examples = this.generateExamples(
-      targetLanguage,
-      translationDirection,
-    );
-
-    // 组装完整提示词
     const components = [
-      baseInstruction,
-      taskDescription,
-      coreRules,
-      levelAdjustment,
-      ratioControl,
-      formatRequirements,
-      examples,
+      this.generateBaseInstruction(),
+      this.generateTaskDescription(targetLanguage),
+      this.generateCoreRules(targetLanguage),
+      this.generateLevelAdjustment(userLevel),
+      this.generateRatioControl(replacementRate),
+      this.generateFormatRequirements(),
+      this.generateExamples(targetLanguage),
     ].filter((component) => component.trim() !== '');
 
     return components.join('\n\n');
   }
 
   /**
-   * 生成任务描述
+   * 基础指令
    */
-  private generateTaskDescription(
-    targetLanguage: string,
-    translationDirection: string,
-    intelligentMode: boolean,
-  ): string {
-    const targetLangName =
-      languageService.getTargetLanguageDisplayName(targetLanguage);
-
-    if (intelligentMode || translationDirection === 'intelligent') {
-      return `The user is a native speaker learning other languages. You will be provided with a text that could be in any language. Your task is to select key words or phrases and provide their ${targetLangName} translations.`;
-    } else {
-      const langNames = languageService.getLanguageNames(translationDirection);
-      if (langNames) {
-        const userDesc =
-          langNames.source === 'Chinese'
-            ? 'The user is a native Chinese speaker.'
-            : `The user is a native Chinese speaker learning ${langNames.source}.`;
-        return `${userDesc} The provided text is in ${langNames.source}. Your goal is to select key words or phrases and provide their ${langNames.target} translations.`;
-      }
-      return `The user is a native Chinese speaker. Your goal is to select key words or phrases and provide their ${targetLangName} translations.`;
-    }
+  private generateBaseInstruction(): string {
+    return "You are an expert linguist and language teacher. Your task is to process text and intelligently select words or phrases suitable for the user's learning level, then provide translations.";
   }
 
   /**
-   * 生成核心规则
+   * 任务描述 - 简化版本
+   */
+  private generateTaskDescription(targetLanguage: string): string {
+    const targetLangName =
+      languageService.getTargetLanguageDisplayName(targetLanguage);
+    return `The user is learning ${targetLangName}. You will be provided with text in any language. Select appropriate words/phrases and provide their ${targetLangName} translations to enhance learning.`;
+  }
+
+  /**
+   * 核心规则
    */
   private generateCoreRules(targetLanguage: string): string {
     const targetLangName =
       languageService.getTargetLanguageDisplayName(targetLanguage);
 
-    return `## CRITICAL RULES:
-- ALL translations must be in ${targetLangName}. Do not translate to any other language.
-- ABSOLUTELY CRITICAL: If a word or phrase in the source text is already written in ${targetLangName}, you MUST completely skip it. Do NOT include it in your response at all.
-- The translation must contain ONLY the direct translation of the word/phrase. Do NOT include explanations, pronunciation guides, or additional context.
-- If you don't follow the rules, my program will crash, so please follow the rules strictly.
+    return `## MANDATORY OUTPUT RULES
 
- ## WORD ORDER GUIDELINES:
-- CRITICAL: Maintain proper word order for the target language
-- NEVER mix languages within a single sentence unless creating parallel translations
-- Ensure grammatical completeness: include necessary connecting words, particles, and structural elements
-- When translating mixed-language text, separate by language and maintain internal coherence
-`;
+1. **Target Language**: ALL output must be exclusively in **${targetLangName}**. No other languages permitted.
+2. **Exclusion Principle**: If a word/phrase from the source text is already in **${targetLangName}**, **OMIT IT ENTIRELY** from output.
+3. **Content Purity**: Output **MUST contain ONLY direct translations**.
+   - **NO** explanations, annotations, pronunciation guides, or alternative translations.
+4. **Grammatical Integrity**: 
+   - Final translation must be **grammatically complete and natural** in ${targetLangName}.
+   - Word order **MUST** be correct for ${targetLangName}.
+   - Include necessary articles, prepositions, and structural elements.
+5. **System Constraint**: Strict adherence required. System parses output directly - **any deviation causes critical failure**.`;
   }
 
   /**
-   * 生成用户水平调整
+   * CEFR水平调整
    */
   private generateLevelAdjustment(userLevel: UserLevel): string {
-    return `The user's proficiency is at the ${UserLevel[userLevel]} level. Please adjust the difficulty and frequency of the selected words accordingly.`;
+    const levelGuidance: Record<UserLevel, string> = {
+      [UserLevel.A1]:
+        'A1 (Beginner): Focus on very basic vocabulary. AVOID ultra-basic words (the, is, a, and, of). Select only simple nouns and verbs beginners should learn.',
+
+      [UserLevel.A2]:
+        'A2 (Elementary): Select everyday vocabulary and simple phrases (family, shopping, work, geography). Focus on concrete, practical words rather than abstract concepts.',
+
+      [UserLevel.B1]:
+        'B1 (Intermediate): Prioritize common verbs, adjectives, adverbs, and fixed expressions/collocations. Focus on words for expressing opinions, experiences, and plans.',
+
+      [UserLevel.B2]:
+        'B2 (Upper-Intermediate): Select complex vocabulary including abstract concepts, sophisticated expressions, and nuanced meanings. Include words for discussing ideas and arguments.',
+
+      [UserLevel.C1]:
+        'C1 (Advanced): Focus on academic and professional vocabulary, sophisticated expressions, and words with subtle distinctions. Include terminology from various fields.',
+
+      [UserLevel.C2]:
+        'C2 (Proficient): Select challenging terminology, idiomatic expressions, technical jargon, and nuanced vocabulary. Include rare words and specialized terminology.',
+    };
+
+    return levelGuidance[userLevel] || levelGuidance[UserLevel.B1];
   }
 
   /**
-   * 生成比例控制指令
+   * 比例控制指令 - 灵活范围版本
    */
-  private generateRatioControl(
-    replacementRate: number,
-    provider: string,
-  ): string {
+  private generateRatioControl(replacementRate: number): string {
     if (replacementRate <= 0 || replacementRate > 1) {
       return '';
     }
 
     const percentage = Math.round(replacementRate * 100);
-    const basicInstruction = `IMPORTANT: Select words totaling exactly ${percentage}% of the text by character count.`;
+    const lowerBound = Math.max(5, percentage - 5);
+    const upperBound = Math.min(95, percentage + 5);
 
-    if (provider === 'gemini') {
-      return `${basicInstruction}
+    return `
+      **SELECTION GUIDELINE**: Select approximately **${lowerBound}% to ${upperBound}%** of the text content for translation.
+      **Priority Principle**: 
+      - **Quality over precision** - Focus on selecting the most valuable learning words rather than exact character counts
+      - **Natural selection** - Choose complete words and meaningful phrases, avoid artificial word splitting
+      - **Learning value first** - Prioritize words that enhance vocabulary acquisition over meeting exact percentages
 
-## RATIO CALCULATION STEPS:
-- Step 1: Count total characters in input text (including spaces, punctuation)
-- Step 2: Calculate target: ${percentage}% × total characters = required character count
-- Step 3: Select words until sum of "original" character lengths equals target
-- Step 4: VERIFY before output: sum of selected original characters ÷ total characters = ${replacementRate.toFixed(2)}
-
-EXAMPLE VERIFICATION:
-Input: "这是测试文本" (6 characters total)
-Target: ${percentage}% = ${Math.round((6 * percentage) / 100)} characters needed
-If selecting "测试" (2 chars): 2÷6 = 33.3% (verify this matches target)`;
-    }
-
-    return `${basicInstruction}
-Example: "这是测试文本" (6 chars) → ${percentage}% = ${Math.round((6 * percentage) / 100)} chars needed.`;
+      **Flexible Approach**:
+      - Target around ${percentage}% as a general guideline
+      - Adjust based on text content and learning value
+      - It's better to select fewer high-value words than more low-value ones to meet a quota
+`;
   }
 
   /**
-   * 生成格式要求
+   * 格式要求
    */
   private generateFormatRequirements(): string {
-    return `You must respond using the simple double-bar format below. NO JSON! NO other format!
+    return `**MANDATORY OUTPUT FORMAT**:
+          Use simple double-bar format below. NO JSON! NO other format!
+          原文||译文
 
-MANDATORY OUTPUT FORMAT:
-原文||译文
-
-FORMAT REQUIREMENTS:
-- One replacement per line
-- Use double bars || to separate original and translation
-- No extra text, quotes, or explanations (such as "Here's the translation:" or "Translation as follows:")
-- Just the direct format: original||translation`;
+          **FORMAT REQUIREMENTS**:
+          - One replacement per line
+          - Use double bars || to separate original and translation  
+          - No extra text, quotes, or explanations
+          - Just the direct format: original||translation
+          `;
   }
 
   /**
-   * 生成示例
+   * 示例 - 简化为通用示例
    */
-  private generateExamples(
-    targetLanguage: string,
-    translationDirection: string,
-  ): string {
+  private generateExamples(targetLanguage: string): string {
     const targetLangName =
       languageService.getTargetLanguageDisplayName(targetLanguage);
 
-    if (translationDirection === 'intelligent' || !translationDirection) {
-      return `EXAMPLE:
-              If the input text is "你好世界" and the target language is ${targetLangName}, a valid output is:
-              你好||Hello
-              世界||World`;
-    }
-
-    // 传统模式示例
-    const langNames = languageService.getLanguageNames(translationDirection);
-    if (langNames) {
-      if (translationDirection === 'zh-to-en') {
-        return `EXAMPLE:
-                学习||learning
-                重要的||important
-                技术||technology`;
-      } else if (translationDirection === 'en-to-zh') {
-        return `EXAMPLE:
-                Hello||你好
-                World||世界
-                Technology||技术`;
-      }
-    }
-
-    return `EXAMPLE:
-            source_word||target_translation
-            another_word||another_translation`;
-  }
-
-  /**
-   * 向后兼容的公共接口
-   */
-  public getSystemPromptByConfig(config: PromptConfig): string {
-    return this.getUnifiedPrompt(config);
+    return `**EXAMPLE**:
+            If input text is "你好世界" and target language is ${targetLangName}, valid output:
+            你好||Hello
+            世界||World
+`;
   }
 }
 
@@ -245,38 +165,9 @@ FORMAT REQUIREMENTS:
 
 export const promptService = PromptService.getInstance();
 
-// 向后兼容的导出函数
-export const getSystemPrompt = (
-  direction: string,
-  level: UserLevel,
-  replacementRate: number,
-): string => {
-  // 从翻译方向推断目标语言
-  const targetLanguage = direction.includes('en') ? 'en' : 'zh';
-
-  return promptService.getUnifiedPrompt({
-    translationDirection: direction,
-    targetLanguage: targetLanguage,
-    userLevel: level,
-    replacementRate: replacementRate,
-  });
-};
-
-export const getGeminiSystemPrompt = (
-  targetLanguage: string,
-  level: UserLevel,
-  replacementRate: number,
-): string => {
-  return promptService.getUnifiedPrompt({
-    targetLanguage: targetLanguage,
-    translationDirection: 'intelligent',
-    userLevel: level,
-    replacementRate: replacementRate,
-    provider: 'gemini',
-    intelligentMode: true,
-  });
-};
-
+/**
+ * 根据配置生成系统提示词 - 唯一公共接口
+ */
 export const getSystemPromptByConfig = (config: PromptConfig): string => {
-  return promptService.getSystemPromptByConfig(config);
+  return promptService.getUnifiedPrompt(config);
 };

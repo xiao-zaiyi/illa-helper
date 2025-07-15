@@ -38,7 +38,7 @@ export interface ReplacementResult {
 }
 
 /**
- * 缓存键接口
+ * 缓存键接口 - 简化版本
  */
 export interface CacheKey {
   text: string;
@@ -46,7 +46,6 @@ export interface CacheKey {
   targetLanguage: string;
   userLevel: number;
   replacementRate: number;
-  translationDirection: string;
 }
 
 /**
@@ -79,14 +78,12 @@ export interface ProcessingStats {
 // ==================== 提示词服务类型 ====================
 
 /**
- * 提示词配置接口
+ * 提示词配置接口 - 简化版本
  */
 export interface PromptConfig {
-  translationDirection: string;
   targetLanguage: string;
   userLevel: UserLevel;
   replacementRate: number;
-  intelligentMode?: boolean;
   provider?: 'gemini' | string;
 }
 
@@ -109,22 +106,6 @@ export interface Language {
   name: string; // e.g., 'English', 'Chinese', 'Japanese'
   nativeName: string; // e.g., 'English', '中文', '日本語'
   isPopular?: boolean; // 标记常用语言
-}
-
-/**
- * 翻译方向选项
- */
-export interface TranslationDirectionOption {
-  value: string;
-  label: string;
-}
-
-/**
- * 语言名称对
- */
-export interface LanguageNames {
-  source: string;
-  target: string;
 }
 
 // ==================== 服务基类类型 ====================

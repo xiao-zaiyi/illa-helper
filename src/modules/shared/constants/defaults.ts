@@ -35,10 +35,10 @@ export const DEFAULT_API_CONFIG: ApiConfig = {
   useBackgroundProxy: false, // 默认不使用background代理，保持向后兼容
 };
 
-// 默认多语言配置
+// 默认多语言配置 - 极简化版本
 export const DEFAULT_MULTILINGUAL_CONFIG: MultilingualConfig = {
-  intelligentMode: true,
-  targetLanguage: 'en',
+  nativeLanguage: 'zh', // 默认中文为母语
+  targetLanguage: 'en', // 默认英语为目标语言
 };
 
 // 默认发音快捷键配置
@@ -76,7 +76,7 @@ function createDefaultApiConfigItem(): ApiConfigItem {
 
 // 默认用户设置
 export const DEFAULT_SETTINGS: UserSettings = {
-  userLevel: UserLevel.INTERMEDIATE,
+  userLevel: UserLevel.B1,
   replacementRate: 0.3,
   isEnabled: true,
   useGptApi: true,
@@ -85,7 +85,6 @@ export const DEFAULT_SETTINGS: UserSettings = {
   translationStyle: TranslationStyle.DEFAULT,
   triggerMode: TriggerMode.MANUAL,
   maxLength: 400,
-  translationDirection: 'intelligent',
   originalWordDisplayMode: OriginalWordDisplayMode.VISIBLE,
   enablePronunciationTooltip: true,
   multilingualConfig: DEFAULT_MULTILINGUAL_CONFIG,

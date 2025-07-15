@@ -28,7 +28,6 @@ interface CacheKey {
   targetLanguage: string;
   userLevel: number;
   replacementRate: number;
-  translationDirection: string;
 }
 
 // 缓存统计信息
@@ -118,10 +117,9 @@ export class TextReplacerService {
   }
 
   /**
-   * 主要的文本替换方法
-   * 支持智能模式和传统模式的翻译
+   * 替换文本中的词汇
    * @param text 原始文本
-   * @returns 翻译处理结果
+   * @returns 替换结果
    */
   public async replaceText(text: string): Promise<FullTextAnalysisResponse> {
     try {
@@ -134,10 +132,10 @@ export class TextReplacerService {
         return this.createEmptyResult(text);
       }
 
-      // 构建完整的用户设置对象
+      // 构建用户设置对象（已包含动态语言检测逻辑）
       const settingsForApi = this.buildUserSettings(settings);
 
-      // 统一处理所有翻译模式
+      // 处理翻译
       return await this.processTranslation(text, settingsForApi);
     } catch (error) {
       console.error('文本替换失败:', error);
@@ -157,18 +155,118 @@ export class TextReplacerService {
   }
 
   /**
-   * 构建API调用用的用户设置
+   * 构建API调用的用户设置
    */
   private buildUserSettings(baseSettings: UserSettings): UserSettings {
+    // 动态确定翻译目标语言
+    const optimizedTargetLanguage = this.determineOptimalTargetLanguage(baseSettings);
+    
     return {
-      ...baseSettings, // 使用真实的用户设置作为基础
+      ...baseSettings,
       userLevel: this.config.userLevel,
       replacementRate: this.config.replacementRate,
       useGptApi: this.config.useGptApi,
       translationStyle: this.config.translationStyle,
-      translationDirection: this.config.translationDirection,
-      // 保持多配置系统的配置不变，不要覆盖
+      multilingualConfig: {
+        ...baseSettings.multilingualConfig,
+        targetLanguage: optimizedTargetLanguage,
+      },
     };
+  }
+
+  /**
+   * 根据页面语言动态确定最佳翻译目标语言
+   */
+  private determineOptimalTargetLanguage(settings: UserSettings): string {
+    try {
+      // 检测当前页面语言
+      const detectedPageLanguage = this.detectCurrentPageLanguage();
+      
+      if (!detectedPageLanguage) {
+        return settings.multilingualConfig.targetLanguage;
+      }
+
+      const config = settings.multilingualConfig;
+      
+      // 标准化语言代码
+      const normalizedPageLang = this.normalizeLanguageCode(detectedPageLanguage);
+      const normalizedTargetLang = this.normalizeLanguageCode(config.targetLanguage);
+      const normalizedNativeLang = this.normalizeLanguageCode(config.nativeLanguage);
+
+      // 页面语言 = 目标语言 → 翻译到母语
+      if (normalizedPageLang === normalizedTargetLang) {
+        console.log(`[TextReplacerService] 页面语言(${detectedPageLanguage})与目标语言(${config.targetLanguage})一致，切换到母语(${config.nativeLanguage})`);
+        return config.nativeLanguage;
+      }
+
+      // 页面语言 = 母语 → 翻译到目标语言
+      if (normalizedPageLang === normalizedNativeLang) {
+        return config.targetLanguage;
+      }
+
+      // 其他情况 → 翻译到目标语言
+      return config.targetLanguage;
+    } catch (error) {
+      console.warn('[TextReplacerService] 语言检测失败，使用默认目标语言:', error);
+      return settings.multilingualConfig.targetLanguage;
+    }
+  }
+
+  /**
+   * 检测当前页面语言
+   */
+  private detectCurrentPageLanguage(): string | null {
+    try {
+      // 方法1：从HTML标签获取
+      const htmlLang = document.documentElement.lang;
+      if (htmlLang) {
+        return htmlLang;
+      }
+
+      // 方法2：从meta标签获取
+      const metaLang = document.querySelector('meta[http-equiv="Content-Language"]');
+      if (metaLang) {
+        return metaLang.getAttribute('content') || null;
+      }
+
+      // 方法3：简单的文本检测（作为后备）
+      const textSample = document.body.innerText.substring(0, 100);
+      if (/[\u4e00-\u9fff]/.test(textSample)) {
+        return 'zh';
+      } else if (/^[a-zA-Z\s\d\.,!?;:'"()-]*$/.test(textSample)) {
+        return 'en';
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('[TextReplacerService] 页面语言检测失败:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 标准化语言代码
+   */
+  private normalizeLanguageCode(langCode: string): string {
+    if (!langCode) return '';
+    
+    // 移除地区代码，只保留主要语言代码
+    const mainLang = langCode.toLowerCase().split('-')[0];
+    
+    // 标准化映射
+    const normalizedMapping: { [key: string]: string } = {
+      'zh': 'zh',
+      'zh-cn': 'zh',
+      'zh-tw': 'zh',
+      'zh-hk': 'zh',
+      'chinese': 'zh',
+      'en': 'en',
+      'en-us': 'en',
+      'en-gb': 'en',
+      'english': 'en',
+    };
+
+    return normalizedMapping[mainLang] || mainLang;
   }
 
   /**
@@ -228,97 +326,40 @@ export class TextReplacerService {
   }
 
   /**
-   * 处理翻译错误，包括智能模式降级
+   * 处理翻译错误 - 简化版本
    */
   private async handleTranslationError(
     text: string,
     settings: UserSettings,
     error: any,
   ): Promise<FullTextAnalysisResponse> {
-    // 检查是否为智能模式
-    const isIntelligentMode = this.isIntelligentMode(settings);
+    console.log('翻译失败，返回原文:', error);
 
-    if (isIntelligentMode) {
-      console.log('智能模式失败，尝试降级到传统模式');
-      const fallbackSettings = this.createFallbackSettings(settings);
-      return await this.processTranslation(text, fallbackSettings);
-    }
-
-    // 传统模式失败，返回原文
+    // 简化后不再有降级逻辑，直接返回原文
     return this.createEmptyResult(text);
   }
 
   /**
-   * 判断是否为智能模式
-   */
-  private isIntelligentMode(settings: UserSettings): boolean {
-    return (
-      settings.multilingualConfig?.intelligentMode ||
-      settings.translationDirection === 'intelligent'
-    );
-  }
-
-  /**
-   * 生成统一的缓存键
+   * 生成缓存键
    * @param text 文本
    * @param settings 设置
    * @returns 缓存键字符串
    */
   private generateCacheKey(text: string, settings: UserSettings): string {
-    const targetLanguage = this.extractTargetLanguage(settings);
+    const targetLanguage = settings.multilingualConfig.targetLanguage;
 
     const keyData: CacheKey = {
       text: text.trim(),
       targetLanguage: targetLanguage,
       userLevel: settings.userLevel,
       replacementRate: settings.replacementRate,
-      translationDirection: settings.translationDirection,
     };
 
     return this.hashCacheKey(keyData);
   }
 
   /**
-   * 提取目标语言
-   */
-  private extractTargetLanguage(settings: UserSettings): string {
-    const isIntelligentMode = this.isIntelligentMode(settings);
-
-    if (isIntelligentMode) {
-      const targetLanguage = settings.multilingualConfig?.targetLanguage;
-      if (!targetLanguage) {
-        throw new Error('智能模式下必须提供目标语言');
-      }
-      return targetLanguage;
-    } else {
-      return this.extractTargetLanguageFromDirection(
-        settings.translationDirection,
-      );
-    }
-  }
-
-  /**
-   * 从翻译方向提取目标语言
-   * @param direction 翻译方向
-   * @returns 目标语言代码
-   */
-  private extractTargetLanguageFromDirection(direction: string): string {
-    if (!direction || direction === 'intelligent') {
-      throw new Error('无法从智能模式提取目标语言，应该使用用户配置');
-    }
-
-    const parts = direction.split('-to-');
-    if (parts.length === 2) {
-      return parts[1];
-    }
-
-    throw new Error(`无效的翻译方向格式: ${direction}`);
-  }
-
-  /**
-   * 哈希缓存键数据
-   * @param keyData 缓存键数据
-   * @returns 哈希字符串
+   * 生成缓存键的哈希值
    */
   private hashCacheKey(keyData: CacheKey): string {
     const str = JSON.stringify(keyData);
@@ -329,22 +370,6 @@ export class TextReplacerService {
       hash = hash & hash; // 转换为32位整数
     }
     return Math.abs(hash).toString(36);
-  }
-
-  /**
-   * 创建降级设置（智能模式失败时使用）
-   * @param originalSettings 原始设置
-   * @returns 降级后的设置
-   */
-  private createFallbackSettings(originalSettings: UserSettings): UserSettings {
-    return {
-      ...originalSettings,
-      translationDirection: 'zh-to-en', // 降级到中译英模式
-      multilingualConfig: {
-        intelligentMode: false,
-        targetLanguage: '', // 降级时清空目标语言
-      },
-    };
   }
 
   // ==================== 缓存管理方法 ====================

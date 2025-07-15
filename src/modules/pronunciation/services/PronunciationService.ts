@@ -203,7 +203,10 @@ export class PronunciationService {
     this.aiTranslationProvider = new AITranslationProvider(effectiveApiConfig);
     // 创建TooltipRenderer实例，传入UI配置和默认的原文显示模式
     // 注意：实际的原文显示模式会在运行时从StorageService获取
-    this.tooltipRenderer = new TooltipRenderer(this.config.uiConfig, OriginalWordDisplayMode.HIDDEN);
+    this.tooltipRenderer = new TooltipRenderer(
+      this.config.uiConfig,
+      OriginalWordDisplayMode.HIDDEN,
+    );
     this.storageService = StorageService.getInstance();
 
     // 始终创建Web Speech作为备用TTS提供者
@@ -528,12 +531,15 @@ export class PronunciationService {
   private async updateOriginalWordDisplayMode(): Promise<void> {
     try {
       const userSettings = await this.storageService.getUserSettings();
-      const mode = userSettings.originalWordDisplayMode || OriginalWordDisplayMode.VISIBLE;
+      const mode =
+        userSettings.originalWordDisplayMode || OriginalWordDisplayMode.VISIBLE;
       this.tooltipRenderer.updateOriginalWordDisplayMode(mode);
     } catch (error) {
       console.error('更新原文显示模式失败:', error);
       // 发生错误时使用默认值
-      this.tooltipRenderer.updateOriginalWordDisplayMode(OriginalWordDisplayMode.VISIBLE);
+      this.tooltipRenderer.updateOriginalWordDisplayMode(
+        OriginalWordDisplayMode.VISIBLE,
+      );
     }
   }
 

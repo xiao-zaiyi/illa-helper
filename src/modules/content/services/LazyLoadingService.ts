@@ -175,7 +175,7 @@ export class LazyLoadingService {
         this.state.processingQueue.delete(segment.fingerprint);
         this.state.segmentCache.delete(segment.fingerprint);
       });
-    } catch (error) {
+    } catch (_) {
       // 即使失败也要清理队列，避免重复处理
       segmentsToProcess.forEach((segment) => {
         this.state.processingQueue.delete(segment.fingerprint);
