@@ -1,8 +1,3 @@
-/**
- * 提示词生成服务 - 重构版本
- * 专注于智能翻译模式，简化代码结构
- */
-
 import { UserLevel } from '../../shared/types/core';
 import { PromptConfig } from './types';
 import { languageService } from './LanguageService';
@@ -23,141 +18,97 @@ export class PromptService {
   }
 
   /**
-   * 生成统一提示词
+   * 生成统一提示词 - 精简版
    */
   public getUnifiedPrompt(config: PromptConfig): string {
     const { targetLanguage, userLevel, replacementRate } = config;
 
     const components = [
-      this.generateBaseInstruction(),
-      this.generateTaskDescription(targetLanguage),
-      this.generateCoreRules(targetLanguage),
-      this.generateLevelAdjustment(userLevel),
-      this.generateRatioControl(replacementRate),
-      this.generateFormatRequirements(),
-      this.generateExamples(targetLanguage),
+      this.generateBaseInstruction(), // 保持，但稍精简
+      this.generateTaskAndRules(targetLanguage), // 新合并：任务+规则
+      this.generateUserConfig(userLevel, replacementRate), // 新合并：水平+比例
+      this.generateFormatRequirements(), // 强化强调
+      this.generateExamples(targetLanguage), // 增加示例
     ].filter((component) => component.trim() !== '');
 
     return components.join('\n\n');
   }
 
   /**
-   * 基础指令
+   * 基础指令 - 精简
    */
   private generateBaseInstruction(): string {
-    return "You are an expert linguist and language teacher. Your task is to process text and intelligently select words or phrases suitable for the user's learning level, then provide translations.";
+    return 'You are an AI translator for language learners. Strictly follow instructions: select suitable words/phrases from input text based on user level and ratio, then output ONLY their translations in the specified format. No extra text allowed.';
   }
 
   /**
-   * 任务描述 - 简化版本
+   * 任务与规则 - 合并简化，澄清冲突
    */
-  private generateTaskDescription(targetLanguage: string): string {
-    const targetLangName =
+  private generateTaskAndRules(targetLanguage: string): string {
+    const langName =
       languageService.getTargetLanguageDisplayName(targetLanguage);
-    return `The user is learning ${targetLangName}. You will be provided with text in any language. Select appropriate words/phrases and provide their ${targetLangName} translations to enhance learning.`;
+    return `Task: User is learning ${langName}. Given any input text, intelligently select high-value words/phrases (e.g., key nouns, verbs, idioms) for learning, and provide their direct ${langName} translations.
+    
+## Strict Rules
+1. Select based on context: Prioritize words that aid learning, avoid fillers (e.g., 'a', 'the', 'is').
+2. Preserve original code, proper nouns, HTML tags unchanged.
+3. Skip any text already in ${langName}.
+4. Output ONLY the selected original||translation pairs. Rigorous ban on any additions, explanations, or prefixes (e.g., no 'Here is the translation:').
+5. Output that does not meet the requirements, directly return the empty string.
+6. Consider the context of the text when translating.
+`;
   }
 
   /**
-   * 核心规则
+   * 用户配置 - 合并水平与比例，添加指导
    */
-  private generateCoreRules(targetLanguage: string): string {
-    const targetLangName =
-      languageService.getTargetLanguageDisplayName(targetLanguage);
-
-    return `## MANDATORY OUTPUT RULES
-
-1. **Target Language**: ALL output must be exclusively in **${targetLangName}**. No other languages permitted.
-2. **Exclusion Principle**: If a word/phrase from the source text is already in **${targetLangName}**, **OMIT IT ENTIRELY** from output.
-3. **Content Purity**: Output **MUST contain ONLY direct translations**.
-   - **NO** explanations, annotations, pronunciation guides, or alternative translations.
-4. **Grammatical Integrity**: 
-   - Final translation must be **grammatically complete and natural** in ${targetLangName}.
-   - Word order **MUST** be correct for ${targetLangName}.
-   - Include necessary articles, prepositions, and structural elements.
-5. **System Constraint**: Strict adherence required. System parses output directly - **any deviation causes critical failure**.`;
-  }
-
-  /**
-   * CEFR水平调整
-   */
-  private generateLevelAdjustment(userLevel: UserLevel): string {
+  private generateUserConfig(
+    userLevel: UserLevel,
+    replacementRate: number,
+  ): string {
     const levelGuidance: Record<UserLevel, string> = {
-      [UserLevel.A1]:
-        'A1 (Beginner): Focus on very basic vocabulary. AVOID ultra-basic words (the, is, a, and, of). Select only simple nouns and verbs beginners should learn.',
-
-      [UserLevel.A2]:
-        'A2 (Elementary): Select everyday vocabulary and simple phrases (family, shopping, work, geography). Focus on concrete, practical words rather than abstract concepts.',
-
-      [UserLevel.B1]:
-        'B1 (Intermediate): Prioritize common verbs, adjectives, adverbs, and fixed expressions/collocations. Focus on words for expressing opinions, experiences, and plans.',
-
-      [UserLevel.B2]:
-        'B2 (Upper-Intermediate): Select complex vocabulary including abstract concepts, sophisticated expressions, and nuanced meanings. Include words for discussing ideas and arguments.',
-
-      [UserLevel.C1]:
-        'C1 (Advanced): Focus on academic and professional vocabulary, sophisticated expressions, and words with subtle distinctions. Include terminology from various fields.',
-
-      [UserLevel.C2]:
-        'C2 (Proficient): Select challenging terminology, idiomatic expressions, technical jargon, and nuanced vocabulary. Include rare words and specialized terminology.',
+      [UserLevel.A1]: 'A1 (Beginner): Select very basic words only.',
+      [UserLevel.A2]: 'A2 (Elementary): Select simple everyday words.',
+      [UserLevel.B1]: 'B1 (Intermediate): Select common phrases and verbs.',
+      [UserLevel.B2]: 'B2 (Upper-Intermediate): Select nuanced vocabulary.',
+      [UserLevel.C1]: 'C1 (Advanced): Select advanced idioms and terms.',
+      [UserLevel.C2]: 'C2 (Proficient): Select rare or specialized words.',
     };
 
-    return levelGuidance[userLevel] || levelGuidance[UserLevel.B1];
-  }
-
-  /**
-   * 比例控制指令 - 灵活范围版本
-   */
-  private generateRatioControl(replacementRate: number): string {
-    if (replacementRate <= 0 || replacementRate > 1) {
-      return '';
+    let ratioPart = '';
+    if (replacementRate > 0 && replacementRate <= 1) {
+      const percentage = Math.round(replacementRate * 100);
+      const lower = Math.max(0, percentage - 3); // 缩小波动范围，提升一致性
+      const upper = Math.min(100, percentage + 3);
+      ratioPart = `Select ~${percentage}% of text (${lower}%-${upper}% range) for translation. Focus on quality over quota; choose natural whole words/phrases.`;
     }
 
-    const percentage = Math.round(replacementRate * 100);
-    const lowerBound = Math.max(5, percentage - 5);
-    const upperBound = Math.min(95, percentage + 5);
-
-    return `
-      **SELECTION GUIDELINE**: Select approximately **${lowerBound}% to ${upperBound}%** of the text content for translation.
-      **Priority Principle**: 
-      - **Quality over precision** - Focus on selecting the most valuable learning words rather than exact character counts
-      - **Natural selection** - Choose complete words and meaningful phrases, avoid artificial word splitting
-      - **Learning value first** - Prioritize words that enhance vocabulary acquisition over meeting exact percentages
-
-      **Flexible Approach**:
-      - Target around ${percentage}% as a general guideline
-      - Adjust based on text content and learning value
-      - It's better to select fewer high-value words than more low-value ones to meet a quota
-`;
+    return `User Level: ${levelGuidance[userLevel] || levelGuidance[UserLevel.B1]}
+${ratioPart}`.trim();
   }
 
   /**
-   * 格式要求
+   * 格式要求 - 强化强调
    */
   private generateFormatRequirements(): string {
-    return `**MANDATORY OUTPUT FORMAT**:
-          Use simple double-bar format below. NO JSON! NO other format!
-          原文||译文
-
-          **FORMAT REQUIREMENTS**:
-          - One replacement per line
-          - Use double bars || to separate original and translation  
-          - No extra text, quotes, or explanations
-          - Just the direct format: original||translation
-          `;
+    return `MANDATORY FORMAT: Output ONLY lines of "original||translation". One per line. No JSON, quotes, extras, or other formats. Violating this will fail the task.`;
   }
 
   /**
-   * 示例 - 简化为通用示例
+   * 示例 - 增加2个，覆盖场景
    */
   private generateExamples(targetLanguage: string): string {
-    const targetLangName =
+    const langName =
       languageService.getTargetLanguageDisplayName(targetLanguage);
-
-    return `**EXAMPLE**:
-            If input text is "你好世界" and target language is ${targetLangName}, valid output:
-            你好||Hello
-            世界||World
-`;
+    return `Examples (Target: ${langName}):
+        Input: "The quick brown fox jumps over the lazy dog."
+        Output:
+        quick||translation_text
+        brown||translation_text
+        fox||translation_text
+        jumps||translation_text
+        lazy||translation_text
+        dog||translation_text`;
   }
 }
 
@@ -165,9 +116,6 @@ export class PromptService {
 
 export const promptService = PromptService.getInstance();
 
-/**
- * 根据配置生成系统提示词 - 唯一公共接口
- */
 export const getSystemPromptByConfig = (config: PromptConfig): string => {
   return promptService.getUnifiedPrompt(config);
 };

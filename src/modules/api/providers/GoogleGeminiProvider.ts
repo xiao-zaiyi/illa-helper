@@ -66,7 +66,7 @@ export class GoogleGeminiProvider extends BaseProvider {
       provider: 'gemini', // 指定为gemini获取特定prompt
     });
 
-    const prompt = `${systemPrompt}\n\n${text}`;
+    const prompt = `${systemPrompt}\n\nTranslate to ${settings.multilingualConfig.targetLanguage} (original||translation): ${text}`;
     const rateLimiter = rateLimitManager.getLimiter(
       this.config.apiEndpoint || 'google-gemini-native',
       this.config.requestsPerSecond || 0,

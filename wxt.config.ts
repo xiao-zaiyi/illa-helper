@@ -13,12 +13,6 @@ export default defineConfig({
     version: '1.7.8',
     permissions: ['storage', 'notifications', 'contextMenus', 'activeTab'],
     host_permissions: ['<all_urls>'],
-    browser_specific_settings: {
-      gecko: {
-        id: 'illa-helper@1932794922.qq.com',
-        strict_min_version: '88.0',
-      },
-    },
     commands: {
       'translate-page': {
         suggested_key: {

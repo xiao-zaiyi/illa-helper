@@ -32,3 +32,4 @@ web-ext.config.ts
 .wxt/firefox-data
 .env
 .env.development
+.env.submit

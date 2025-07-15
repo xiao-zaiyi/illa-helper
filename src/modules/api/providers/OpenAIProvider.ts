@@ -36,7 +36,10 @@ export class OpenAIProvider extends BaseProvider {
       model: this.config.model,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `{{ ${text} }}` },
+        {
+          role: 'user',
+          content: `Translate to ${settings.multilingualConfig.targetLanguage} (original||translation): ${text}`,
+        },
       ],
       temperature: this.config.temperature,
     };
