@@ -168,19 +168,40 @@ class ReleaseManager {
   }
 
   /**
+   * 检查命令行工具是否可用
+   */
+  isCommandAvailable(command) {
+    try {
+      // 使用 'pipe' 来抑制输出，同时如果命令不存在会抛出错误
+      execSync(`${command} --version`, { stdio: 'pipe' });
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  /**
    * 删除标签
    */
   deleteReleaseAssets(version) {
     const tag = `v${version}`;
     console.log(`🗑️  删除已存在的 Release 和标签: ${tag}`);
 
-    try {
-      // 删除 GitHub Release
-      console.log('💥 正在删除 GitHub Release...');
-      this.exec(`gh release delete ${tag} --yes`);
-      console.log('✅ GitHub Release 删除成功');
-    } catch (_error) {
-      console.log('ℹ️ GitHub Release 不存在或删除失败，跳过');
+    // 检查 gh 是否可用
+    if (this.isCommandAvailable('gh')) {
+      try {
+        // 删除 GitHub Release
+        console.log('💥 正在删除 GitHub Release...');
+        this.exec(`gh release delete ${tag} --yes`);
+        console.log('✅ GitHub Release 删除成功');
+      } catch (_error) {
+        console.log('ℹ️ GitHub Release 不存在或删除失败，跳过');
+      }
+    } else {
+      console.log(
+        "⚠️ GitHub CLI ('gh') 未安装或不在 PATH 中，将跳过删除 Release 的步骤。",
+      );
+      console.log('   请访问 https://cli.github.com/ 进行安装。');
     }
 
     try {
@@ -237,12 +258,14 @@ class ReleaseManager {
   createAndPushTag(version) {
     const tag = `v${version}`;
 
+    // 由于主流程已处理标签冲突，这里只是警告提示
     if (this.checkTagExists(tag)) {
-      console.error(`❌ 标签 ${tag} 已存在`);
-      console.log('💡 如需重新发布，请先删除标签:');
-      console.log(`   git tag -d ${tag}`);
-      console.log(`   git push origin :refs/tags/${tag}`);
-      process.exit(1);
+      console.log(`ℹ️ 标签 ${tag} 仍然存在，尝试删除后重新创建...`);
+      try {
+        this.exec(`git tag -d ${tag}`, false);
+      } catch (_error) {
+        // 忽略删除失败，继续尝试创建
+      }
     }
 
     console.log(`🏷️ 创建标签: ${tag}`);
@@ -312,31 +335,17 @@ class ReleaseManager {
 
       // 检查该版本是否已经发布过
       if (this.checkTagExists(`v${currentVersion}`)) {
-        const choice = await this.choice(
-          `⚠️ 版本 v${currentVersion} 已经发布过，请选择操作：`,
-          ['取消发布', '删除已有标签和 Release 并重新发布', '强制继续（不推荐）'],
-          0,
+        console.log(`⚠️ 版本 v${currentVersion} 已经发布过`);
+        const deleteConfirmed = await this.confirm(
+          '🗑️ 是否删除已有标签和 GitHub Release 然后重新发布？',
+          true,
         );
-
-        switch (choice) {
-          case 0:
-            console.log('❌ 发布已取消');
-            return;
-          case 1:
-            const deleteConfirmed = await this.confirm(
-              '⚠️ 确认删除远程标签和 GitHub Release？这个操作不可逆',
-              false,
-            );
-            if (deleteConfirmed) {
-              this.deleteReleaseAssets(currentVersion);
-            } else {
-              console.log('❌ 发布已取消');
-              return;
-            }
-            break;
-          case 2:
-            console.log('⚠️ 强制继续发布...');
-            break;
+        if (deleteConfirmed) {
+          this.deleteReleaseAssets(currentVersion);
+          console.log(`✅ 已删除已有版本，继续发布流程`);
+        } else {
+          console.log('❌ 发布已取消');
+          return;
         }
       }
 
