@@ -111,9 +111,15 @@ class ReleaseManager {
   }
 
   /**
-   * 提交变更
+   * 提交变更（如果有的话）
    */
   commitChanges(version) {
+    // 检查是否有变更需要提交
+    if (this.checkWorkingDirectory()) {
+      console.log('ℹ️ 工作目录干净，无需提交变更');
+      return;
+    }
+
     console.log('📤 提交版本变更...');
     this.exec(`git add .`);
     this.exec(`git commit -m "🔖 发布版本 v${version}"`);
