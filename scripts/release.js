@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import readline from 'readline';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +18,62 @@ class ReleaseManager {
   constructor() {
     this.configPath = path.join(process.cwd(), 'wxt.config.ts');
     this.packagePath = path.join(process.cwd(), 'package.json');
+    this.rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+  }
+
+  /**
+   * 交互式询问
+   */
+  async question(query) {
+    return new Promise((resolve) => {
+      this.rl.question(query, resolve);
+    });
+  }
+
+  /**
+   * 确认询问（y/n）
+   */
+  async confirm(message, defaultValue = false) {
+    const defaultStr = defaultValue ? 'Y/n' : 'y/N';
+    const answer = await this.question(`${message} (${defaultStr}): `);
+    
+    if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
+      return true;
+    } else if (answer.toLowerCase() === 'n' || answer.toLowerCase() === 'no') {
+      return false;
+    } else {
+      return defaultValue;
+    }
+  }
+
+  /**
+   * 选择询问
+   */
+  async choice(message, options, defaultIndex = 0) {
+    console.log(`\n${message}`);
+    options.forEach((option, index) => {
+      const marker = index === defaultIndex ? '→' : ' ';
+      console.log(`${marker} ${index + 1}. ${option}`);
+    });
+    
+    const answer = await this.question(`\n请选择 (1-${options.length}, 默认: ${defaultIndex + 1}): `);
+    const index = parseInt(answer) - 1;
+    
+    if (isNaN(index) || index < 0 || index >= options.length) {
+      return defaultIndex;
+    }
+    
+    return index;
+  }
+
+  /**
+   * 关闭交互界面
+   */
+  closeInterface() {
+    this.rl.close();
   }
 
   /**
@@ -109,9 +166,33 @@ class ReleaseManager {
   }
 
   /**
+   * 删除标签
+   */
+  deleteTag(version) {
+    const tag = `v${version}`;
+    console.log(`🗑️ 删除标签: ${tag}`);
+    
+    try {
+      // 删除本地标签
+      this.exec(`git tag -d ${tag}`);
+      console.log('✅ 本地标签删除成功');
+    } catch (error) {
+      console.log('ℹ️ 本地标签不存在，跳过');
+    }
+    
+    try {
+      // 删除远程标签
+      this.exec(`git push origin :refs/tags/${tag}`);
+      console.log('✅ 远程标签删除成功');
+    } catch (error) {
+      console.log('ℹ️ 远程标签不存在，跳过');
+    }
+  }
+
+  /**
    * 提交变更（如果有的话）
    */
-  commitChanges(version) {
+  async commitChanges(version) {
     // 检查是否有变更需要提交
     if (this.checkWorkingDirectory()) {
       console.log('ℹ️ 工作目录干净，无需提交变更');
@@ -119,6 +200,18 @@ class ReleaseManager {
     }
 
     console.log('📤 提交版本变更...');
+    
+    // 显示即将提交的文件
+    try {
+      const status = execSync('git status --porcelain', { encoding: 'utf8' });
+      console.log('📄 即将提交的文件:');
+      status.split('\n').filter(line => line.trim()).forEach(line => {
+        console.log(`   ${line}`);
+      });
+    } catch (error) {
+      // 忽略错误，继续执行
+    }
+
     this.exec(`git add .`);
     this.exec(`git commit -m "🔖 发布版本 v${version}"`);
     console.log('✅ 变更提交成功');
@@ -175,51 +268,111 @@ class ReleaseManager {
    * 主发布流程
    */
   async release(options = {}) {
-    console.log('🚀 开始自动化发布流程\n');
-
-    // 预检查
-    if (!this.checkGitRepository()) {
-      console.error('❌ 当前目录不是 Git 仓库');
-      process.exit(1);
-    }
-
-    // 读取当前版本号
-    const currentVersion = this.getCurrentVersion();
-    console.log(`📋 准备发布版本: v${currentVersion}`);
-
-    // 验证版本号格式
-    this.validateVersion(currentVersion);
-
-    // 检查该版本是否已经发布过
-    if (this.checkTagExists(`v${currentVersion}`)) {
-      console.error(`❌ 版本 v${currentVersion} 已经发布过`);
-      console.log('💡 请更新 package.json 中的版本号，或删除已有标签:');
-      console.log(`   git tag -d v${currentVersion}`);
-      console.log(`   git push origin :refs/tags/v${currentVersion}`);
-      process.exit(1);
-    }
-
-    // 检查工作目录（除非强制执行）
-    if (!options.force && !this.checkWorkingDirectory()) {
-      console.error('❌ 工作目录有未提交的变更');
-      console.log('💡 请先提交所有变更，或使用 --force 标志');
-      process.exit(1);
-    }
-
     try {
-      console.log(`✅ 开始发布版本: v${currentVersion}`);
+      console.log('🚀 开始自动化发布流程\n');
+
+      // 预检查
+      if (!this.checkGitRepository()) {
+        console.error('❌ 当前目录不是 Git 仓库');
+        process.exit(1);
+      }
+
+      // 读取当前版本号
+      const currentVersion = this.getCurrentVersion();
+      console.log(`📋 准备发布版本: v${currentVersion}`);
+
+      // 验证版本号格式
+      this.validateVersion(currentVersion);
+
+      // 发布前确认
+      if (!options.force) {
+        const confirmed = await this.confirm(`\n🎯 确认发布版本 v${currentVersion}？`, true);
+        if (!confirmed) {
+          console.log('❌ 发布已取消');
+          return;
+        }
+      }
+
+      // 检查该版本是否已经发布过
+      if (this.checkTagExists(`v${currentVersion}`)) {
+        const choice = await this.choice(
+          `⚠️ 版本 v${currentVersion} 已经发布过，请选择操作：`,
+          [
+            '取消发布',
+            '删除已有标签并重新发布',
+            '强制继续（不推荐）'
+          ],
+          0
+        );
+
+        switch (choice) {
+          case 0:
+            console.log('❌ 发布已取消');
+            return;
+          case 1:
+            const deleteConfirmed = await this.confirm('⚠️ 确认删除远程标签？这个操作不可逆', false);
+            if (deleteConfirmed) {
+              this.deleteTag(currentVersion);
+            } else {
+              console.log('❌ 发布已取消');
+              return;
+            }
+            break;
+          case 2:
+            console.log('⚠️ 强制继续发布...');
+            break;
+        }
+      }
+
+      // 检查工作目录
+      if (!this.checkWorkingDirectory()) {
+        const choice = await this.choice(
+          '⚠️ 工作目录有未提交的变更，请选择操作：',
+          [
+            '取消发布，手动提交后再试',
+            '自动提交变更并继续',
+            '忽略变更强制发布'
+          ],
+          0
+        );
+
+        switch (choice) {
+          case 0:
+            console.log('❌ 发布已取消，请先提交变更');
+            return;
+          case 1:
+            console.log('📝 将自动提交变更...');
+            break;
+          case 2:
+            console.log('⚠️ 忽略变更强制发布...');
+            options.force = true;
+            break;
+        }
+      }
+
+      console.log(`\n✅ 开始发布版本: v${currentVersion}`);
 
       // 提交变更（如果有的话）
-      this.commitChanges(currentVersion);
+      await this.commitChanges(currentVersion);
+
+      // 最终确认
+      const finalConfirm = await this.confirm('\n🚨 最后确认：即将推送到远程仓库并触发自动构建，是否继续？', true);
+      if (!finalConfirm) {
+        console.log('❌ 发布已取消');
+        return;
+      }
 
       // 创建并推送标签
       this.createAndPushTag(currentVersion);
 
       // 显示发布信息
       this.showReleaseInfo(currentVersion);
+
     } catch (error) {
       console.error('❌ 发布过程中出现错误:', error.message);
       process.exit(1);
+    } finally {
+      this.closeInterface();
     }
   }
 }
@@ -230,32 +383,41 @@ function parseArguments() {
 
   if (args.includes('--help') || args.includes('-h')) {
     console.log(`
-🚀 自动化发布脚本
+🚀 交互式自动化发布脚本
 
 用法:
   node scripts/release.js [options]
   npm run release [-- options]
 
 选项:
-  --force       忽略未提交的变更警告
+  --force       跳过所有交互确认，强制执行
   --help, -h    显示帮助信息
 
 示例:
-  node scripts/release.js
-  node scripts/release.js --force
-  npm run release
-  npm run release -- --force
+  node scripts/release.js          # 交互式发布
+  node scripts/release.js --force  # 强制发布（无交互）
+  npm run release                  # 交互式发布
+  npm run release -- --force      # 强制发布（无交互）
+
+交互式功能:
+  ✅ 发布前确认版本信息
+  ✅ 版本冲突时提供选择（取消/删除/强制）
+  ✅ 未提交变更时提供选择（取消/提交/忽略）
+  ✅ 推送前最终确认
+  ✅ 显示即将提交的文件列表
 
 发布流程:
   1. 读取 package.json 中的版本号
-  2. 检查该版本是否已发布
-  3. 提交变更到 git
-  4. 创建版本标签
-  5. 推送到远程仓库
-  6. 触发 GitHub Actions 自动构建和发布
+  2. 交互确认发布信息
+  3. 智能处理版本冲突和变更
+  4. 提交变更到 git（如需要）
+  5. 创建版本标签
+  6. 推送到远程仓库
+  7. 触发 GitHub Actions 自动构建和发布
 
 注意:
   发布前请先手动更新 package.json 中的版本号
+  使用 Ctrl+C 可以随时取消发布流程
     `);
     process.exit(0);
   }

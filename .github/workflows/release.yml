@@ -1,5 +1,5 @@
 name: 🚀 Release Build and Publish
-
+permissions: write-all
 on:
   push:
     tags:
