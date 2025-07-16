@@ -160,9 +160,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🎊 发布完成!"
-          RELEASE_URL=$(gh release view "v${{ env.VERSION }}" --json url -q .url)
+          RELEASE_URL=$(gh release view "${{ env.VERSION }}" --json url -q .url)
           echo "📦 Release URL: $RELEASE_URL"
-          echo "🏷️ 版本: v${{ env.VERSION }}"
+          echo "🏷️ 版本: ${{ env.VERSION }}"
           echo "📁 已上传的扩展包:"
           echo "  ✅ Chrome: illa-helper-${{ env.VERSION }}-chrome.zip"
           echo "  ✅ Firefox: illa-helper-${{ env.VERSION }}-firefox.zip"
