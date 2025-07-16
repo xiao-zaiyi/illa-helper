@@ -23,7 +23,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{js,ts,jsx,tsx,vue}\" \"entrypoints/**/*.{js,ts,jsx,tsx,vue}\"",
     "check": "npm run format && npm run lint:fix",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -54,6 +54,7 @@
     "eslint-plugin-vue": "^10.2.0",
     "globals": "^16.2.0",
     "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "prettier": "3.5.3",
     "tailwindcss": "^4.1.10",
     "typescript": "5.6.3",
@@ -61,5 +62,15 @@
     "vite-plugin-remove-console": "^2.2.0",
     "vue-tsc": "^2.2.10",
     "wxt": "^0.20.6"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx,vue}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "scripts/*.js": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }

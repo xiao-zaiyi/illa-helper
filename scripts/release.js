@@ -20,7 +20,7 @@ class ReleaseManager {
     this.packagePath = path.join(process.cwd(), 'package.json');
     this.rl = readline.createInterface({
       input: process.stdin,
-      output: process.stdout
+      output: process.stdout,
     });
   }
 
@@ -39,7 +39,7 @@ class ReleaseManager {
   async confirm(message, defaultValue = false) {
     const defaultStr = defaultValue ? 'Y/n' : 'y/N';
     const answer = await this.question(`${message} (${defaultStr}): `);
-    
+
     if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
       return true;
     } else if (answer.toLowerCase() === 'n' || answer.toLowerCase() === 'no') {
@@ -58,14 +58,16 @@ class ReleaseManager {
       const marker = index === defaultIndex ? '→' : ' ';
       console.log(`${marker} ${index + 1}. ${option}`);
     });
-    
-    const answer = await this.question(`\n请选择 (1-${options.length}, 默认: ${defaultIndex + 1}): `);
+
+    const answer = await this.question(
+      `\n请选择 (1-${options.length}, 默认: ${defaultIndex + 1}): `,
+    );
     const index = parseInt(answer) - 1;
-    
+
     if (isNaN(index) || index < 0 || index >= options.length) {
       return defaultIndex;
     }
-    
+
     return index;
   }
 
@@ -171,20 +173,20 @@ class ReleaseManager {
   deleteTag(version) {
     const tag = `v${version}`;
     console.log(`🗑️ 删除标签: ${tag}`);
-    
+
     try {
       // 删除本地标签
       this.exec(`git tag -d ${tag}`);
       console.log('✅ 本地标签删除成功');
-    } catch (error) {
+    } catch (_error) {
       console.log('ℹ️ 本地标签不存在，跳过');
     }
-    
+
     try {
       // 删除远程标签
       this.exec(`git push origin :refs/tags/${tag}`);
       console.log('✅ 远程标签删除成功');
-    } catch (error) {
+    } catch (_error) {
       console.log('ℹ️ 远程标签不存在，跳过');
     }
   }
@@ -200,15 +202,18 @@ class ReleaseManager {
     }
 
     console.log('📤 提交版本变更...');
-    
+
     // 显示即将提交的文件
     try {
       const status = execSync('git status --porcelain', { encoding: 'utf8' });
       console.log('📄 即将提交的文件:');
-      status.split('\n').filter(line => line.trim()).forEach(line => {
-        console.log(`   ${line}`);
-      });
-    } catch (error) {
+      status
+        .split('\n')
+        .filter((line) => line.trim())
+        .forEach((line) => {
+          console.log(`   ${line}`);
+        });
+    } catch (_error) {
       // 忽略错误，继续执行
     }
 
@@ -286,7 +291,10 @@ class ReleaseManager {
 
       // 发布前确认
       if (!options.force) {
-        const confirmed = await this.confirm(`\n🎯 确认发布版本 v${currentVersion}？`, true);
+        const confirmed = await this.confirm(
+          `\n🎯 确认发布版本 v${currentVersion}？`,
+          true,
+        );
         if (!confirmed) {
           console.log('❌ 发布已取消');
           return;
@@ -297,12 +305,8 @@ class ReleaseManager {
       if (this.checkTagExists(`v${currentVersion}`)) {
         const choice = await this.choice(
           `⚠️ 版本 v${currentVersion} 已经发布过，请选择操作：`,
-          [
-            '取消发布',
-            '删除已有标签并重新发布',
-            '强制继续（不推荐）'
-          ],
-          0
+          ['取消发布', '删除已有标签并重新发布', '强制继续（不推荐）'],
+          0,
         );
 
         switch (choice) {
@@ -310,7 +314,10 @@ class ReleaseManager {
             console.log('❌ 发布已取消');
             return;
           case 1:
-            const deleteConfirmed = await this.confirm('⚠️ 确认删除远程标签？这个操作不可逆', false);
+            const deleteConfirmed = await this.confirm(
+              '⚠️ 确认删除远程标签？这个操作不可逆',
+              false,
+            );
             if (deleteConfirmed) {
               this.deleteTag(currentVersion);
             } else {
@@ -331,9 +338,9 @@ class ReleaseManager {
           [
             '取消发布，手动提交后再试',
             '自动提交变更并继续',
-            '忽略变更强制发布'
+            '忽略变更强制发布',
           ],
-          0
+          0,
         );
 
         switch (choice) {
@@ -356,7 +363,10 @@ class ReleaseManager {
       await this.commitChanges(currentVersion);
 
       // 最终确认
-      const finalConfirm = await this.confirm('\n🚨 最后确认：即将推送到远程仓库并触发自动构建，是否继续？', true);
+      const finalConfirm = await this.confirm(
+        '\n🚨 最后确认：即将推送到远程仓库并触发自动构建，是否继续？',
+        true,
+      );
       if (!finalConfirm) {
         console.log('❌ 发布已取消');
         return;
@@ -367,7 +377,6 @@ class ReleaseManager {
 
       // 显示发布信息
       this.showReleaseInfo(currentVersion);
-
     } catch (error) {
       console.error('❌ 发布过程中出现错误:', error.message);
       process.exit(1);
