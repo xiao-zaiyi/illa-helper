@@ -1,5 +1,7 @@
 name: 🚀 Release Build and Publish
-permissions: write-all
+permissions:
+  contents: write # 明确指定写权限，用于创建 Release
+
 on:
   push:
     tags:
@@ -10,160 +12,177 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 检出代码
+      # 1. 检出代码
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # 必须获取所有历史记录，以便 git log 能正常工作
 
-      # 设置 Node.js 环境
+      # 2. 设置 Node.js 环境
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
 
-      # 安装依赖
+      # 3. 安装依赖
       - name: 📦 Install dependencies
         run: npm ci
 
-      # 验证版本一致性
+      # 4. 验证版本一致性
       - name: ✅ Validate version consistency
         run: |
-          # 获取标签版本（移除 v 前缀）
-          TAG_VERSION=${GITHUB_REF#refs/tags/v}
-          echo "标签版本: $TAG_VERSION"
+          # GITHUB_REF_NAME 变量直接提供了标签名，例如 v1.8.0
+          TAG_NAME=${{ github.ref_name }}
+          # 移除 v 前缀以获取版本号
+          TAG_VERSION=${TAG_NAME#v}
+          echo "Tag name: $TAG_NAME"
+          echo "Tag version: $TAG_VERSION"
 
-          # 从 package.json 获取版本号
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          echo "package.json 版本: $PACKAGE_VERSION"
+          echo "package.json version: $PACKAGE_VERSION"
 
-          # 检查版本是否一致
           if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "❌ 错误: 标签版本 ($TAG_VERSION) 与 package.json 版本 ($PACKAGE_VERSION) 不一致"
+            echo "❌ Error: Tag version ($TAG_VERSION) does not match package.json version ($PACKAGE_VERSION)."
             exit 1
           fi
 
-          echo "✅ 版本验证通过: $TAG_VERSION"
+          echo "✅ Version validation passed: $TAG_VERSION"
+          # 将版本号存入环境变量，供后续步骤使用
           echo "VERSION=$TAG_VERSION" >> $GITHUB_ENV
 
-      # 类型检查
-      - name: 🔍 TypeScript check
-        run: npm run compile
-
-      # 代码质量检查
-      - name: 🧹 Format and lint check
+      # 5. 代码检查
+      - name: 🔍 Code quality checks
         run: |
+          npm run compile
           npm run check
           npm run lint
 
-      # 构建所有平台的扩展包
+      # 6. 构建所有平台的扩展包
       - name: 🏗️ Build extensions for all platforms
         run: |
-          echo "🚀 开始构建扩展包..."
+          echo "🚀 Starting to build extension packages..."
           npm run zip:all
-
-          echo "📁 构建产物列表:"
+          echo "📁 Build artifacts list:"
           ls -la .output/*.zip
 
-      # 验证构建产物
+      # 7. 验证构建产物
       - name: ✅ Validate build artifacts
         run: |
-          echo "🔍 验证构建产物..."
-
-          # 检查必需的文件是否存在
+          echo "🔍 Validating build artifacts..."
           required_files=(
             ".output/illa-helper-${{ env.VERSION }}-chrome.zip"
             ".output/illa-helper-${{ env.VERSION }}-firefox.zip"
             ".output/illa-helper-${{ env.VERSION }}-safari.zip"
           )
-
           for file in "${required_files[@]}"; do
             if [ ! -f "$file" ]; then
-              echo "❌ 错误: 缺少构建文件 $file"
+              echo "❌ Error: Missing build artifact: $file"
               exit 1
             else
-              echo "✅ 找到文件: $file ($(du -h "$file" | cut -f1))"
+              echo "✅ Found artifact: $file ($(du -h "$file" | cut -f1))"
             fi
           done
+          echo "🎉 All build artifacts validated successfully!"
 
-          echo "🎉 所有构建产物验证通过!"
-
-      # 生成 Release Notes
+      # 8. 生成 Release Notes
       - name: 📝 Generate Release Notes
-        id: release_notes
         run: |
-          # 获取上一个标签
+          VERSION=${{ env.VERSION }}
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
 
           if [ -n "$PREVIOUS_TAG" ]; then
-            echo "📋 生成从 $PREVIOUS_TAG 到 v${{ env.VERSION }} 的更新日志..."
-            
-            # 生成提交日志（原始格式）
-            COMMITS=$(git log --pretty=format:"%s (%h)" $PREVIOUS_TAG..HEAD | head -50)
-            
-            if [ -z "$COMMITS" ]; then
-              RELEASE_NOTES="* 版本更新至 v${{ env.VERSION }}"
-            else
-              # 使用 awk 进行分类（处理英文: 和中文：，忽略 emoji）
-              RELEASE_NOTES=$(echo "$COMMITS" | awk '
-                BEGIN {
-                  FS = "[:：]";
-                }
-                {
-                  gsub(/🔧|其他emoji/, "", $1);  # 移除 emoji，如果有
-                  type = tolower(trim($1));
-                  if (type == "") next;
-                  msg = $0;  # 整行消息
-                  groups[type] = groups[type] ? groups[type] "\n- " msg : "- " msg;
-                }
-                END {
-                  for (t in groups) {
-                    printf "### %s\n%s\n\n", toupper(substr(t,1,1)) substr(t,2), groups[t];
-                  }
-                }
-                function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
-              ')
-            fi
+            echo "📋 Generating changelog from $PREVIOUS_TAG to ${{ github.ref_name }}..."
+            COMMITS=$(git log --pretty=format:"%s (%h)" $PREVIOUS_TAG..HEAD)
           else
-            echo "📋 首次发布，生成基础发布说明..."
-            RELEASE_NOTES="* 初始版本发布 v${{ env.VERSION }}"
+            echo "📋 No previous tag found. This is the first release."
+            COMMITS=$(git log --pretty=format:"%s (%h)" HEAD -50)
           fi
 
-          # 组合完整的 Release Notes
-          cat << EOF > release_notes.md
-          ### 🔄 更新内容
-          $RELEASE_NOTES
+          if [ -z "$COMMITS" ]; then
+            RELEASE_NOTES="- 版本更新"
+          else
+            RELEASE_NOTES=$(echo "$COMMITS" | awk '
+              BEGIN {
+                FS = "[:：]";
+                order_count = 8;
+                order[1] = "feat";     headers["feat"]     = "✨ Features";
+                order[2] = "fix";      headers["fix"]      = "🐛 Bug Fixes";
+                order[3] = "perf";     headers["perf"]     = "⚡️ Performance";
+                order[4] = "refactor";  headers["refactor"]  = "♻️ Refactoring";
+                order[5] = "docs";     headers["docs"]     = "📝 Documentation";
+                order[6] = "style";    headers["style"]    = "💄 Styles";
+                order[7] = "test";     headers["test"]     = "✅ Testing";
+                order[8] = "chore";    headers["chore"]    = "📦 Chores";
+              }
+              {
+                full_message = $0;
+                if (NF < 2) {
+                  groups["other"] = groups["other"] ? groups["other"] "\n- " full_message : "- " full_message;
+                  next;
+                }
+                type_field = $1;
+                gsub(/^[ \t]+|[ \t]+$/, "", type_field);
+                match(type_field, /^[a-zA-Z]+/);
+                type = tolower(substr(type_field, RSTART, RLENGTH));
+                is_known_type = 0;
+                for (i=1; i<=order_count; i++) { if (order[i] == type) { is_known_type = 1; break; } }
+                if (is_known_type == 0) {
+                  groups["other"] = groups["other"] ? groups["other"] "\n- " full_message : "- " full_message;
+                } else {
+                  groups[type] = groups[type] ? groups[type] "\n- " full_message : "- " full_message;
+                }
+              }
+              END {
+                for (i = 1; i <= order_count; i++) {
+                  type = order[i];
+                  if (groups[type]) {
+                    if (output != "") { output = output "\n" }
+                    output = output sprintf("### %s\n%s", headers[type], groups[type]);
+                  }
+                }
+                if (groups["other"]) {
+                  if (output != "") { output = output "\n\n" }
+                  output = output sprintf("### miscellaneous\n%s", groups["other"]);
+                }
+                print output;
+              }
+            ')
+          fi
 
+          # 使用 GITHUB_REF_NAME 设置更友好的主标题
+          cat << EOF > release_notes.md
+          # Release ${{ github.ref_name }}
+
+          $RELEASE_NOTES
           EOF
 
-          echo "📄 Release Notes 预览:"
+          echo "📄 Release Notes Preview:"
+          echo "---"
           cat release_notes.md
+          echo "---"
 
-      # 创建 GitHub Release 并上传资产
+      # 9. 创建 GitHub Release 并上传资产
       - name: 🎁 Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 使用 gh CLI 创建发布并上传所有扩展包
-          gh release create "${{ env.VERSION }}" \
+          # 使用 github.ref_name 作为标签名，它包含了 "v" 前缀 (e.g., v1.8.0)
+          gh release create "${{ github.ref_name }}" \
             --latest \
-            --title "${{ env.VERSION }}" \
+            --title "Release ${{ github.ref_name }}" \
             --notes-file release_notes.md \
-            ".output/illa-helper-${{ env.VERSION }}-chrome.zip" \
-            ".output/illa-helper-${{ env.VERSION }}-firefox.zip" \
-            ".output/illa-helper-${{ env.VERSION }}-safari.zip"
+            .output/illa-helper-${{ env.VERSION }}-chrome.zip \
+            .output/illa-helper-${{ env.VERSION }}-firefox.zip \
+            .output/illa-helper-${{ env.VERSION }}-safari.zip
 
-      # 发布成功通知
+      # 10. 发布成功通知
       - name: 🎉 Release completed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "🎊 发布完成!"
-          RELEASE_URL=$(gh release view "${{ env.VERSION }}" --json url -q .url)
+          echo "🎊 Release successful!"
+          # 同样，使用 github.ref_name 来获取 release URL
+          RELEASE_URL=$(gh release view "${{ github.ref_name }}" --json url -q .url)
           echo "📦 Release URL: $RELEASE_URL"
-          echo "🏷️ 版本: ${{ env.VERSION }}"
-          echo "📁 已上传的扩展包:"
-          echo "  ✅ Chrome: illa-helper-${{ env.VERSION }}-chrome.zip"
-          echo "  ✅ Firefox: illa-helper-${{ env.VERSION }}-firefox.zip"
-          echo "  ✅ Safari: illa-helper-${{ env.VERSION }}-safari.zip"
+          echo "🏷️ Version: ${{ github.ref_name }}"
