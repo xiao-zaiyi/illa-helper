@@ -170,9 +170,18 @@ class ReleaseManager {
   /**
    * 删除标签
    */
-  deleteTag(version) {
+  deleteReleaseAssets(version) {
     const tag = `v${version}`;
-    console.log(`🗑️ 删除标签: ${tag}`);
+    console.log(`🗑️  删除已存在的 Release 和标签: ${tag}`);
+
+    try {
+      // 删除 GitHub Release
+      console.log('💥 正在删除 GitHub Release...');
+      this.exec(`gh release delete ${tag} --yes`);
+      console.log('✅ GitHub Release 删除成功');
+    } catch (_error) {
+      console.log('ℹ️ GitHub Release 不存在或删除失败，跳过');
+    }
 
     try {
       // 删除本地标签
@@ -305,7 +314,7 @@ class ReleaseManager {
       if (this.checkTagExists(`v${currentVersion}`)) {
         const choice = await this.choice(
           `⚠️ 版本 v${currentVersion} 已经发布过，请选择操作：`,
-          ['取消发布', '删除已有标签并重新发布', '强制继续（不推荐）'],
+          ['取消发布', '删除已有标签和 Release 并重新发布', '强制继续（不推荐）'],
           0,
         );
 
@@ -315,11 +324,11 @@ class ReleaseManager {
             return;
           case 1:
             const deleteConfirmed = await this.confirm(
-              '⚠️ 确认删除远程标签？这个操作不可逆',
+              '⚠️ 确认删除远程标签和 GitHub Release？这个操作不可逆',
               false,
             );
             if (deleteConfirmed) {
-              this.deleteTag(currentVersion);
+              this.deleteReleaseAssets(currentVersion);
             } else {
               console.log('❌ 发布已取消');
               return;

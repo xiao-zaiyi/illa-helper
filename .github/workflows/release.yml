@@ -29,15 +29,13 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      # 4. 验证版本一致性
-      - name: ✅ Validate version consistency
+      # 4. 验证版本一致性并设置环境变量
+      - name: ✅ Validate version and set ENV
         run: |
-          # GITHUB_REF_NAME 变量直接提供了标签名，例如 v1.8.0
           TAG_NAME=${{ github.ref_name }}
-          # 移除 v 前缀以获取版本号
           TAG_VERSION=${TAG_NAME#v}
           echo "Tag name: $TAG_NAME"
-          echo "Tag version: $TAG_VERSION"
+          echo "Version number: $TAG_VERSION"
 
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
           echo "package.json version: $PACKAGE_VERSION"
@@ -48,7 +46,7 @@ jobs:
           fi
 
           echo "✅ Version validation passed: $TAG_VERSION"
-          # 将版本号存入环境变量，供后续步骤使用
+          # 将纯版本号存入环境变量，供后续步骤使用
           echo "VERSION=$TAG_VERSION" >> $GITHUB_ENV
 
       # 5. 代码检查
@@ -150,9 +148,10 @@ jobs:
             ')
           fi
 
-          # 使用 GITHUB_REF_NAME 设置更友好的主标题
+          # -----------------  修改点  -----------------
+          # 生成的 Markdown 文件主标题直接使用版本号
           cat << EOF > release_notes.md
-          # Release ${{ github.ref_name }}
+          # ${{ env.VERSION }}
 
           $RELEASE_NOTES
           EOF
@@ -167,10 +166,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 使用 github.ref_name 作为标签名，它包含了 "v" 前缀 (e.g., v1.8.0)
           gh release create "${{ github.ref_name }}" \
             --latest \
-            --title "Release ${{ github.ref_name }}" \
+            --title "${{ env.VERSION }}" \
             --notes-file release_notes.md \
             .output/illa-helper-${{ env.VERSION }}-chrome.zip \
             .output/illa-helper-${{ env.VERSION }}-firefox.zip \
@@ -182,7 +180,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🎊 Release successful!"
-          # 同样，使用 github.ref_name 来获取 release URL
           RELEASE_URL=$(gh release view "${{ github.ref_name }}" --json url -q .url)
           echo "📦 Release URL: $RELEASE_URL"
-          echo "🏷️ Version: ${{ github.ref_name }}"
+          # 输出的版本号也保持一致
+          echo "🏷️ Version: ${{ env.VERSION }}"
