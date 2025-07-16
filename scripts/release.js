@@ -192,6 +192,7 @@ class ReleaseManager {
       try {
         // 删除 GitHub Release
         console.log('💥 正在删除 GitHub Release...');
+        this.exec(`gh repo set-default xiao-zaiyi/illa-helper`);
         this.exec(`gh release delete ${tag} --yes`);
         console.log('✅ GitHub Release 删除成功');
       } catch (_error) {
