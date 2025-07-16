@@ -54,8 +54,6 @@ class ReleaseManager {
     }
   }
 
-
-
   /**
    * 验证版本号格式
    */
@@ -99,9 +97,9 @@ class ReleaseManager {
   checkTagExists(tag) {
     try {
       // 使用静默模式检查标签，不显示错误信息
-      execSync(`git rev-parse ${tag}`, { 
+      execSync(`git rev-parse ${tag}`, {
         encoding: 'utf8',
-        stdio: 'pipe'
+        stdio: 'pipe',
       });
       return true;
     } catch {

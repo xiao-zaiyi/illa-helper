@@ -5,7 +5,9 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
 // 从 package.json 读取版本号
-const packageJson = JSON.parse(readFileSync(resolve('./package.json'), 'utf-8'));
+const packageJson = JSON.parse(
+  readFileSync(resolve('./package.json'), 'utf-8'),
+);
 const version = packageJson.version;
 
 // See https://wxt.dev/api/config.html
