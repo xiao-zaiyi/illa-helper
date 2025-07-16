@@ -129,6 +129,7 @@ jobs:
         run: |
           # 使用 gh CLI 创建发布并上传所有扩展包
           gh release create "v${{ env.VERSION }}" \
+            --latest \
             --title "浸入式学语言助手 v${{ env.VERSION }}" \
             --notes-file release_notes.md \
             ".output/illa-helper-${{ env.VERSION }}-chrome.zip#Chrome 扩展包" \
