@@ -307,6 +307,19 @@ export const TOOLTIP_STYLES = `
   align-self: flex-start;
 }
 
+.wxt-pronunciation-tooltip button{
+  min-width: 20px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.wxt-word-tooltip button{
+  min-width: 20px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+
 
 
 .wxt-word-list {
