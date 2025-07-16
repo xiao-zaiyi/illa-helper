@@ -2,7 +2,7 @@
   "name": "illa-helper",
   "description": "manifest.json description",
   "private": true,
-  "version": "1.7.8-beta.1",
+  "version": "1.7.9",
   "type": "module",
   "scripts": {
     "dev": "wxt",
