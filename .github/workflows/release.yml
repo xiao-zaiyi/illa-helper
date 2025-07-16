@@ -99,11 +99,31 @@ jobs:
           if [ -n "$PREVIOUS_TAG" ]; then
             echo "📋 生成从 $PREVIOUS_TAG 到 v${{ env.VERSION }} 的更新日志..."
             
-            # 生成提交日志
-            RELEASE_NOTES=$(git log --pretty=format:"* %s (%h)" $PREVIOUS_TAG..HEAD | head -20)
+            # 生成提交日志（原始格式）
+            COMMITS=$(git log --pretty=format:"%s (%h)" $PREVIOUS_TAG..HEAD | head -50)
             
-            if [ -z "$RELEASE_NOTES" ]; then
+            if [ -z "$COMMITS" ]; then
               RELEASE_NOTES="* 版本更新至 v${{ env.VERSION }}"
+            else
+              # 使用 awk 进行分类（处理英文: 和中文：，忽略 emoji）
+              RELEASE_NOTES=$(echo "$COMMITS" | awk '
+                BEGIN {
+                  FS = "[:：]";
+                }
+                {
+                  gsub(/🔧|其他emoji/, "", $1);  # 移除 emoji，如果有
+                  type = tolower(trim($1));
+                  if (type == "") next;
+                  msg = $0;  # 整行消息
+                  groups[type] = groups[type] ? groups[type] "\n- " msg : "- " msg;
+                }
+                END {
+                  for (t in groups) {
+                    printf "### %s\n%s\n\n", toupper(substr(t,1,1)) substr(t,2), groups[t];
+                  }
+                }
+                function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+              ')
             fi
           else
             echo "📋 首次发布，生成基础发布说明..."
@@ -112,8 +132,6 @@ jobs:
 
           # 组合完整的 Release Notes
           cat << EOF > release_notes.md
-          ## 🎉 浸入式学语言助手 v${{ env.VERSION }}
-
           ### 🔄 更新内容
           $RELEASE_NOTES
 
@@ -128,13 +146,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # 使用 gh CLI 创建发布并上传所有扩展包
-          gh release create "v${{ env.VERSION }}" \
+          gh release create "${{ env.VERSION }}" \
             --latest \
-            --title "浸入式学语言助手 v${{ env.VERSION }}" \
+            --title "${{ env.VERSION }}" \
             --notes-file release_notes.md \
-            ".output/illa-helper-${{ env.VERSION }}-chrome.zip#Chrome 扩展包" \
-            ".output/illa-helper-${{ env.VERSION }}-firefox.zip#Firefox 扩展包" \
-            ".output/illa-helper-${{ env.VERSION }}-safari.zip#Safari 扩展包"
+            ".output/illa-helper-${{ env.VERSION }}-chrome.zip" \
+            ".output/illa-helper-${{ env.VERSION }}-firefox.zip" \
+            ".output/illa-helper-${{ env.VERSION }}-safari.zip"
 
       # 发布成功通知
       - name: 🎉 Release completed
