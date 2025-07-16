@@ -1,6 +1,13 @@
 import { defineConfig } from 'wxt';
 import removeConsole from 'vite-plugin-remove-console';
 import tailwindcss from '@tailwindcss/vite';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+// 从 package.json 读取版本号
+const packageJson = JSON.parse(readFileSync(resolve('./package.json'), 'utf-8'));
+const version = packageJson.version;
+
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   modules: ['@wxt-dev/module-vue'],
@@ -10,7 +17,7 @@ export default defineConfig({
       email: 'xiao1932794922@gmail.com',
     },
     description: `浸入式学语言助手(illa-helper) extension turns browsing into language learning. AI uses "i+1" theory, supports 20+ languages.`,
-    version: '1.7.9',
+    version,
     permissions: ['storage', 'notifications', 'contextMenus', 'activeTab'],
     host_permissions: ['<all_urls>', 'https://api.github.com/*'],
     commands: {

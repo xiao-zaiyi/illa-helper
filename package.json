@@ -2,7 +2,7 @@
   "name": "illa-helper",
   "description": "manifest.json description",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.7.8-beta.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -16,6 +16,7 @@
     "zip:safari": "wxt zip -b safari --mode production",
     "zip:safari:dev": "wxt zip -b safari --mode development",
     "zip:all": "wxt zip -b chrome --mode production && wxt zip -b safari --mode production && wxt zip -b firefox --mode production",
+    "release": "node scripts/release.js",
     "compile": "vue-tsc --noEmit",
     "postinstall": "wxt prepare",
     "lint": "eslint .",

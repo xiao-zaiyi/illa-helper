@@ -1,0 +1,192 @@
+name: 🚀 Release Build and Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 触发条件：版本标签 (例如: v1.8.0)
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 检出代码
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 设置 Node.js 环境
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      # 安装依赖
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      # 验证版本一致性
+      - name: ✅ Validate version consistency
+        run: |
+          # 获取标签版本（移除 v 前缀）
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          echo "标签版本: $TAG_VERSION"
+          
+          # 从 package.json 获取版本号
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          echo "package.json 版本: $PACKAGE_VERSION"
+          
+          # 检查版本是否一致
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "❌ 错误: 标签版本 ($TAG_VERSION) 与 package.json 版本 ($PACKAGE_VERSION) 不一致"
+            exit 1
+          fi
+          
+          echo "✅ 版本验证通过: $TAG_VERSION"
+          echo "VERSION=$TAG_VERSION" >> $GITHUB_ENV
+
+      # 类型检查
+      - name: 🔍 TypeScript check
+        run: npm run compile
+
+      # 代码质量检查
+      - name: 🧹 Lint and format check
+        run: |
+          npm run lint
+          npm run format -- --check
+
+      # 构建所有平台的扩展包
+      - name: 🏗️ Build extensions for all platforms
+        run: |
+          echo "🚀 开始构建扩展包..."
+          npm run zip:all
+          
+          echo "📁 构建产物列表:"
+          ls -la .output/*.zip
+
+      # 验证构建产物
+      - name: ✅ Validate build artifacts
+        run: |
+          echo "🔍 验证构建产物..."
+          
+          # 检查必需的文件是否存在
+          required_files=(
+            ".output/illa-helper-${{ env.VERSION }}-chrome.zip"
+            ".output/illa-helper-${{ env.VERSION }}-firefox.zip"
+            ".output/illa-helper-${{ env.VERSION }}-safari.zip"
+          )
+          
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ 错误: 缺少构建文件 $file"
+              exit 1
+            else
+              echo "✅ 找到文件: $file ($(du -h "$file" | cut -f1))"
+            fi
+          done
+          
+          echo "🎉 所有构建产物验证通过!"
+
+      # 生成 Release Notes
+      - name: 📝 Generate Release Notes
+        id: release_notes
+        run: |
+          # 获取上一个标签
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "📋 生成从 $PREVIOUS_TAG 到 v${{ env.VERSION }} 的更新日志..."
+            
+            # 生成提交日志
+            RELEASE_NOTES=$(git log --pretty=format:"* %s (%h)" $PREVIOUS_TAG..HEAD | head -20)
+            
+            if [ -z "$RELEASE_NOTES" ]; then
+              RELEASE_NOTES="* 版本更新至 v${{ env.VERSION }}"
+            fi
+          else
+            echo "📋 首次发布，生成基础发布说明..."
+            RELEASE_NOTES="* 初始版本发布 v${{ env.VERSION }}"
+          fi
+          
+          # 组合完整的 Release Notes
+          cat << EOF > release_notes.md
+          ## 🎉 浸入式学语言助手 v${{ env.VERSION }}
+          
+          ### 📦 下载说明
+          - **Chrome 浏览器**: 下载 \`illa-helper-${{ env.VERSION }}-chrome.zip\`
+          - **Firefox 浏览器**: 下载 \`illa-helper-${{ env.VERSION }}-firefox.zip\`  
+          - **Safari 浏览器**: 下载 \`illa-helper-${{ env.VERSION }}-safari.zip\`
+          
+          ### 🔄 更新内容
+          $RELEASE_NOTES
+          
+          ### 📥 安装方法
+          1. 下载对应浏览器的 zip 文件
+          2. 解压到本地目录
+          3. 在浏览器扩展管理页面加载解压后的文件夹
+          
+          ---
+          🤖 此版本由 GitHub Actions 自动构建发布
+          EOF
+          
+          echo "📄 Release Notes 预览:"
+          cat release_notes.md
+
+      # 创建 GitHub Release
+      - name: 🎁 Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.VERSION }}
+          release_name: "🚀 浸入式学语言助手 v${{ env.VERSION }}"
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+
+      # 上传 Chrome 扩展包
+      - name: 📤 Upload Chrome Extension
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: .output/illa-helper-${{ env.VERSION }}-chrome.zip
+          asset_name: illa-helper-${{ env.VERSION }}-chrome.zip
+          asset_content_type: application/zip
+
+      # 上传 Firefox 扩展包
+      - name: 📤 Upload Firefox Extension
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: .output/illa-helper-${{ env.VERSION }}-firefox.zip
+          asset_name: illa-helper-${{ env.VERSION }}-firefox.zip
+          asset_content_type: application/zip
+
+      # 上传 Safari 扩展包
+      - name: 📤 Upload Safari Extension
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: .output/illa-helper-${{ env.VERSION }}-safari.zip
+          asset_name: illa-helper-${{ env.VERSION }}-safari.zip
+          asset_content_type: application/zip
+
+      # 发布成功通知
+      - name: 🎉 Release completed
+        run: |
+          echo "🎊 发布完成!"
+          echo "📦 Release URL: ${{ steps.create_release.outputs.html_url }}"
+          echo "🏷️ 版本: v${{ env.VERSION }}"
+          echo "📁 已上传的扩展包:"
+          echo "  ✅ Chrome: illa-helper-${{ env.VERSION }}-chrome.zip"
+          echo "  ✅ Firefox: illa-helper-${{ env.VERSION }}-firefox.zip"
+          echo "  ✅ Safari: illa-helper-${{ env.VERSION }}-safari.zip" 
