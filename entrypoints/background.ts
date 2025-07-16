@@ -8,6 +8,7 @@ import { NotificationService } from '@/src/modules/background/services/Notificat
 import { ApiProxyService } from '@/src/modules/background/services/ApiProxyService';
 import { CommandService } from '@/src/modules/background/services/CommandService';
 import { InitializationService } from '@/src/modules/background/services/InitializationService';
+import { UpdateCheckService } from '@/src/modules/background/services/UpdateCheckService';
 import {
   MESSAGE_TYPES,
   BACKGROUND_CONSTANTS,
@@ -21,6 +22,7 @@ export default defineBackground(() => {
   const apiProxyService = ApiProxyService.getInstance();
   const commandService = CommandService.getInstance();
   const initializationService = InitializationService.getInstance();
+  const updateCheckService = UpdateCheckService.getInstance();
 
   // 传统管理器已移除 - 统一到InitializationService中管理
 
@@ -31,6 +33,9 @@ export default defineBackground(() => {
     try {
       // 初始化命令服务
       commandService.initialize();
+
+      // 初始化更新检查服务
+      await updateCheckService.init();
 
       console.log('[Background] 所有服务初始化完成');
     } catch (error) {
@@ -89,6 +94,14 @@ export default defineBackground(() => {
 
       case MessageType.CONTEXT_MENU_ACTION:
         handleContextMenuAction(message, sendResponse);
+        return true; // 保持消息通道开放
+
+      // 处理更新检查相关消息
+      case 'CHECK_UPDATE':
+      case 'CLEAR_UPDATE_BADGE':
+      case 'DISMISS_UPDATE':
+      case 'GET_UPDATE_INFO':
+        handleUpdateMessage(message, sendResponse);
         return true; // 保持消息通道开放
 
       default:
@@ -213,6 +226,37 @@ export default defineBackground(() => {
         });
       } catch (error) {
         console.error('[Background] 右键菜单动作处理失败:', error);
+        sendResponse({
+          success: false,
+          error: {
+            message: error instanceof Error ? error.message : '未知错误',
+          },
+        });
+      }
+    })();
+  }
+
+  /**
+   * 处理更新检查相关消息
+   */
+  function handleUpdateMessage(
+    message: any,
+    sendResponse: (response: any) => void,
+  ): void {
+    (async () => {
+      try {
+        const handled = await updateCheckService.handleMessage(
+          message,
+          sendResponse,
+        );
+        if (!handled) {
+          sendResponse({
+            success: false,
+            error: { message: '未知的更新消息类型' },
+          });
+        }
+      } catch (error) {
+        console.error('[Background] 更新消息处理失败:', error);
         sendResponse({
           success: false,
           error: {

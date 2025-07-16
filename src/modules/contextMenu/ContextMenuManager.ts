@@ -56,10 +56,7 @@ export class ContextMenuManager {
    * 更新菜单状态（V3兼容版本）
    */
   private async updateMenuState(tabId: number, url: string): Promise<void> {
-    console.log(`[ContextMenu] 更新菜单状态 - TabID: ${tabId}, URL: ${url}`);
-
     if (!url || !url.startsWith('http')) {
-      console.log(`[ContextMenu] 非HTTP页面，隐藏菜单 - URL: ${url}`);
       await this.hideAllDynamicMenus();
       return;
     }
@@ -68,9 +65,6 @@ export class ContextMenuManager {
       // 验证URL
       const validation = validateUrlForRule(url);
       if (!validation.valid) {
-        console.log(
-          `[ContextMenu] URL验证失败 - ${validation.error || 'Unknown error'}`,
-        );
         await this.hideAllDynamicMenus();
         return;
       }
@@ -78,10 +72,6 @@ export class ContextMenuManager {
       // 获取当前网站状态
       const websiteStatus = await this.websiteManager.getWebsiteStatus(url);
       const domain = extractDomain(url);
-
-      console.log(
-        `[ContextMenu] 网站状态 - Domain: ${domain}, Status: ${websiteStatus}`,
-      );
 
       // 根据网站状态更新菜单可见性
       await this.updateMenuVisibility(url, domain, websiteStatus);

@@ -550,7 +550,7 @@
                   <Button
                     @click="clearCustomParams"
                     size="sm"
-                    variant="outline"
+                    variant="destructive"
                     :disabled="!configForm.config.customParams?.trim()"
                   >
                     清空
@@ -558,7 +558,7 @@
                   <Button
                     @click="showCustomParamsExample = !showCustomParamsExample"
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                   >
                     {{ showCustomParamsExample ? '隐藏示例' : '显示示例' }}
                   </Button>
@@ -629,7 +629,7 @@
                     !configForm.config.apiEndpoint)
                 "
                 size="sm"
-                variant="outline"
+                variant="default"
               >
                 <span v-if="isTestingConnection" class="flex items-center">
                   <div

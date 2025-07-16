@@ -63,7 +63,7 @@
                     </div>
                   </div>
                   <div
-                    class="font-mono text-lg px-4 py-2 bg-muted rounded border min-w-[120px] text-center"
+                    class="font-mono text-lg px-4 py-1 bg-muted rounded border min-w-[120px] text-center"
                     :class="
                       currentShortcut
                         ? 'text-foreground'
@@ -79,7 +79,7 @@
               <div class="flex justify-end mt-3">
                 <Button
                   @click="openShortcutsPage"
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   class="flex items-center gap-2"
                 >
@@ -140,7 +140,7 @@
             </h3>
             <Button
               @click="checkHotkeyStatus"
-              variant="outline"
+              variant="default"
               size="sm"
               :disabled="isChecking"
               class="flex items-center gap-2"

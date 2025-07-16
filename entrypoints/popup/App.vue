@@ -34,6 +34,7 @@ import { testApiConnection, ApiTestResult } from '@/src/utils';
 const storageService = StorageService.getInstance();
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
+const hasUpdate = ref(false);
 
 onMounted(async () => {
   const loadedSettings = await storageService.getUserSettings();
@@ -65,6 +66,9 @@ onMounted(async () => {
     // 在非扩展环境或开发服务器中，这可能会失败。可以设置一个默认值。
     extensionVersion.value = 'DEV';
   }
+
+  // 检查是否有更新
+  await checkForUpdates();
 });
 
 // API测试状态
@@ -169,9 +173,23 @@ const manualTranslate = async () => {
 };
 
 const openAdvancedSettings = () => {
-  const url = browser.runtime.getURL('/options.html');
+  const url = browser.runtime.getURL('/options.html#about');
   window.open(url);
 };
+
+async function checkForUpdates() {
+  try {
+    // 获取存储的更新信息
+    const updateInfo = await browser.runtime.sendMessage({
+      type: 'GET_UPDATE_INFO',
+    });
+    if (updateInfo && updateInfo.hasUpdate) {
+      hasUpdate.value = true;
+    }
+  } catch (error) {
+    console.error('检查更新状态失败:', error);
+  }
+}
 
 const showApiSettings = ref(true);
 const toggleApiSettings = () =>
@@ -670,7 +688,27 @@ const nativeLanguageOptions = computed(() =>
         <div class="footer-row-left flex flex-col items-center">
           <p>
             💖 基于"i+1"理论，让学习自然发生
-            <span class="text-gray-500 ml-2">v{{ extensionVersion }}</span>
+            <span
+              class="text-gray-500 ml-2 cursor-pointer hover:text-blue-500 transition-colors"
+              @click="hasUpdate ? openAdvancedSettings() : undefined"
+              :title="hasUpdate ? '点击查看更新详情' : ''"
+              style="white-space: nowrap"
+            >
+              v{{ extensionVersion }}
+              <span
+                v-if="hasUpdate"
+                class="bg-red-500 text-white rounded font-bold animate-pulse"
+                style="
+                  font-size: 8px;
+                  line-height: 1;
+                  margin-left: 2px;
+                  padding: 1px 3px;
+                  display: inline-block;
+                "
+              >
+                NEW
+              </span>
+            </span>
           </p>
         </div>
         <button
