@@ -65,7 +65,7 @@ export const DEFAULT_LAZY_LOADING_CONFIG: LazyLoadingConfig = {
 function createDefaultApiConfigItem(): ApiConfigItem {
   return {
     id: 'default-config',
-    name: '默认配置',
+    name: 'defaultConfig',
     provider: 'openai',
     config: DEFAULT_API_CONFIG,
     isDefault: true,

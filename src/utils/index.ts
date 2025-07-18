@@ -284,7 +284,7 @@ export async function testOpenAICompatibleConnection(
 
       return {
         success: true,
-        message: `状态码: ${response.status}`,
+        message: `status: ${response.status}`,
         model: data.model || apiConfig.model,
       };
     } else {

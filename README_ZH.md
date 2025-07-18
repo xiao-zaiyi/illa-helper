@@ -53,9 +53,10 @@
 - **智能文本处理**: 使用大语言模型分析网页内容，智能选择适合用户水平的词汇进行翻译
 - **精确替换控制**: 可精确控制翻译比例（1%-100%），支持字符级精确计算
 - **上下文感知**: 考虑语境和用户水平，选择最合适的翻译词汇
-- **多语言支持**: 支持20+种语言的智能翻译（英语、日语、韩语、法语、德语、西班牙语、俄语、意大利语、葡萄牙语、荷兰语、瑞典语、挪威语、丹麦语、芬兰语、波兰语、捷克语、土耳其语、希腊语等）**理论上依赖大模型能力**。
+- **多语言支持**: 支持20+种语言的智能翻译（英语、日语、韩语、法语、德语、西班牙语、俄语、意大利语、葡萄牙语、荷兰语、瑞典语、挪威语、丹麦语、芬兰语、波兰语、捷克语、土耳其语、希腊语等）**理论上依赖大模型能力**
 - **翻译位置控制**: 新增翻译文本位置自定义功能，更灵活的显示方式
 - **括号显示控制**: 可选择是否显示翻译文本的括号，提供更清爽的阅读体验
+- **懒加载翻译**: 滚动到段落时才进行翻译，减少资源消耗和提高性能
 
 ### 🔊 发音学习生态系统 ⭐
 - **交互式悬浮框**: 鼠标悬停翻译词汇即可查看音标、AI词义和朗读功能，智能定位避免边界溢出
@@ -73,6 +74,7 @@
 - **辉光动画**: 新翻译词汇出现时的柔和提示效果，不干扰阅读体验
 - **响应式设计**: 自适应深色/浅色主题，智能悬浮框定位
 - **悬浮工具球**: 新增可配置的悬浮工具球，快速访问常用功能
+- **外观设置**: 支持自定义悬浮球透明度、位置等外观参数
 
 ### ⚙️ 高度可配置性
 - **智能翻译模式**: 用户只需选择目标语言，AI自动检测源语言并进行翻译
@@ -83,27 +85,38 @@
 - **发音功能开关**: 可独立控制发音悬浮框功能的启用状态
 - **多API配置**: 支持配置多个API服务，可灵活切换不同的翻译服务提供商
 - **数据导入导出**: 新增配置数据的导入导出功能，方便备份和迁移
+- **界面语言**: 支持5种界面语言（中文、英文、日文、韩文、西班牙文）
 
 ### 🔌 开放式API集成
 - **兼容OpenAI API**: 支持任何兼容 OpenAI 格式的AI服务（ChatGPT、Claude、豆包等国产大模型）
+- **Google Gemini支持**: 新增Google Gemini API集成，提供更多AI服务选择
 - **灵活配置**: 自定义API Key、Endpoint、模型名称、Temperature参数
 - **智能提示词**: 根据翻译方向和用户水平动态生成最优提示词
 - **错误处理**: 完善的API错误处理和重试机制
 - **多API支持**: 支持配置多个API服务并灵活切换，提供更可靠的服务保障
+- **思考模式**: 支持AI思考过程输出，提升翻译质量
+
+### 🖱️ 交互功能增强
+- **右键菜单**: 新增浏览器右键菜单功能，快速访问翻译相关操作
+- **悬浮球功能**: 可配置的悬浮工具球，提供快速翻译和设置访问
+- **快捷键管理**: 完善的快捷键设置和管理功能
+- **网站管理**: 黑名单和白名单功能，精确控制翻译行为
 
 ### 🚀 性能与优化
 - **智能缓存**: 翻译结果、音标数据、TTS音频多级缓存策略
 - **增量处理**: 只处理新增内容，避免重复翻译
 - **DOM安全**: 使用Range API确保DOM结构完整性
 - **内存管理**: 及时清理监听器，优化内存使用
+- **懒加载优化**: 滚动时按需翻译，减少初始加载时间
 
 ### 💻 现代技术架构
 - **框架**: [WXT](https://wxt.dev/) - 现代WebExtension开发框架
 - **前端**: Vue 3 + TypeScript + Vite
-- **UI库**: Tailwind CSS + Lucide Icons
+- **UI库**: Tailwind CSS + Lucide Icons + Reka UI
 - **构建**: ESLint + Prettier + TypeScript编译
-- **API集成**: OpenAI兼容接口 + Dictionary API + 有道TTS
+- **API集成**: OpenAI兼容接口 + Google Gemini + Dictionary API + 有道TTS
 - **跨浏览器兼容**: 支持Chrome、Edge、Firefox，部分支持Safari
+- **国际化**: Vue I18n支持多语言界面
 
 ## 🌐 浏览器兼容性
 
@@ -127,6 +140,7 @@
 - **DOM监听**: 只处理新增内容，避免重复翻译
 - **防抖优化**: 动态内容变化时的智能延迟处理
 - **Range API**: 精确DOM操作，保持页面结构完整性
+- **懒加载**: 滚动时按需翻译，优化性能
 
 ## 📸 功能展示
 
@@ -273,7 +287,8 @@ browser_specific_settings: {
 .
 ├── .output/              # WXT 打包输出目录
 │   ├── chrome-mv3/       # Chrome/Edge扩展文件
-│   └── firefox-mv2/      # Firefox扩展文件
+│   ├── firefox-mv2/      # Firefox扩展文件
+│   └── safari/           # Safari扩展文件
 ├── assets/               # 静态资源目录 (例如 CSS, 字体)
 ├── components/           # 全局Vue组件
 ├── docs/                 # 📚 项目文档
@@ -290,11 +305,11 @@ browser_specific_settings: {
 │       ├── App.vue       # 设置主界面
 │       ├── index.html    # 设置页面HTML
 │       ├── main.ts       # 设置页面入口脚本
-│       └── components/   # 设置页面组件 (内容无法获取)
+│       └── components/   # 设置页面组件
 ├── images/               # 项目图片资源
 ├── lib/                  # 第三方库或辅助模块
 ├── src/modules/          # 核心功能模块（现代化模块架构）
-│   ├── content/          # 📄 内容脚本模块（新增！服务化架构）
+│   ├── content/          # 📄 内容脚本模块（服务化架构）
 │   │   ├── ContentManager.ts    # 主协调服务（生命周期管理）
 │   │   ├── services/     # 业务服务层
 │   │   │   ├── ConfigurationService.ts  # 配置管理服务
@@ -325,12 +340,20 @@ browser_specific_settings: {
 │   │   └── website-management/ # 网站规则管理
 │   ├── processing/       # 📝 文本处理模块
 │   ├── floatingBall/     # ⚪ 浮动球功能
+│   ├── contextMenu/      # 🖱️ 右键菜单功能
 │   ├── api/              # 🌐 AI翻译API服务模块
+│   │   ├── providers/    # API提供商
+│   │   │   ├── OpenAIProvider.ts    # OpenAI API
+│   │   │   ├── GoogleGeminiProvider.ts  # Google Gemini API
+│   │   │   └── index.ts  # 提供商导出
+│   │   ├── services/     # API服务层
+│   │   ├── factory/      # 工厂模式
+│   │   └── types.ts      # API类型定义
 │   ├── styles/           # 🎨 样式管理器
 │   ├── shared/           # 🔗 共享模块（类型、常量、工具）
 │   └── infrastructure/   # 🏗️ 基础设施（限流等）
 ├── public/               # 静态资源
-│   ├── icon/             # 扩展图标 (内容无法获取)
+│   ├── icon/             # 扩展图标
 │   ├── warning.png       # 通知图标
 │   └── wxt.svg           # WXT 图标
 ├── .env.example          # 环境变量模板
@@ -344,10 +367,11 @@ browser_specific_settings: {
 - **前端**: Vue 3 + TypeScript + Vite
 - **UI库**: Tailwind CSS + Lucide Icons
 - **构建**: ESLint + Prettier + TypeScript编译
-- **API集成**: OpenAI兼容接口 + Dictionary API + 有道TTS
+- **API集成**: OpenAI兼容接口 + Google Gemini + Dictionary API + 有道TTS
 - **架构模式**: Provider模式 + 模块化设计 + 事件驱动
 - **发音系统**: 工厂模式 + 多TTS服务 + 智能缓存
 - **存储管理**: 配置版本控制 + 跨浏览器兼容
+- **国际化**: Vue I18n支持多语言界面
 
 > 📖 **查看详细文档**: [架构与功能详解](./docs/ARCHITECTURE_AND_FEATURES.md) - 包含完整的技术架构、API参考和开发指南
 
@@ -355,7 +379,7 @@ browser_specific_settings: {
 
 ### 为什么我需要提供API密钥？
 
-本扩展使用AI技术进行智能文本翻译，这需要调用API服务。您可以使用 OpenAI 的API密钥，或任何兼容 OpenAI API格式的第三方服务。
+本扩展使用AI技术进行智能文本翻译，这需要调用API服务。您可以使用 OpenAI 的API密钥，或任何兼容 OpenAI API格式的第三方服务，包括新支持的Google Gemini API。
 
 ### 发音功能如何工作？
 
@@ -494,6 +518,7 @@ Safari需要额外的步骤将Web扩展打包为Safari扩展。请参考[Apple�
 - **多语言支持**: 新增语言时需要在languageManager.ts注册并测试翻译效果
 - **发音功能**: 扩展TTS服务时需要实现ITTSProvider接口并注册到工厂
 - **浏览器兼容性**: 新功能需要在Chrome、Edge、Firefox中测试
+- **新功能开发**: 新增功能时需要考虑国际化支持和用户配置管理
 
 > 📖 **详细开发指南**: 查看 [架构与功能详解](./docs/ARCHITECTURE_AND_FEATURES.md) 获取完整的开发环境配置、代码结构说明和最佳实践。
 
