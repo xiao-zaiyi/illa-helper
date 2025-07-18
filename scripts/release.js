@@ -193,10 +193,24 @@ class ReleaseManager {
         // 删除 GitHub Release
         console.log('💥 正在删除 GitHub Release...');
         this.exec(`gh repo set-default xiao-zaiyi/illa-helper`);
-        this.exec(`gh release delete ${tag} --yes`);
-        console.log('✅ GitHub Release 删除成功');
+
+        try {
+          execSync(`gh release delete ${tag} --yes`, {
+            encoding: 'utf8',
+            stdio: 'pipe',
+          });
+          console.log('✅ GitHub Release 删除成功');
+        } catch (error) {
+          // 检查是否是 "release not found" 错误
+          if (error.message && error.message.includes('not found')) {
+            console.log('ℹ️ GitHub Release 不存在，跳过删除');
+          } else {
+            console.log('ℹ️ GitHub Release 删除失败，跳过');
+            console.log(`   错误信息: ${error.message}`);
+          }
+        }
       } catch (_error) {
-        console.log('ℹ️ GitHub Release 不存在或删除失败，跳过');
+        console.log('ℹ️ GitHub Release 操作失败，跳过');
       }
     } else {
       console.log(
