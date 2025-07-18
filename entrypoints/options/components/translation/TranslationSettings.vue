@@ -4,7 +4,9 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-2xl font-bold text-foreground">翻译服务配置</h2>
+          <h2 class="text-2xl font-bold text-foreground">
+            {{ $t('translationSettings.title') }}
+          </h2>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-4">
@@ -28,7 +30,9 @@
                 />
               </svg>
             </div>
-            <h3 class="text-lg font-semibold text-foreground">API请求设置</h3>
+            <h3 class="text-lg font-semibold text-foreground">
+              {{ $t('translationSettings.apiRequestSettings') }}
+            </h3>
           </div>
 
           <div class="space-y-3">
@@ -37,17 +41,17 @@
                 for="api-timeout"
                 class="text-sm font-medium flex items-center gap-2"
               >
-                超时时间（秒）
+                {{ $t('translationSettings.timeoutSeconds') }}
                 <span
                   class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                 >
-                  全局设置
+                  {{ $t('translationSettings.globalSetting') }}
                 </span>
               </Label>
               <p class="text-xs text-muted-foreground leading-relaxed">
-                设置所有API请求的最大等待时间。填写
+                {{ $t('translationSettings.timeoutDescription') }}
                 <code class="px-1 py-0.5 bg-muted rounded text-xs">0</code>
-                表示不做任何超时限制。
+                {{ $t('translationSettings.noTimeoutLimit') }}
               </p>
               <div class="relative">
                 <Input
@@ -57,7 +61,7 @@
                   @update:model-value="
                     settings.apiRequestTimeout = Number($event || 0) * 1000
                   "
-                  placeholder="输入超时时间（秒），0表示无限制"
+                  :placeholder="$t('translationSettings.timeoutPlaceholder')"
                   min="0"
                   step="0.001"
                   class="pr-12"
@@ -65,7 +69,9 @@
                 <div
                   class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
                 >
-                  <span class="text-sm text-muted-foreground">秒</span>
+                  <span class="text-sm text-muted-foreground">
+                    {{ $t('translationSettings.seconds') }}
+                  </span>
                 </div>
               </div>
 
@@ -82,7 +88,13 @@
                       settings.apiRequestTimeout / 1000 === preset,
                   }"
                 >
-                  {{ preset === 0 ? '无限制' : `${preset}秒` }}
+                  {{
+                    preset === 0
+                      ? $t('translationSettings.unlimited')
+                      : $t('translationSettings.secondsValue', {
+                          value: preset,
+                        })
+                  }}
                 </button>
               </div>
             </div>
@@ -90,13 +102,15 @@
         </div>
 
         <div class="space-y-2">
-          <Label>当前活跃配置</Label>
+          <Label>{{ $t('translationSettings.currentActiveConfig') }}</Label>
           <Select
             v-model="settings.activeApiConfigId"
             @update:model-value="handleActiveConfigChange"
           >
             <SelectTrigger>
-              <SelectValue placeholder="选择API配置" />
+              <SelectValue
+                :placeholder="$t('translationSettings.selectApiConfig')"
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectItem
@@ -114,19 +128,19 @@
         <div v-if="activeConfig" class="p-3 bg-muted rounded-lg">
           <div class="text-sm space-y-1">
             <div>
-              <strong>服务商：</strong>
+              <strong>{{ $t('translationSettings.provider') }}：</strong>
               {{ activeConfig.provider }}
             </div>
             <div>
-              <strong>模型：</strong>
+              <strong>{{ $t('translationSettings.model') }}：</strong>
               {{ activeConfig.config.model }}
             </div>
             <div class="truncate">
-              <strong>端点：</strong>
+              <strong>{{ $t('translationSettings.endpoint') }}：</strong>
               {{ activeConfig.config.apiEndpoint }}
             </div>
             <div>
-              <strong>状态：</strong>
+              <strong>{{ $t('translationSettings.status') }}：</strong>
               <span
                 :class="
                   activeConfig.config.apiKey
@@ -134,7 +148,11 @@
                     : 'text-destructive'
                 "
               >
-                {{ activeConfig.config.apiKey ? '已配置' : '未配置API密钥' }}
+                {{
+                  activeConfig.config.apiKey
+                    ? $t('translationSettings.configured')
+                    : $t('translationSettings.notConfigured')
+                }}
               </span>
             </div>
           </div>
@@ -147,10 +165,12 @@
       <CardHeader class="pb-3">
         <CardTitle>
           <div class="flex items-center justify-between">
-            <h2 class="text-2xl font-bold text-foreground">管理配置</h2>
+            <h2 class="text-2xl font-bold text-foreground">
+              {{ $t('translationSettings.manageConfig') }}
+            </h2>
             <Button @click="showAddDialog = true" size="sm" variant="default">
               <PlusCircle class="h-4 w-4 mr-1" />
-              添加配置
+              {{ $t('translationSettings.addConfig') }}
             </Button>
           </div>
         </CardTitle>
@@ -202,7 +222,7 @@
                     :for="`config-${config.id}`"
                     class="text-xs ml-1.5 text-muted-foreground cursor-pointer"
                   >
-                    激活
+                    {{ $t('translationSettings.activate') }}
                   </label>
                 </div>
               </div>
@@ -229,7 +249,11 @@
                         config.config.apiKey ? 'bg-green-500' : 'bg-red-500'
                       "
                     ></span>
-                    {{ config.config.apiKey ? '已配置' : '未配置' }}
+                    {{
+                      config.config.apiKey
+                        ? $t('translationSettings.configured')
+                        : $t('translationSettings.notConfigured')
+                    }}
                   </span>
                 </div>
               </div>
@@ -254,8 +278,8 @@
                   <span class="font-medium">
                     {{
                       cardTestResults[config.id].success
-                        ? '连接成功'
-                        : '连接失败'
+                        ? $t('translationSettings.connectionSuccess')
+                        : $t('translationSettings.connectionFailed')
                     }}
                   </span>
                 </div>
@@ -288,11 +312,11 @@
                       <div
                         class="animate-spin rounded-full h-2 w-2 border-b border-current mr-1"
                       ></div>
-                      测试中
+                      {{ $t('translationSettings.testing') }}
                     </span>
                     <span v-else class="flex items-center">
                       <ZapIcon class="h-3 w-3 mr-1" />
-                      测试
+                      {{ $t('translationSettings.test') }}
                     </span>
                   </Button>
                 </div>
@@ -324,7 +348,7 @@
               class="rounded-lg border border-dashed p-6 text-center text-muted-foreground col-span-full"
             >
               <FolderOpenIcon class="h-8 w-8 mx-auto mb-2 opacity-50" />
-              暂无配置，点击上方"添加配置"按钮创建
+              {{ $t('translationSettings.noConfigMessage') }}
             </div>
           </div>
         </RadioGroup>
@@ -344,7 +368,11 @@
         <CardHeader>
           <div class="flex items-center justify-between">
             <CardTitle>
-              {{ editingConfig ? '编辑配置' : '添加新配置' }}
+              {{
+                editingConfig
+                  ? $t('translationSettings.editConfig')
+                  : $t('translationSettings.addNewConfig')
+              }}
             </CardTitle>
             <Button
               @click="cancelEdit"
@@ -358,37 +386,56 @@
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="space-y-2">
-            <Label>配置名称</Label>
-            <Input v-model="configForm.name" placeholder="输入配置名称" />
+            <Label>{{ $t('translationSettings.configName') }}</Label>
+            <Input
+              v-model="configForm.name"
+              :placeholder="$t('translationSettings.inputConfigName')"
+            />
           </div>
 
           <div class="space-y-2">
-            <Label>服务提供商</Label>
+            <Label>{{ $t('translationSettings.serviceProvider') }}</Label>
             <Select
               v-model="configForm.provider"
               @update:model-value="handleProviderChange"
             >
               <SelectTrigger>
-                <SelectValue placeholder="选择服务提供商" />
+                <SelectValue
+                  :placeholder="$t('translationSettings.selectServiceProvider')"
+                />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="openai">OpenAI</SelectItem>
-                <SelectItem value="deepseek">DeepSeek</SelectItem>
-                <SelectItem value="silicon-flow">Silicon Flow</SelectItem>
-                <SelectItem value="GoogleGemini">Google Gemini</SelectItem>
-                <SelectItem value="ProxyGemini">Proxy-Gemini</SelectItem>
-                <SelectItem value="anthropic">Anthropic</SelectItem>
-                <SelectItem value="custom">自定义</SelectItem>
+                <SelectItem value="openai">
+                  {{ $t('translationSettings.openai') }}
+                </SelectItem>
+                <SelectItem value="deepseek">
+                  {{ $t('translationSettings.deepseek') }}
+                </SelectItem>
+                <SelectItem value="silicon-flow">
+                  {{ $t('translationSettings.siliconFlow') }}
+                </SelectItem>
+                <SelectItem value="GoogleGemini">
+                  {{ $t('translationSettings.googleGemini') }}
+                </SelectItem>
+                <SelectItem value="ProxyGemini">
+                  {{ $t('translationSettings.proxyGemini') }}
+                </SelectItem>
+                <SelectItem value="anthropic">
+                  {{ $t('translationSettings.anthropic') }}
+                </SelectItem>
+                <SelectItem value="custom">
+                  {{ $t('translationSettings.custom') }}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <!-- 自定义服务商名称输入 -->
           <div v-if="configForm.provider === 'custom'" class="space-y-2">
-            <Label>自定义服务商名称</Label>
+            <Label>{{ $t('translationSettings.customProviderName') }}</Label>
             <Input
               v-model="configForm.customProviderName"
-              placeholder="输入自定义服务商名称"
+              :placeholder="$t('translationSettings.inputCustomProviderName')"
             />
           </div>
 
@@ -399,29 +446,29 @@
             "
             class="space-y-2"
           >
-            <Label>API端点</Label>
+            <Label>{{ $t('translationSettings.apiEndpoint') }}</Label>
             <Input
               v-model="configForm.config.apiEndpoint"
-              placeholder="https:/xxxxx/v1/chat/completions"
+              :placeholder="$t('translationSettings.apiEndpointPlaceholder')"
             />
           </div>
 
           <!-- API Endpoint for Proxy-Gemini -->
           <div v-if="configForm.provider === 'ProxyGemini'" class="space-y-2">
-            <Label>代理API端点</Label>
+            <Label>{{ $t('translationSettings.proxyApiEndpoint') }}</Label>
             <Input
               v-model="configForm.config.apiEndpoint"
-              placeholder="输入你的代理端点URL"
+              :placeholder="$t('translationSettings.inputProxyEndpoint')"
             />
           </div>
 
           <div class="space-y-2">
-            <Label>API密钥</Label>
+            <Label>{{ $t('translationSettings.apiKey') }}</Label>
             <div class="relative">
               <Input
                 :type="showPassword ? 'text' : 'password'"
                 v-model="configForm.config.apiKey"
-                placeholder="输入API密钥"
+                :placeholder="$t('translationSettings.inputApiKey')"
                 class="pr-10"
               />
               <Button
@@ -441,16 +488,22 @@
           </div>
 
           <div class="space-y-2">
-            <Label>模型名称</Label>
+            <Label>{{ $t('translationSettings.modelName') }}</Label>
             <Input
               v-model="configForm.config.model"
-              placeholder="gpt-4o-mini"
+              :placeholder="$t('translationSettings.inputModelName')"
             />
           </div>
 
           <!-- Temperature -->
           <div class="space-y-2">
-            <Label>温度参数 ({{ configForm.config.temperature }})</Label>
+            <Label>
+              {{
+                $t('translationSettings.temperatureParam', {
+                  value: configForm.config.temperature,
+                })
+              }}
+            </Label>
             <Slider
               :model-value="[configForm.config.temperature]"
               @update:model-value="updateTemperature"
@@ -463,30 +516,34 @@
           <!-- Requests Per Second -->
           <div class="space-y-2">
             <Label>
-              每秒请求限制 ({{
-                configForm.config.requestsPerSecond === 0
-                  ? '无限制'
-                  : configForm.config.requestsPerSecond + ' 次/秒'
-              }})
+              {{
+                $t('translationSettings.requestsPerSecond', {
+                  value:
+                    configForm.config.requestsPerSecond === 0
+                      ? $t('translationSettings.noLimit')
+                      : configForm.config.requestsPerSecond +
+                        ' ' +
+                        $t('translationSettings.requestsPerSecondUnit'),
+                })
+              }}
             </Label>
             <p class="text-xs text-muted-foreground">
-              设置每秒最大API请求数，0表示无限制。建议设置适当限制避免触发API
-              429错误。
+              {{ $t('translationSettings.requestsPerSecondDescription') }}
             </p>
             <Input
               type="number"
               v-model.number="configForm.config.requestsPerSecond"
               :min="0"
               :max="100"
-              placeholder="0 = 无限制"
+              :placeholder="$t('translationSettings.inputRequestsPerSecond')"
             />
           </div>
 
           <div class="flex items-center justify-between">
             <div class="space-y-1">
-              <Label>启用思考模式</Label>
+              <Label>{{ $t('translationSettings.enableThinkingMode') }}</Label>
               <p class="text-xs text-muted-foreground">
-                控制是否启用AI的思考过程输出
+                {{ $t('translationSettings.enableThinkingModeDescription') }}
               </p>
             </div>
             <Switch v-model="configForm.config.enable_thinking" />
@@ -494,9 +551,11 @@
 
           <div class="flex items-center justify-between">
             <div class="space-y-1">
-              <Label>请求传递思考参数</Label>
+              <Label>
+                {{ $t('translationSettings.includeThinkingParam') }}
+              </Label>
               <p class="text-xs text-muted-foreground">
-                控制enable_thinking参数是否向API发送思考参数（某些模型不支持此参数）
+                {{ $t('translationSettings.includeThinkingParamDescription') }}
               </p>
             </div>
             <Switch v-model="configForm.config.includeThinkingParam" />
@@ -504,9 +563,15 @@
 
           <div class="flex items-center justify-between">
             <div class="space-y-1">
-              <Label>通过扩展后台发送请求</Label>
+              <Label>
+                {{ $t('translationSettings.sendRequestThroughBackground') }}
+              </Label>
               <p class="text-xs text-muted-foreground">
-                启用此选项可绕过CORS限制，适用于无法访问的API服务。如果遇到跨域错误，建议启用此选项
+                {{
+                  $t(
+                    'translationSettings.sendRequestThroughBackgroundDescription',
+                  )
+                }}
               </p>
             </div>
             <Switch v-model="configForm.config.useBackgroundProxy" />
@@ -515,9 +580,9 @@
           <!-- 自定义API参数 -->
           <div class="space-y-3">
             <div class="space-y-1">
-              <Label>自定义API参数</Label>
+              <Label>{{ $t('translationSettings.customApiParams') }}</Label>
               <p class="text-xs text-muted-foreground">
-                支持添加额外的API参数，如top_p、presence_penalty等（JSON格式）
+                {{ $t('translationSettings.customApiParamsDescription') }}
               </p>
             </div>
 
@@ -545,7 +610,7 @@
                     variant="outline"
                     :disabled="!configForm.config.customParams?.trim()"
                   >
-                    格式化JSON
+                    {{ $t('translationSettings.formatJson') }}
                   </Button>
                   <Button
                     @click="clearCustomParams"
@@ -553,14 +618,18 @@
                     variant="destructive"
                     :disabled="!configForm.config.customParams?.trim()"
                   >
-                    清空
+                    {{ $t('translationSettings.clear') }}
                   </Button>
                   <Button
                     @click="showCustomParamsExample = !showCustomParamsExample"
                     size="sm"
                     variant="outline"
                   >
-                    {{ showCustomParamsExample ? '隐藏示例' : '显示示例' }}
+                    {{
+                      showCustomParamsExample
+                        ? $t('translationSettings.hideExample')
+                        : $t('translationSettings.showExample')
+                    }}
                   </Button>
                 </div>
 
@@ -573,14 +642,14 @@
                     class="flex items-center text-green-600 text-xs"
                   >
                     <CheckCircle2Icon class="h-3 w-3 mr-1" />
-                    JSON格式正确
+                    {{ $t('translationSettings.jsonValid') }}
                   </div>
                   <div
                     v-else-if="customParamsError"
                     class="flex items-center text-red-600 text-xs"
                   >
                     <XCircle class="h-3 w-3 mr-1" />
-                    JSON格式错误
+                    {{ $t('translationSettings.jsonInvalid') }}
                   </div>
                 </div>
               </div>
@@ -598,7 +667,9 @@
                 v-if="showCustomParamsExample"
                 class="text-xs bg-muted p-3 rounded border"
               >
-                <div class="font-medium mb-2">常用参数示例：</div>
+                <div class="font-medium mb-2">
+                  {{ $t('translationSettings.commonParamsExample') }}
+                </div>
                 <pre class="text-muted-foreground whitespace-pre-wrap">
                   {
                     "top_p": 0.9,
@@ -609,8 +680,8 @@
                   }
                 </pre>
                 <div class="mt-2 text-muted-foreground">
-                  <strong>注意：</strong>
-                  system参数如model、messages、apiKey等将被系统保护，不会被覆盖。
+                  <strong>{{ $t('translationSettings.note') }}</strong>
+                  {{ $t('translationSettings.systemParamsNote') }}
                 </div>
               </div>
             </div>
@@ -619,7 +690,9 @@
           <!-- API连接测试 -->
           <div class="border-t border-border pt-4">
             <div class="flex items-center justify-between mb-2">
-              <Label class="text-sm font-medium">API连接测试</Label>
+              <Label class="text-sm font-medium">
+                {{ $t('translationSettings.apiConnectionTest') }}
+              </Label>
               <Button
                 @click="testApiConnection"
                 :disabled="
@@ -635,9 +708,11 @@
                   <div
                     class="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-1"
                   ></div>
-                  测试中...
+                  {{ $t('translationSettings.testing') }}...
                 </span>
-                <span v-else>测试连接</span>
+                <span v-else>
+                  {{ $t('translationSettings.testConnection') }}
+                </span>
               </Button>
             </div>
 
@@ -659,7 +734,11 @@
                 />
                 <XCircle v-else class="h-4 w-4 mr-1" />
                 <span class="font-medium">
-                  {{ testResult.success ? 'API连接成功' : 'API连接失败' }}
+                  {{
+                    testResult.success
+                      ? $t('translationSettings.apiConnectionSuccess')
+                      : $t('translationSettings.apiConnectionFailed')
+                  }}
                 </span>
               </div>
               <div v-if="testResult.message" class="mt-1 text-xs">
@@ -669,15 +748,22 @@
                 v-if="testResult.success && testResult.model"
                 class="mt-1 text-xs"
               >
-                检测到模型: {{ testResult.model }}
+                {{ $t('translationSettings.detectedModel') }}:
+                {{ testResult.model }}
               </div>
             </div>
           </div>
         </CardContent>
         <CardFooter class="flex justify-end space-x-2">
-          <Button @click="cancelEdit" variant="outline">取消</Button>
+          <Button @click="cancelEdit" variant="outline">
+            {{ $t('translationSettings.cancel') }}
+          </Button>
           <Button @click="saveConfig">
-            {{ editingConfig ? '保存' : '添加' }}
+            {{
+              editingConfig
+                ? $t('translationSettings.save')
+                : $t('translationSettings.add')
+            }}
           </Button>
         </CardFooter>
       </Card>
@@ -687,6 +773,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { StorageService } from '@/src/modules/core/storage';
 import {
   testApiConnection as performApiTest,
@@ -737,6 +824,8 @@ import {
   EyeOff,
   X,
 } from 'lucide-vue-next';
+
+const { t } = useI18n();
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
 const storageService = StorageService.getInstance();
@@ -832,7 +921,7 @@ const handleActiveConfigChange = async () => {
     emit('saveMessage', '活跃配置已更新');
     notifyConfigChange();
   } catch (error) {
-    console.error('更新活跃配置失败:', error);
+    console.error(t('errors.updateActiveConfigFailed'), error);
   }
 };
 
@@ -867,8 +956,8 @@ const deleteConfig = async (configId: string) => {
       emit('saveMessage', '配置已删除');
       notifyConfigChange();
     } catch (error) {
-      console.error('删除配置失败:', error);
-      alert('删除配置失败');
+      console.error(t('errors.deleteConfigFailed'), error);
+      alert(t('translationSettings.errors.deleteConfigFailed'));
     }
   }
 };
@@ -940,7 +1029,7 @@ const handleProviderChange = (provider: any) => {
 
 const saveConfig = async () => {
   if (!configForm.value.name || !configForm.value.config.apiKey) {
-    alert('请填写配置名称和API密钥');
+    alert(t('translationSettings.errors.fillRequiredFields'));
     return;
   }
 
@@ -972,8 +1061,8 @@ const saveConfig = async () => {
     cancelEdit();
     notifyConfigChange();
   } catch (error) {
-    console.error('保存配置失败:', error);
-    alert('保存配置失败');
+    console.error(t('errors.saveConfigFailed'), error);
+    alert(t('translationSettings.errors.saveConfigFailed'));
   }
 };
 
@@ -1095,7 +1184,7 @@ const loadSettings = async () => {
   try {
     settings.value = await storageService.getUserSettings();
   } catch (error) {
-    console.error('加载设置失败:', error);
+    console.error(t('errors.loadSettingsFailed'), error);
   }
 };
 
@@ -1106,7 +1195,7 @@ const notifyConfigChange = () => {
       settings: settings.value,
     });
   } catch (error) {
-    console.error('通知配置更改失败:', error);
+    console.error(t('errors.notifyConfigChangeFailed'), error);
   }
 };
 
@@ -1131,7 +1220,7 @@ watch(
       emit('saveMessage', '设置已保存');
       notifyConfigChange();
     } catch (error) {
-      console.error('保存设置失败:', error);
+      console.error(t('errors.saveSettingsFailed'), error);
       emit('saveMessage', '保存设置失败');
     }
   },

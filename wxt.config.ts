@@ -2,7 +2,9 @@ import { defineConfig } from 'wxt';
 import removeConsole from 'vite-plugin-remove-console';
 import tailwindcss from '@tailwindcss/vite';
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
 
 // 从 package.json 读取版本号
 const packageJson = JSON.parse(
@@ -25,8 +27,8 @@ export default defineConfig({
     commands: {
       'translate-page': {
         suggested_key: {
-          default: 'Alt+A',
-          mac: 'Command+A',
+          default: 'Alt+Z',
+          mac: 'Command+Z',
         },
         description: '一键翻译',
       },
@@ -40,6 +42,23 @@ export default defineConfig({
   vite: (configEnv) => ({
     plugins: [
       tailwindcss(),
+      VueI18nPlugin({
+        // 自动加载语言包文件
+        include: [
+          resolve(
+            dirname(fileURLToPath(import.meta.url)),
+            './src/i18n/locales/**',
+          ),
+        ],
+        // 支持 JSON 和 YAML 格式
+        forceStringify: true,
+        // 启用运行时优化
+        runtimeOnly: false,
+        // 自动生成类型定义
+        compositionOnly: true,
+        // 支持嵌套结构
+        fullInstall: true,
+      }),
       configEnv.mode === 'production'
         ? [removeConsole({ includes: ['log', 'warn'] })]
         : [],

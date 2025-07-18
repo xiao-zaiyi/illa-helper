@@ -4,7 +4,9 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-2xl font-bold text-foreground">快捷键设置</h2>
+          <h2 class="text-2xl font-bold text-foreground">
+            {{ $t('hotkeySettings.title') }}
+          </h2>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-4">
@@ -28,22 +30,22 @@
               </svg>
             </div>
             <h3 class="text-lg font-semibold text-foreground">
-              翻译整页快捷键
+              {{ $t('hotkeySettings.translatePageHotkey') }}
             </h3>
           </div>
 
           <div class="space-y-3">
             <div class="space-y-2">
               <Label class="text-sm font-medium flex items-center gap-2">
-                当前快捷键
+                {{ $t('hotkeySettings.currentHotkey') }}
                 <span
                   class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                 >
-                  全局设置
+                  {{ $t('hotkeySettings.globalSetting') }}
                 </span>
               </Label>
               <p class="text-xs text-muted-foreground leading-relaxed">
-                按快捷键翻译当前页面的所有文本内容
+                {{ $t('hotkeySettings.translatePageDescription') }}
               </p>
 
               <!-- 当前快捷键显示 -->
@@ -51,15 +53,17 @@
                 <div class="flex items-center justify-between">
                   <div class="space-y-1">
                     <div class="font-medium flex items-center space-x-2">
-                      <span>翻译整个页面</span>
+                      <span>
+                        {{ $t('hotkeySettings.translateEntirePage') }}
+                      </span>
                       <span
                         class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded dark:bg-green-950/30 dark:text-green-300"
                       >
-                        推荐
+                        {{ $t('hotkeySettings.recommended') }}
                       </span>
                     </div>
                     <div class="text-sm text-muted-foreground">
-                      快速翻译当前页面的所有文本
+                      {{ $t('hotkeySettings.quickTranslateDescription') }}
                     </div>
                   </div>
                   <div
@@ -70,7 +74,7 @@
                         : 'text-muted-foreground'
                     "
                   >
-                    {{ currentShortcut || '未设置' }}
+                    {{ currentShortcut || $t('hotkeySettings.notSet') }}
                   </div>
                 </div>
               </div>
@@ -102,7 +106,7 @@
                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  管理快捷键
+                  {{ $t('hotkeySettings.manageHotkeys') }}
                 </Button>
               </div>
             </div>
@@ -114,17 +118,18 @@
           class="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800"
         >
           <p class="font-medium text-blue-900 dark:text-blue-100 mb-1">
-            💡 如何修改快捷键：
+            {{ $t('hotkeySettings.howToModify') }}
           </p>
           <p class="text-blue-800 dark:text-blue-200 mb-2">
-            点击上方"管理快捷键"按钮，或访问 chrome://extensions/shortcuts
-            来自定义快捷键组合
+            {{ $t('hotkeySettings.modifyInstructions') }}
           </p>
           <p v-if="currentShortcut" class="text-blue-800 dark:text-blue-200">
-            当前设置：{{ currentShortcut }}
+            {{
+              $t('hotkeySettings.currentSetting', { shortcut: currentShortcut })
+            }}
           </p>
           <p v-else class="text-blue-800 dark:text-blue-200">
-            建议设置：Ctrl+Shift+T (Mac: Command+Shift+T)
+            {{ $t('hotkeySettings.suggestedSetting') }}
           </p>
         </div>
       </CardContent>
@@ -136,7 +141,7 @@
         <CardTitle>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-foreground">
-              快捷键状态检查
+              {{ $t('hotkeySettings.statusCheck') }}
             </h3>
             <Button
               @click="checkHotkeyStatus"
@@ -163,8 +168,8 @@
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span v-if="isChecking">检查中...</span>
-              <span v-else>检查状态</span>
+              <span v-if="isChecking">{{ $t('hotkeySettings.checking') }}</span>
+              <span v-else>{{ $t('hotkeySettings.checkStatus') }}</span>
             </Button>
           </div>
         </CardTitle>
@@ -197,69 +202,76 @@
                       : 'text-orange-900 dark:text-orange-100'
                   "
                 >
-                  {{ hotkeyStatus.active ? '快捷键已设置' : '快捷键未设置' }}
+                  {{
+                    hotkeyStatus.active
+                      ? $t('hotkeySettings.hotkeySet')
+                      : $t('hotkeySettings.hotkeyNotSet')
+                  }}
                 </span>
               </div>
-              <div
-                class="font-mono text-sm px-3 py-1 bg-background/50 rounded border"
-                :class="
-                  hotkeyStatus.active
-                    ? 'text-green-800 dark:text-green-200'
-                    : 'text-orange-800 dark:text-orange-200'
-                "
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted-foreground">
+                  {{ $t('hotkeySettings.shortcut') }}
+                </span>
+                <span class="font-mono">
+                  {{ hotkeyStatus.shortcut || $t('hotkeySettings.notSet') }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted-foreground">
+                  {{ $t('hotkeySettings.command') }}
+                </span>
+                <span>{{ $t('hotkeySettings.translateEntirePage') }}</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted-foreground">
+                  {{ $t('hotkeySettings.status') }}
+                </span>
+                <span class="text-sm text-muted-foreground">
+                  {{ $t('hotkeySettings.pleaseSetHotkey') }}
+                </span>
+              </div>
+            </div>
+
+            <div class="text-xs text-muted-foreground">
+              {{ $t('hotkeySettings.clickManageButton') }}
+              <a
+                href="chrome://extensions/shortcuts"
+                target="_blank"
+                class="text-primary hover:underline"
               >
-                {{ hotkeyStatus.shortcut || '未设置' }}
-              </div>
-            </div>
-
-            <div
-              class="text-sm"
-              :class="
-                hotkeyStatus.active
-                  ? 'text-green-800 dark:text-green-200'
-                  : 'text-orange-800 dark:text-orange-200'
-              "
-            >
-              <div class="flex justify-between items-center">
-                <span>翻译整个页面</span>
-                <span v-if="!hotkeyStatus.active" class="text-xs">
-                  请设置快捷键以启用此功能
-                </span>
-              </div>
-            </div>
-
-            <div
-              v-if="!hotkeyStatus.active"
-              class="text-xs p-2 bg-orange-100 dark:bg-orange-950/50 rounded border border-orange-200 dark:border-orange-800"
-            >
-              <div class="text-orange-700 dark:text-orange-300">
-                💡 点击上方"管理快捷键"按钮进行设置，或访问
                 chrome://extensions/shortcuts
-              </div>
+              </a>
             </div>
           </div>
         </div>
 
         <!-- 未检查状态提示 -->
-        <div
-          v-else
-          class="p-4 bg-muted/50 rounded-lg border border-border/50 text-center"
-        >
-          <div class="text-muted-foreground">
-            <svg
-              class="h-8 w-8 mx-auto mb-2 opacity-50"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+        <div v-else class="p-4 rounded-lg border border-border bg-muted/50">
+          <div class="text-center space-y-2">
+            <div
+              class="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            点击"检查状态"按钮来验证快捷键设置
+              <svg
+                class="h-6 w-6 text-muted-foreground"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <p class="text-sm text-muted-foreground">
+              {{ $t('hotkeySettings.clickCheckButton') }}
+            </p>
           </div>
         </div>
       </CardContent>
@@ -269,23 +281,19 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const emit = defineEmits<{
-  saveMessage: [message: string];
-}>();
+const { t } = useI18n();
 
 // 当前快捷键
 const currentShortcut = ref<string>('');
 
 // 快捷键状态检查相关
 const isChecking = ref(false);
-const hotkeyStatus = ref<{
-  active: boolean;
-  shortcut: string;
-} | null>(null);
+const hotkeyStatus = ref<any>(null);
 
 // 初始化时获取当前快捷键
 onMounted(async () => {
@@ -293,60 +301,58 @@ onMounted(async () => {
 });
 
 // 加载当前快捷键设置
-async function loadCurrentShortcut() {
+const loadCurrentShortcut = async () => {
   try {
     const commands = await browser.commands.getAll();
-    const translatePageCommand = commands.find(
+    const translateCommand = commands.find(
       (cmd) => cmd.name === 'translate-page',
     );
-    currentShortcut.value = translatePageCommand?.shortcut || '';
+    currentShortcut.value = translateCommand?.shortcut || '';
   } catch (error) {
-    console.error('获取当前快捷键失败:', error);
-    currentShortcut.value = '';
+    console.error(t('errors.getHotkeyFailed'), error);
   }
-}
+};
 
 // 打开快捷键管理页面
-function openShortcutsPage() {
-  browser.tabs.create({ url: 'chrome://extensions/shortcuts' });
-}
+const openShortcutsPage = () => {
+  browser.tabs.create({
+    url: 'chrome://extensions/shortcuts',
+  });
+};
 
 // 检查快捷键状态
-async function checkHotkeyStatus() {
+const checkHotkeyStatus = async () => {
   isChecking.value = true;
-
   try {
     const commands = await browser.commands.getAll();
     console.log('当前注册的命令:', commands);
 
-    const translatePageCommand = commands.find(
+    const translateCommand = commands.find(
       (cmd) => cmd.name === 'translate-page',
     );
-    const shortcut = translatePageCommand?.shortcut || '';
+    const isActive = translateCommand && translateCommand.shortcut;
 
     // 同时更新当前快捷键显示
-    currentShortcut.value = shortcut;
-
-    const isActive = shortcut && shortcut.trim() !== '';
+    currentShortcut.value = translateCommand?.shortcut || '';
 
     hotkeyStatus.value = {
-      active: !!isActive,
-      shortcut: shortcut,
+      active: isActive,
+      shortcut: translateCommand?.shortcut || '',
+      message: isActive
+        ? t('hotkeySettings.hotkeySet')
+        : t('hotkeySettings.pleaseSetHotkey'),
     };
-
-    emit(
-      'saveMessage',
-      isActive
-        ? '快捷键已正确设置'
-        : '快捷键未设置，请点击"管理快捷键"进行设置',
-    );
   } catch (error) {
-    console.error('检查快捷键状态失败:', error);
-    emit('saveMessage', '检查快捷键状态失败');
+    console.error(t('errors.checkHotkeyFailed'), error);
+    emit('saveMessage', t('hotkeySettings.checkFailed'));
   } finally {
     isChecking.value = false;
   }
-}
+};
+
+const emit = defineEmits<{
+  saveMessage: [message: string];
+}>();
 </script>
 
 <style scoped>

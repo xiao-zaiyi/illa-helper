@@ -4,7 +4,7 @@
       <CardHeader>
         <CardTitle>
           <h2 class="text-2xl font-bold text-foreground">
-            关于 浸入式学语言助手 (illa-helper)
+            {{ $t('about.title') }}
           </h2>
         </CardTitle>
       </CardHeader>
@@ -12,22 +12,21 @@
         <div class="flex items-center space-x-4">
           <img
             src="/assets/logo.png"
-            alt="浸入式学语言助手 illa-helper Logo"
+            :alt="$t('about.logoAlt')"
             class="w-16 h-16"
           />
           <div>
             <h3 class="text-lg font-semibold">
-              浸入式学语言助手 (illa-helper)
+              {{ $t('about.appName') }}
             </h3>
             <p class="text-sm text-muted-foreground">
-              版本 {{ extensionVersion }}
+              {{ $t('about.version', { version: extensionVersion }) }}
             </p>
           </div>
         </div>
         <div class="prose prose-sm max-w-none text-foreground">
           <p>
-            浸入式学语言助手 (illa-helper) 是一款基于 'i+1'
-            可理解输入理论的浏览器扩展，旨在通过沉浸式翻译和发音学习生态系统，帮助您在日常浏览中轻松、高效地学习外语。
+            {{ $t('about.description') }}
           </p>
         </div>
       </CardContent>
@@ -36,26 +35,28 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-xl font-bold text-foreground">核心功能</h2>
+          <h2 class="text-xl font-bold text-foreground">
+            {{ $t('about.coreFeatures') }}
+          </h2>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <ul class="list-disc space-y-2 pl-5 text-sm text-foreground">
           <li>
-            <strong>智能翻译与词汇替换:</strong>
-            支持超过20种语言，并根据您的水平智能选择词汇。
+            <strong>{{ $t('about.features.smartTranslation.title') }}:</strong>
+            {{ $t('about.features.smartTranslation.description') }}
           </li>
           <li>
-            <strong>发音学习生态系统:</strong>
-            集成音标、AI词义解释和双TTS语音朗读，提供一站式发音学习体验。
+            <strong>{{ $t('about.features.pronunciation.title') }}:</strong>
+            {{ $t('about.features.pronunciation.description') }}
           </li>
           <li>
-            <strong>多种学习风格:</strong>
-            提供7种不同的翻译样式（如下划线、高亮、模糊等），满足个性化学习需求。
+            <strong>{{ $t('about.features.learningStyles.title') }}:</strong>
+            {{ $t('about.features.learningStyles.description') }}
           </li>
           <li>
-            <strong>交互式悬浮框:</strong>
-            鼠标悬停即可查看单词和短语的详细发音与释义，支持嵌套查询。
+            <strong>{{ $t('about.features.interactive.title') }}:</strong>
+            {{ $t('about.features.interactive.description') }}
           </li>
         </ul>
       </CardContent>
@@ -64,26 +65,36 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-xl font-bold text-foreground">版本更新</h2>
+          <h2 class="text-xl font-bold text-foreground">
+            {{ $t('about.versionUpdate') }}
+          </h2>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div class="flex items-center justify-between mb-4">
           <div>
             <p class="text-sm text-muted-foreground">
-              当前版本：v{{ extensionVersion }}
+              {{ $t('about.currentVersion', { version: extensionVersion }) }}
             </p>
             <p v-if="updateInfo?.hasUpdate" class="text-sm text-green-600 mt-1">
-              发现新版本：v{{ updateInfo.latestVersion }}
+              {{
+                $t('about.newVersionFound', {
+                  version: updateInfo.latestVersion,
+                })
+              }}
             </p>
             <p
               v-else-if="updateChecked && !updateInfo?.hasUpdate"
               class="text-sm text-muted-foreground mt-1"
             >
-              已是最新版本
+              {{ $t('about.latestVersion') }}
             </p>
             <p v-if="lastCheckTime" class="text-xs text-muted-foreground mt-1">
-              上次检查：{{ formatLastCheckTime(lastCheckTime) }}
+              {{
+                $t('about.lastCheck', {
+                  time: formatLastCheckTime(lastCheckTime),
+                })
+              }}
             </p>
           </div>
           <Button
@@ -96,7 +107,9 @@
               :class="{ 'animate-spin': checkingUpdate }"
               class="w-4 h-4 mr-2"
             />
-            {{ checkingUpdate ? '检查中...' : '检查更新' }}
+            {{
+              checkingUpdate ? $t('about.checking') : $t('about.checkUpdate')
+            }}
           </Button>
         </div>
 
@@ -108,7 +121,7 @@
             class="font-semibold text-green-900 dark:text-green-100 mb-2 flex items-center"
           >
             <PartyPopper class="w-4 h-4 mr-2" />
-            更新说明
+            {{ $t('about.releaseNotes') }}
           </h4>
           <div
             class="text-sm text-green-800 dark:text-green-200 whitespace-pre-wrap max-h-32 overflow-y-auto"
@@ -126,7 +139,11 @@
               class="text-xs text-green-700 dark:text-green-300 mb-2 flex items-center"
             >
               <FolderOpen class="w-3 h-3 mr-1" />
-              可用下载文件 (当前浏览器: {{ currentBrowser.toUpperCase() }})
+              {{
+                $t('about.availableDownloads', {
+                  browser: currentBrowser.toUpperCase(),
+                })
+              }}
             </p>
             <div class="space-y-2">
               <div
@@ -141,7 +158,7 @@
                     v-if="asset.browserType === currentBrowser"
                     class="text-green-600 dark:text-green-400"
                   >
-                    (推荐)
+                    ({{ $t('about.recommended') }})
                   </span>
                 </span>
                 <span class="text-gray-500 text-xs">
@@ -162,15 +179,17 @@
                 :class="{ 'animate-pulse': downloading }"
                 class="w-4 h-4 mr-2"
               />
-              {{ downloading ? '下载中...' : '下载文件' }}
+              {{
+                downloading ? $t('about.downloading') : $t('about.downloadFile')
+              }}
             </Button>
             <Button @click="viewUpdate" variant="secondary" size="sm">
               <ExternalLink class="w-4 h-4 mr-2" />
-              查看详情
+              {{ $t('about.viewDetails') }}
             </Button>
             <Button @click="dismissUpdate" variant="secondary" size="sm">
               <X class="w-4 h-4 mr-2" />
-              忽略此版本
+              {{ $t('about.dismissVersion') }}
             </Button>
           </div>
         </div>
@@ -180,17 +199,18 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-xl font-bold text-foreground">支持与反馈</h2>
+          <h2 class="text-xl font-bold text-foreground">
+            {{ $t('about.supportAndFeedback') }}
+          </h2>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <p class="text-sm text-muted-foreground">
-          您的支持是我们不断改进的动力！如果觉得这个扩展有用，欢迎在 GitHub
-          上给我们一颗星，或参与到开发中来。
+          {{ $t('about.supportDescription') }}
         </p>
         <div class="mt-4 flex flex-wrap gap-2">
           <a href="https://github.com/xiao-zaiyi/illa-helper" target="_blank">
-            <Button>⭐ Star on GitHub</Button>
+            <Button>⭐ {{ $t('about.starOnGitHub') }}</Button>
           </a>
           <a
             href="https://github.com/xiao-zaiyi/illa-helper/issues"
@@ -198,7 +218,7 @@
           >
             <Button variant="outline">
               <Bug class="w-4 h-4 mr-2" />
-              报告问题
+              {{ $t('about.reportIssue') }}
             </Button>
           </a>
           <a
@@ -207,7 +227,7 @@
           >
             <Button variant="outline">
               <GitPullRequest class="w-4 h-4 mr-2" />
-              参与贡献
+              {{ $t('about.contribute') }}
             </Button>
           </a>
         </div>
@@ -218,6 +238,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { browser } from 'wxt/browser';
@@ -231,6 +252,8 @@ import {
   GitPullRequest,
   X,
 } from 'lucide-vue-next';
+
+const { t } = useI18n();
 
 interface UpdateInfo {
   hasUpdate: boolean;
@@ -263,7 +286,7 @@ onMounted(async () => {
     const manifest = browser.runtime.getManifest();
     extensionVersion.value = manifest.version;
   } catch (error) {
-    console.error('无法获取扩展版本号:', error);
+    console.error(t('errors.getExtensionVersion'), error);
     // 在非扩展环境或开发服务器中，这可能会失败。可以设置一个默认值。
     extensionVersion.value = 'DEV';
   }
@@ -291,29 +314,29 @@ async function loadStoredUpdateInfo() {
       lastCheckTime.value = result.lastUpdateCheck;
     }
   } catch (error) {
-    console.error('获取更新信息失败:', error);
+    console.error(t('errors.getUpdateInfoFailed'), error);
   }
 }
 
 async function checkUpdate() {
   checkingUpdate.value = true;
   try {
-    console.log('[About] 开始检查更新...');
+    console.log('[About] Starting update check...');
     const response = await browser.runtime.sendMessage({
       type: 'CHECK_UPDATE',
     });
-    console.log('[About] 检查更新响应:', response);
+    console.log('[About] Update check response:', response);
 
     if (response && typeof response === 'object') {
       updateInfo.value = response;
       updateChecked.value = true;
       lastCheckTime.value = Date.now();
     } else {
-      console.warn('[About] 无效的更新响应:', response);
+      console.warn('[About] Invalid update response:', response);
       updateChecked.value = true;
     }
   } catch (error) {
-    console.error('[About] 检查更新失败:', error);
+    console.error(t('errors.checkUpdateFailed'), error);
     updateChecked.value = true;
   } finally {
     checkingUpdate.value = false;
@@ -341,7 +364,7 @@ async function dismissUpdate() {
     // 更新本地状态
     updateInfo.value = { ...updateInfo.value!, hasUpdate: false };
   } catch (error) {
-    console.error('忽略更新失败:', error);
+    console.error(t('errors.dismissUpdateFailed'), error);
   }
 }
 
@@ -351,15 +374,16 @@ function formatLastCheckTime(timestamp: number): string {
 
   if (diff < 60000) {
     // 1分钟内
-    return '刚刚';
+    return t('time.justNow');
   } else if (diff < 3600000) {
     // 1小时内
-    return `${Math.floor(diff / 60000)}分钟前`;
+    return t('time.minutesAgo', { minutes: Math.floor(diff / 60000) });
   } else if (diff < 86400000) {
     // 24小时内
-    return `${Math.floor(diff / 3600000)}小时前`;
+    return t('time.hoursAgo', { hours: Math.floor(diff / 3600000) });
   } else {
-    return new Date(timestamp).toLocaleDateString('zh-CN');
+    const days = Math.floor(diff / 86400000);
+    return t('time.daysAgo', { days });
   }
 }
 
@@ -394,7 +418,7 @@ function getDownloadAssetForCurrentBrowser(): DownloadAsset | null {
 async function downloadFile() {
   const asset = getDownloadAssetForCurrentBrowser();
   if (!asset) {
-    console.error('没有找到可下载的文件');
+    console.error(t('errors.noDownloadFile'));
     return;
   }
 
@@ -411,9 +435,9 @@ async function downloadFile() {
     link.click();
     document.body.removeChild(link);
 
-    console.log('开始下载:', asset.name);
+    console.log('Starting download:', asset.name);
   } catch (error) {
-    console.error('下载失败:', error);
+    console.error(t('errors.downloadFailed'), error);
   } finally {
     downloading.value = false;
   }
@@ -429,7 +453,7 @@ function formatFileSize(bytes: number): string {
 }
 
 function formatReleaseNotes(notes?: string): string {
-  if (!notes) return '暂无更新说明';
+  if (!notes) return t('about.noReleaseNotes');
 
   // 简化 markdown 格式，只保留主要内容
   return (

@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-2">
     <label class="text-sm font-medium text-foreground">
-      规则类型
+      {{ $t('ruleTypeSelector.title') }}
       <span class="text-destructive">*</span>
     </label>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -62,8 +62,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Check, Shield, Heart } from 'lucide-vue-next';
 import { RuleTypeOption } from '@/src/modules/options/website-management/types';
+
+const { t } = useI18n();
 
 interface Props {
   modelValue: 'blacklist' | 'whitelist';
@@ -80,22 +83,22 @@ const selectedType = computed({
   set: (value) => emit('update:modelValue', value),
 });
 
-const ruleTypeOptions: RuleTypeOption[] = [
+const ruleTypeOptions = computed<RuleTypeOption[]>(() => [
   {
     value: 'blacklist',
-    label: '黑名单',
-    description: '禁用翻译功能的网站',
+    label: t('ruleTypeSelector.blacklist.label'),
+    description: t('ruleTypeSelector.blacklist.description'),
     icon: 'Shield',
     color: 'hover:border-red-200 focus:border-red-300',
   },
   {
     value: 'whitelist',
-    label: '白名单',
-    description: '强制自动翻译的网站',
+    label: t('ruleTypeSelector.whitelist.label'),
+    description: t('ruleTypeSelector.whitelist.description'),
     icon: 'Heart',
     color: 'hover:border-green-200 focus:border-green-300',
   },
-];
+]);
 
 const selectType = (type: 'blacklist' | 'whitelist') => {
   selectedType.value = type;

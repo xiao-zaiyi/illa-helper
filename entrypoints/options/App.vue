@@ -32,7 +32,7 @@
             <button
               @click="toggleTheme"
               class="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-              title="切换主题"
+              :title="$t('options.toggleTheme')"
             >
               <component :is="isDark ? Sun : Moon" class="w-4 h-4" />
             </button>
@@ -59,9 +59,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Sun, Moon } from 'lucide-vue-next';
 import OptionsNavigation from './components/OptionsNavigation.vue';
 import OptionsContent from './components/OptionsContent.vue';
+
+const { t } = useI18n();
 
 // 当前选中的设置模块
 const currentSection = ref('basic');
@@ -77,13 +80,13 @@ const isMobile = ref(false);
 
 // 设置模块标题映射
 const sectionTitles: Record<string, string> = {
-  basic: '基本设置',
-  translation: '翻译服务',
-  'website-management': '网站管理',
-  floating: '悬浮球',
-  hotkey: '快捷键',
-  data: '导入/导出',
-  about: '关于',
+  basic: t('options.basic'),
+  translation: t('options.translation'),
+  'website-management': t('options.websiteManagement'),
+  floating: t('options.floating'),
+  hotkey: t('options.hotkey'),
+  data: t('options.data'),
+  about: t('options.about'),
 };
 
 // 检查设备是否为移动端
@@ -159,7 +162,7 @@ const handleSaveMessage = (message: string) => {
 };
 
 const getSectionTitle = (section: string): string => {
-  return sectionTitles[section] || '设置';
+  return sectionTitles[section] || t('options.settings');
 };
 
 const toggleTheme = async () => {

@@ -3,25 +3,31 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-2xl font-bold text-foreground">数据管理</h2>
+          <h2 class="text-2xl font-bold text-foreground">
+            {{ $t('dataManagement.title') }}
+          </h2>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-6">
         <div class="space-y-4">
-          <h3 class="text-lg font-medium">导出设置</h3>
+          <h3 class="text-lg font-medium">
+            {{ $t('dataManagement.exportSettings.title') }}
+          </h3>
           <p class="text-sm text-muted-foreground">
-            将您当前的所有设置导出为一个JSON文件，包括用户配置、API设置和网站管理规则。您可以保存此文件作为备份，或在其他设备上导入。
+            {{ $t('dataManagement.exportSettings.description') }}
           </p>
           <Button @click="exportSettings">
             <Download class="w-4 h-4 mr-2" />
-            导出设置
+            {{ $t('dataManagement.exportSettings.button') }}
           </Button>
         </div>
 
         <div class="border-t border-border pt-6 space-y-4">
-          <h3 class="text-lg font-medium">导入设置</h3>
+          <h3 class="text-lg font-medium">
+            {{ $t('dataManagement.importSettings.title') }}
+          </h3>
           <p class="text-sm text-muted-foreground">
-            从JSON文件导入设置，包括用户配置和网站管理规则。请注意：这将覆盖您当前的所有设置。支持新旧格式，旧格式只导入用户设置。
+            {{ $t('dataManagement.importSettings.description') }}
           </p>
           <div class="flex items-center space-x-2">
             <Input
@@ -33,7 +39,7 @@
             />
             <Button @click="importSettings" :disabled="!selectedFile">
               <Upload class="w-4 h-4 mr-2" />
-              确认导入
+              {{ $t('dataManagement.importSettings.button') }}
             </Button>
           </div>
         </div>
@@ -44,12 +50,15 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { StorageService } from '@/src/modules/core/storage';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Download, Upload } from 'lucide-vue-next';
+
+const { t } = useI18n();
 
 const storageService = StorageService.getInstance();
 const websiteManager = new WebsiteManager();
@@ -85,12 +94,14 @@ const exportSettings = async () => {
     URL.revokeObjectURL(url);
     emit(
       'saveMessage',
-      `设置已成功导出！包含 ${websiteRules.length} 个网站规则。`,
+      t('dataManagement.exportSettings.success', {
+        count: websiteRules.length,
+      }),
       'success',
     );
   } catch (error) {
     console.error('Failed to export settings:', error);
-    emit('saveMessage', '导出失败，请查看控制台获取详情。', 'error');
+    emit('saveMessage', t('dataManagement.exportSettings.error'), 'error');
   }
 };
 
@@ -105,7 +116,7 @@ const handleFileSelect = (event: Event) => {
 
 const importSettings = async () => {
   if (!selectedFile.value) {
-    emit('saveMessage', '请先选择一个文件。', 'error');
+    emit('saveMessage', t('dataManagement.importSettings.selectFile'), 'error');
     return;
   }
 
@@ -114,7 +125,7 @@ const importSettings = async () => {
     try {
       const result = event.target?.result;
       if (typeof result !== 'string') {
-        throw new Error('无法读取文件内容。');
+        throw new Error(t('dataManagement.errors.cannotReadFile'));
       }
 
       const importedData = JSON.parse(result);
@@ -144,7 +155,7 @@ const importSettings = async () => {
           }
         }
 
-        const message = `导入完成！`;
+        const message = t('dataManagement.importSettings.success');
         emit('saveMessage', message, 'success');
       } else if (
         importedData.isEnabled !== undefined ||
@@ -154,9 +165,13 @@ const importSettings = async () => {
         await storageService.saveUserSettings(importedData);
         importStats.settings = true;
 
-        emit('saveMessage', '用户设置已成功导入！', 'success');
+        emit(
+          'saveMessage',
+          t('dataManagement.importSettings.userSettingsSuccess'),
+          'success',
+        );
       } else {
-        throw new Error('无法识别的文件格式');
+        throw new Error(t('dataManagement.importSettings.unrecognizedFormat'));
       }
 
       // 重新加载页面以应用更改
@@ -165,11 +180,11 @@ const importSettings = async () => {
       }, 2000);
     } catch (error) {
       console.error('Failed to import settings:', error);
-      emit('saveMessage', '导入失败，文件格式可能不正确。', 'error');
+      emit('saveMessage', t('dataManagement.importSettings.error'), 'error');
     }
   };
   reader.onerror = () => {
-    emit('saveMessage', '读取文件时发生错误。', 'error');
+    emit('saveMessage', t('dataManagement.importSettings.readError'), 'error');
   };
   reader.readAsText(selectedFile.value);
 };

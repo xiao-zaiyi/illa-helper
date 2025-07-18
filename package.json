@@ -2,7 +2,7 @@
   "name": "illa-helper",
   "description": "manifest.json description",
   "private": true,
-  "version": "1.7.9",
+  "version": "1.8.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@intlify/unplugin-vue-i18n": "^6.0.8",
     "@tailwindcss/vite": "^4.1.10",
     "@tanstack/vue-table": "^8.21.3",
     "@vueuse/core": "^13.5.0",
@@ -38,7 +39,8 @@
     "reka-ui": "^2.3.1",
     "tailwind-merge": "^3.3.1",
     "tw-animate-css": "^1.3.4",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-i18n": "^11.1.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

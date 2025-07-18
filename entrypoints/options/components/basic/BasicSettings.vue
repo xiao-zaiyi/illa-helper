@@ -3,15 +3,19 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-2xl font-bold text-foreground">基本设置</h2>
+          <h2 class="text-2xl font-bold text-foreground">
+            {{ $t('basicSettings.title') }}
+          </h2>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-6">
         <div class="flex items-center justify-between">
           <div class="space-y-1">
-            <Label for="extension-enabled">启用扩展总开关</Label>
+            <Label for="extension-enabled">
+              {{ $t('basicSettings.enableExtension') }}
+            </Label>
             <p class="text-xs text-muted-foreground">
-              关闭后，所有翻译功能将停止工作。
+              {{ $t('basicSettings.enableExtensionDescription') }}
             </p>
           </div>
           <Switch
@@ -21,20 +25,45 @@
           />
         </div>
 
-        <div
-          class="flex items-center justify-between border-t border-border pt-6"
-        >
-          <Label for="show-parentheses">翻译是否显示括号</Label>
-          <Switch
-            id="show-parentheses"
-            :model-value="settings.showParentheses"
-            @update:model-value="settings.showParentheses = $event"
-          />
+        <!-- 界面语言设置 -->
+        <div class="border-t border-border pt-6">
+          <div class="space-y-1">
+            <Label for="interface-language">
+              {{ $t('basicSettings.interfaceLanguage') }}
+            </Label>
+            <p class="text-xs text-muted-foreground">
+              {{ $t('basicSettings.interfaceLanguageDescription') }}
+            </p>
+          </div>
+          <div class="mt-2">
+            <Select
+              id="interface-language"
+              :model-value="currentLocale"
+              @update:model-value="changeLanguage"
+            >
+              <SelectTrigger>
+                <SelectValue
+                  :placeholder="$t('basicSettings.selectInterfaceLanguage')"
+                />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="locale in supportedLocales"
+                  :key="locale"
+                  :value="locale"
+                >
+                  {{ getLocaleName(locale) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <!-- 母语设置 -->
         <div class="border-t border-border pt-6">
-          <Label class="text-sm mb-3">母语设置</Label>
+          <Label class="text-sm mb-3">
+            {{ $t('basicSettings.nativeLanguage') }}
+          </Label>
           <div class="space-y-4">
             <!-- 母语选择 -->
             <div class="space-y-2">
@@ -46,14 +75,16 @@
                 "
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="选择您的母语" />
+                  <SelectValue
+                    :placeholder="$t('basicSettings.selectNativeLanguage')"
+                  />
                 </SelectTrigger>
                 <SelectContent class="max-h-60">
                   <!-- 常用语言组 -->
                   <div
                     class="px-2 py-1.5 text-xs font-medium text-muted-foreground"
                   >
-                    常用语言
+                    {{ $t('basicSettings.popularLanguages') }}
                   </div>
                   <SelectItem
                     v-for="lang in popularNativeLanguages"
@@ -70,7 +101,7 @@
                   <div
                     class="px-2 py-1.5 text-xs font-medium text-muted-foreground"
                   >
-                    其他语言
+                    {{ $t('basicSettings.otherLanguages') }}
                   </div>
                   <SelectItem
                     v-for="lang in otherNativeLanguages"
@@ -85,8 +116,23 @@
           </div>
         </div>
 
+        <div
+          class="flex items-center justify-between border-t border-border pt-6"
+        >
+          <Label for="show-parentheses">
+            {{ $t('basicSettings.showParentheses') }}
+          </Label>
+          <Switch
+            id="show-parentheses"
+            :model-value="settings.showParentheses"
+            @update:model-value="settings.showParentheses = $event"
+          />
+        </div>
+
         <div class="border-t border-border pt-6">
-          <Label class="text-sm mb-2">翻译位置</Label>
+          <Label class="text-sm mb-2">
+            {{ $t('basicSettings.translationPosition') }}
+          </Label>
           <RadioGroup
             :model-value="settings.translationPosition"
             @update:model-value="
@@ -96,11 +142,13 @@
           >
             <div class="flex items-center space-x-2">
               <RadioGroupItem id="pos-after" value="after" />
-              <Label for="pos-after">词后</Label>
+              <Label for="pos-after">{{ $t('basicSettings.afterWord') }}</Label>
             </div>
             <div class="flex items-center space-x-2">
               <RadioGroupItem id="pos-before" value="before" />
-              <Label for="pos-before">词前</Label>
+              <Label for="pos-before">
+                {{ $t('basicSettings.beforeWord') }}
+              </Label>
             </div>
           </RadioGroup>
         </div>
@@ -110,7 +158,7 @@
             for="translation-style"
             class="mb-3 border-t border-border pt-6"
           >
-            翻译样式
+            {{ $t('basicSettings.translationStyle') }}
           </Label>
           <div class="flex space-x-4">
             <Select
@@ -120,18 +168,36 @@
               "
             >
               <SelectTrigger>
-                <SelectValue placeholder="选择样式" />
+                <SelectValue :placeholder="$t('basicSettings.selectStyle')" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="default">默认</SelectItem>
-                <SelectItem value="subtle">微妙</SelectItem>
-                <SelectItem value="bold">粗体</SelectItem>
-                <SelectItem value="italic">斜体</SelectItem>
-                <SelectItem value="underlined">下划线</SelectItem>
-                <SelectItem value="highlighted">高亮</SelectItem>
-                <SelectItem value="dotted">点画线</SelectItem>
-                <SelectItem value="learning">学习模式</SelectItem>
-                <SelectItem value="custom">自定义</SelectItem>
+                <SelectItem value="default">
+                  {{ $t('basicSettings.styles.default') }}
+                </SelectItem>
+                <SelectItem value="subtle">
+                  {{ $t('basicSettings.styles.subtle') }}
+                </SelectItem>
+                <SelectItem value="bold">
+                  {{ $t('basicSettings.styles.bold') }}
+                </SelectItem>
+                <SelectItem value="italic">
+                  {{ $t('basicSettings.styles.italic') }}
+                </SelectItem>
+                <SelectItem value="underlined">
+                  {{ $t('basicSettings.styles.underlined') }}
+                </SelectItem>
+                <SelectItem value="highlighted">
+                  {{ $t('basicSettings.styles.highlighted') }}
+                </SelectItem>
+                <SelectItem value="dotted">
+                  {{ $t('basicSettings.styles.dotted') }}
+                </SelectItem>
+                <SelectItem value="learning">
+                  {{ $t('basicSettings.styles.learning') }}
+                </SelectItem>
+                <SelectItem value="custom">
+                  {{ $t('basicSettings.styles.custom') }}
+                </SelectItem>
               </SelectContent>
             </Select>
             <!-- 自定义CSS编辑框 -->
@@ -145,12 +211,12 @@
                 @update:model-value="
                   settings.customTranslationCSS = $event as string
                 "
-                placeholder="例如: color: #ff0000; font-weight: bold; background-color: #f0f0f0;"
+                :placeholder="$t('basicSettings.customCSSPlaceholder')"
                 class="font-mono text-sm"
                 rows="4"
               />
               <p class="text-xs text-muted-foreground">
-                提示：这里的CSS样式将应用到翻译文本上。请不要包含选择器，直接写样式属性即可。
+                {{ $t('basicSettings.customCSSHint') }}
               </p>
             </div>
           </div>
@@ -159,7 +225,7 @@
       <CardContent>
         <div class="bg-muted p-4 rounded-lg">
           <div class="flex items-center text-sm text-foreground">
-            <span>这是一个示例文本，其中包含</span>
+            <span>{{ $t('basicSettings.previewText') }}</span>
             <template v-if="settings.translationPosition === 'before'">
               <span :class="[currentStyleClass, 'mx-1']">
                 {{ previewTranslation }}
@@ -167,14 +233,14 @@
               <span
                 class="px-2 py-0.5 bg-background border rounded-md text-sm mx-1"
               >
-                原文
+                {{ $t('basicSettings.originalText') }}
               </span>
             </template>
             <template v-else>
               <span
                 class="px-2 py-0.5 bg-background border rounded-md text-sm mx-1"
               >
-                原文
+                {{ $t('basicSettings.originalText') }}
               </span>
               <span :class="[currentStyleClass, 'mx-1']">
                 {{ previewTranslation }}
@@ -189,12 +255,14 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-xl font-bold text-foreground">高级设置</h2>
+          <h2 class="text-xl font-bold text-foreground">
+            {{ $t('basicSettings.advancedSettings') }}
+          </h2>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-6">
         <div class="space-y-2">
-          <Label>触发模式</Label>
+          <Label>{{ $t('basicSettings.triggerMode') }}</Label>
           <RadioGroup
             :model-value="settings.triggerMode"
             @update:model-value="settings.triggerMode = $event as any"
@@ -202,50 +270,68 @@
           >
             <div class="flex items-center space-x-2">
               <RadioGroupItem id="mode-auto" value="automatic" />
-              <Label for="mode-auto">自动翻译</Label>
+              <Label for="mode-auto">
+                {{ $t('basicSettings.triggerModes.automatic') }}
+              </Label>
             </div>
             <div class="flex items-center space-x-2">
               <RadioGroupItem id="mode-manual" value="manual" />
-              <Label for="mode-manual">手动触发</Label>
+              <Label for="mode-manual">
+                {{ $t('basicSettings.triggerModes.manual') }}
+              </Label>
             </div>
           </RadioGroup>
         </div>
         <div class="space-y-2">
-          <Label for="max-length">最大处理长度</Label>
+          <Label for="max-length">{{ $t('basicSettings.maxLength') }}</Label>
           <Input
             id="max-length"
             type="number"
             :model-value="settings.maxLength"
             @update:model-value="settings.maxLength = Number($event)"
-            placeholder="例如: 400"
+            :placeholder="$t('basicSettings.maxLengthPlaceholder')"
           />
         </div>
         <div class="space-y-2">
-          <Label for="user-level">
-            单词熟悉度 ({{ getUserLevelLabel(settings.userLevel) }})
-          </Label>
-          <Slider
+          <Label for="user-level">{{ $t('basicSettings.userLevel') }}</Label>
+          <Select
             id="user-level"
-            :model-value="[settings.userLevel]"
-            @update:model-value="settings.userLevel = ($event || [1])[0]"
-            :min="1"
-            :max="6"
-            :step="1"
-          />
+            :model-value="settings.userLevel"
+            @update:model-value="settings.userLevel = $event as number"
+          >
+            <SelectTrigger>
+              <SelectValue :placeholder="$t('basicSettings.selectUserLevel')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="option in userLevelOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div class="space-y-2">
           <Label for="replacement-rate">
-            替换率 (Replacement Rate:
-            {{ Math.round(settings.replacementRate * 100) }}%)
+            {{ $t('basicSettings.replacementRate') }} （{{
+              Math.round(settings.replacementRate * 100)
+            }}%）
           </Label>
-          <Slider
-            id="replacement-rate"
-            :model-value="[settings.replacementRate]"
-            @update:model-value="settings.replacementRate = ($event || [0])[0]"
-            :min="0"
-            :max="1"
-            :step="0.01"
-          />
+          <div class="flex items-center space-x-4">
+            <Slider
+              id="replacement-rate"
+              :model-value="[settings.replacementRate]"
+              @update:model-value="
+                settings.replacementRate = ($event || [0])[0]
+              "
+              :min="0"
+              :max="1"
+              :step="0.01"
+              class="flex-1 max-w-[50%]"
+            />
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -254,15 +340,19 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-xl font-bold text-foreground">懒加载设置</h2>
+          <h2 class="text-xl font-bold text-foreground">
+            {{ $t('lazyLoading.title') }}
+          </h2>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-6">
         <div class="flex items-center justify-between">
           <div class="space-y-1">
-            <Label for="lazy-loading-enabled">启用懒加载翻译</Label>
+            <Label for="lazy-loading-enabled">
+              {{ $t('lazyLoading.enabled') }}
+            </Label>
             <p class="text-xs text-muted-foreground">
-              滚动到段落时才进行翻译，减少资源消耗和提高性能
+              {{ $t('lazyLoading.description') }}
             </p>
           </div>
           <Switch
@@ -278,23 +368,25 @@
           class="space-y-2 border-t border-border pt-6"
         >
           <Label for="preload-distance">
-            预加载距离 ({{
-              Math.round(settings.lazyLoading.preloadDistance * 100)
-            }}%)
+            {{ $t('lazyLoading.preloadDistance') }} （{{
+              Math.round(settings.lazyLoading.preloadDistance * 50)
+            }}% ）
           </Label>
-          <Slider
-            id="preload-distance"
-            :model-value="[settings.lazyLoading.preloadDistance]"
-            @update:model-value="
-              settings.lazyLoading.preloadDistance = ($event || [0.5])[0]
-            "
-            :min="0.0"
-            :max="2.0"
-            :step="0.1"
-            class="w-full"
-          />
+          <div class="flex items-center space-x-4">
+            <Slider
+              id="preload-distance"
+              :model-value="[settings.lazyLoading.preloadDistance]"
+              @update:model-value="
+                settings.lazyLoading.preloadDistance = ($event || [0.5])[0]
+              "
+              :min="0.0"
+              :max="2.0"
+              :step="0.1"
+              class="flex-1 max-w-[50%]"
+            />
+          </div>
           <p class="text-xs text-muted-foreground">
-            较高的值可以捕获更多段落，但会增加资源消耗。推荐范围：50%-100%
+            {{ $t('lazyLoading.preloadDistanceHint') }}
           </p>
         </div>
 
@@ -315,12 +407,14 @@
               />
             </svg>
             <div>
-              <p class="text-sm font-medium text-blue-900">性能提示</p>
+              <p class="text-sm font-medium text-blue-900">
+                {{ $t('lazyLoading.performanceHintTitle') }}
+              </p>
               <p class="text-sm text-blue-700">
                 {{
                   settings.lazyLoading.enabled
-                    ? '懒加载已启用，将在您滚动时按需翻译内容，有效减少内存使用和提高页面加载速度。'
-                    : '懒加载未启用，将一次性翻译整个页面。建议在内容较多的页面开启懒加载。'
+                    ? $t('lazyLoading.performanceHintEnabled')
+                    : $t('lazyLoading.performanceHintDisabled')
                 }}
               </p>
             </div>
@@ -333,16 +427,17 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { StorageService } from '@/src/modules/core/storage';
 import { StyleManager } from '@/src/modules/styles';
 import { LanguageService } from '@/src/modules/core/translation/LanguageService';
+import { SUPPORTED_LOCALES, LOCALE_NAMES, setLocale } from '@/src/i18n';
 import {
   UserSettings,
   DEFAULT_SETTINGS,
   TranslationPosition,
   TranslationStyle,
 } from '@/src/modules/shared/types';
-import { getUserLevelLabel } from '@/src/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -359,8 +454,25 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 
+const { t, locale } = useI18n();
+
 const settings = ref<UserSettings>(DEFAULT_SETTINGS);
+const currentLocale = ref(locale.value);
+const supportedLocales = SUPPORTED_LOCALES;
 const storageService = StorageService.getInstance();
+
+const getLocaleName = (locale: string) => {
+  return LOCALE_NAMES[locale] || locale;
+};
+
+const changeLanguage = (newLocale: any) => {
+  if (typeof newLocale === 'string') {
+    setLocale(newLocale as any);
+    locale.value = newLocale;
+    currentLocale.value = newLocale;
+    window.location.reload();
+  }
+};
 const styleManager = new StyleManager();
 const languageService = LanguageService.getInstance();
 
@@ -383,6 +495,16 @@ const otherNativeLanguages = computed(() => {
   return nativeLanguageOptions.value.filter((lang) => !lang.isPopular);
 });
 
+// 用户级别选项
+const userLevelOptions = computed(() => [
+  { value: 1, label: t('languageLevel.a1') },
+  { value: 2, label: t('languageLevel.a2') },
+  { value: 3, label: t('languageLevel.b1') },
+  { value: 4, label: t('languageLevel.b2') },
+  { value: 5, label: t('languageLevel.c1') },
+  { value: 6, label: t('languageLevel.c2') },
+]);
+
 onMounted(async () => {
   settings.value = await storageService.getUserSettings();
   styleManager.setTranslationStyle(settings.value.translationStyle);
@@ -394,9 +516,9 @@ onMounted(async () => {
 
 const previewTranslation = computed(() => {
   if (settings.value.showParentheses) {
-    return '( 翻译 )';
+    return `( ${t('actions.translate')} )`;
   }
-  return '翻译';
+  return t('actions.translate');
 });
 
 const currentStyleClass = computed(() => {
@@ -412,7 +534,7 @@ watch(
   settings,
   async (newSettings) => {
     await storageService.saveUserSettings(newSettings);
-    emit('saveMessage', '设置已保存');
+    emit('saveMessage', t('settings.save'));
     styleManager.setTranslationStyle(newSettings.translationStyle);
     // 如果是自定义样式，更新自定义CSS
     if (newSettings.translationStyle === TranslationStyle.CUSTOM) {

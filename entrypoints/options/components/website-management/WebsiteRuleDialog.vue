@@ -11,7 +11,11 @@
       <!-- 标题栏 -->
       <div class="flex items-center justify-between p-6 border-b border-border">
         <h3 class="text-lg font-semibold text-foreground">
-          {{ isEditing ? '编辑网站规则' : '添加网站规则' }}
+          {{
+            isEditing
+              ? $t('websiteRuleDialog.editTitle')
+              : $t('websiteRuleDialog.addTitle')
+          }}
         </h3>
         <button
           @click="handleCancel"
@@ -29,14 +33,14 @@
         <!-- 网站模式输入 -->
         <div class="space-y-2">
           <label class="text-sm font-medium text-foreground">
-            网站模式
+            {{ $t('websiteRuleDialog.pattern') }}
             <span class="text-destructive">*</span>
           </label>
           <input
             v-model="formData.pattern"
             @keyup.enter="handleSave"
             type="text"
-            placeholder="例如: *://github.com/*"
+            :placeholder="$t('websiteRuleDialog.patternPlaceholder')"
             class="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             :class="{ 'border-destructive': patternError }"
             ref="patternInput"
@@ -49,48 +53,52 @@
         <!-- 描述输入 -->
         <div class="space-y-2">
           <label class="text-sm font-medium text-foreground">
-            描述（可选）
+            {{ $t('websiteRuleDialog.description') }}
           </label>
           <textarea
             v-model="formData.description"
             rows="2"
-            placeholder="为这个规则添加一些说明..."
+            :placeholder="$t('websiteRuleDialog.descriptionPlaceholder')"
             class="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
           />
         </div>
 
         <!-- 帮助信息 -->
         <div class="bg-muted/50 rounded-md p-4 space-y-3">
-          <div class="text-sm font-medium text-foreground">支持的模式：</div>
+          <div class="text-sm font-medium text-foreground">
+            {{ $t('websiteRuleDialog.supportedPatterns') }}
+          </div>
           <div class="text-xs text-muted-foreground space-y-1">
             <div>
               <code class="px-1.5 py-0.5 rounded bg-background">
                 *://example.com/*
               </code>
-              - 整个域名
+              - {{ $t('websiteRuleDialog.entireDomain') }}
             </div>
             <div>
               <code class="px-1.5 py-0.5 rounded bg-background">
                 https://example.com/path/*
               </code>
-              - 特定路径
+              - {{ $t('websiteRuleDialog.specificPath') }}
             </div>
             <div>
               <code class="px-1.5 py-0.5 rounded bg-background">
                 *://*.example.com/*
               </code>
-              - 包含子域名
+              - {{ $t('websiteRuleDialog.includeSubdomain') }}
             </div>
             <div>
               <code class="px-1.5 py-0.5 rounded bg-background">file:///*</code>
-              - 本地文件
+              - {{ $t('websiteRuleDialog.localFile') }}
             </div>
           </div>
         </div>
 
         <!-- 预设模板 -->
         <div class="space-y-3">
-          <label class="text-sm font-medium text-foreground">常用模板：</label>
+          <label class="text-sm font-medium text-foreground">
+            {{ $t('websiteRuleDialog.commonTemplates') }}
+          </label>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
             <button
               v-for="preset in getPresets()"
@@ -118,7 +126,7 @@
           @click="handleCancel"
           class="px-4 py-2 border border-border rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
         >
-          取消
+          {{ $t('websiteRuleDialog.cancel') }}
         </button>
         <button
           @click="handleSave"
@@ -131,7 +139,11 @@
             !isFormValid && 'opacity-50 cursor-not-allowed',
           ]"
         >
-          {{ isEditing ? '更新' : '添加' }}
+          {{
+            isEditing
+              ? $t('websiteRuleDialog.update')
+              : $t('websiteRuleDialog.add')
+          }}
         </button>
       </div>
     </div>
@@ -140,9 +152,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, nextTick } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { X, Shield, Heart } from 'lucide-vue-next';
 import { WebsiteRule } from '@/src/modules/options/website-management/types';
 import RuleTypeSelector from './RuleTypeSelector.vue';
+
+const { t } = useI18n();
 
 interface Props {
   rule?: WebsiteRule | null;
@@ -210,7 +225,7 @@ const validatePattern = (pattern: string): boolean => {
   patternError.value = '';
 
   if (!pattern.trim()) {
-    patternError.value = '请输入网站模式';
+    patternError.value = t('websiteRuleDialog.patternRequired');
     return false;
   }
 
@@ -224,7 +239,7 @@ const validatePattern = (pattern: string): boolean => {
   const isValid = validPatterns.some((regex) => regex.test(pattern));
 
   if (!isValid) {
-    patternError.value = '请输入有效的URL模式';
+    patternError.value = t('websiteRuleDialog.invalidPattern');
     return false;
   }
 

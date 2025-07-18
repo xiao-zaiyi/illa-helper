@@ -8,6 +8,7 @@ import {
   nextTick,
   onUnmounted,
 } from 'vue';
+import { useI18n } from 'vue-i18n';
 import {
   TranslationStyle,
   TriggerMode,
@@ -18,7 +19,6 @@ import {
   DEFAULT_PRONUNCIATION_HOTKEY,
   DEFAULT_FLOATING_BALL_CONFIG,
 } from '@/src/modules/shared/types';
-import { getUserLevelOptions } from '@/src/utils';
 import { StorageService } from '@/src/modules/core/storage';
 import { notifySettingsChanged } from '@/src/modules/core/messaging';
 import { languageService } from '@/src/modules/core/translation/LanguageService';
@@ -29,6 +29,9 @@ import {
   XCircle,
 } from 'lucide-vue-next';
 import { testApiConnection, ApiTestResult } from '@/src/utils';
+
+// 使用 i18n
+const { t } = useI18n();
 
 // 服务实例
 const storageService = StorageService.getInstance();
@@ -62,7 +65,7 @@ onMounted(async () => {
     const manifest = browser.runtime.getManifest();
     extensionVersion.value = manifest.version;
   } catch (error) {
-    console.error('无法获取扩展版本号:', error);
+    console.error(t('errors.getExtensionVersion'), error);
     // 在非扩展环境或开发服务器中，这可能会失败。可以设置一个默认值。
     extensionVersion.value = 'DEV';
   }
@@ -98,10 +101,10 @@ const testActiveApiConnection = async () => {
       testResult.value = null;
     }, 5000);
   } catch (error) {
-    console.error('API测试失败:', error);
+    console.error(t('errors.apiTestFailed'), error);
     testResult.value = {
       success: false,
-      message: error instanceof Error ? error.message : '未知错误',
+      message: error instanceof Error ? error.message : t('api.unknownError'),
     };
   } finally {
     isTestingConnection.value = false;
@@ -139,16 +142,16 @@ const saveAndNotifySettings = async () => {
       !settings.value.multilingualConfig.targetLanguage.trim() ||
       !settings.value.multilingualConfig.nativeLanguage.trim()
     ) {
-      showSavedMessage('请选择目标语言和母语后再保存设置');
+      showSavedMessage(t('settings.selectLanguageFirst'));
       return;
     }
 
     await storageService.saveUserSettings(settings.value);
     await notifySettingsChanged(settings.value);
-    showSavedMessage('设置已保存');
+    showSavedMessage(t('settings.save'));
   } catch (error) {
-    console.error('保存设置失败:', error);
-    showSavedMessage('保存设置失败');
+    console.error(t('settings.saveFailed'), error);
+    showSavedMessage(t('settings.saveFailed'));
   }
 };
 
@@ -168,7 +171,7 @@ const manualTranslate = async () => {
       await browser.tabs.sendMessage(tabs[0].id, { type: 'MANUAL_TRANSLATE' });
     }
   } catch (error) {
-    console.error('手动翻译失败:', error);
+    console.error(t('errors.manualTranslateFailed'), error);
   }
 };
 
@@ -187,7 +190,7 @@ async function checkForUpdates() {
       hasUpdate.value = true;
     }
   } catch (error) {
-    console.error('检查更新状态失败:', error);
+    console.error(t('errors.checkUpdateFailed'), error);
   }
 }
 
@@ -221,35 +224,42 @@ const handleActiveConfigChange = async () => {
     // 通知content script配置已更新
     await notifySettingsChanged(settings.value);
   } catch (error) {
-    console.error('切换活跃配置失败:', error);
-    showSavedMessage('切换配置失败');
+    console.error(t('settings.switchConfigFailed'), error);
+    showSavedMessage(t('settings.switchConfigFailed'));
   }
 };
 
-const levelOptions = getUserLevelOptions();
+const levelOptions = computed(() => [
+  { value: 1, label: t('languageLevel.a1') },
+  { value: 2, label: t('languageLevel.a2') },
+  { value: 3, label: t('languageLevel.b1') },
+  { value: 4, label: t('languageLevel.b2') },
+  { value: 5, label: t('languageLevel.c1') },
+  { value: 6, label: t('languageLevel.c2') },
+]);
 
-const styleOptions = [
-  { value: TranslationStyle.DEFAULT, label: '默认' },
-  { value: TranslationStyle.SUBTLE, label: '微妙' },
-  { value: TranslationStyle.BOLD, label: '粗体' },
-  { value: TranslationStyle.ITALIC, label: '斜体' },
-  { value: TranslationStyle.UNDERLINED, label: '下划线' },
-  { value: TranslationStyle.HIGHLIGHTED, label: '高亮' },
-  { value: TranslationStyle.DOTTED, label: '点画线' },
-  { value: TranslationStyle.LEARNING, label: '学习模式' },
-  { value: TranslationStyle.CUSTOM, label: '自定义' },
-];
+const styleOptions = computed(() => [
+  { value: TranslationStyle.DEFAULT, label: t('translation.default') },
+  { value: TranslationStyle.SUBTLE, label: t('translation.subtle') },
+  { value: TranslationStyle.BOLD, label: t('translation.bold') },
+  { value: TranslationStyle.ITALIC, label: t('translation.italic') },
+  { value: TranslationStyle.UNDERLINED, label: t('translation.underlined') },
+  { value: TranslationStyle.HIGHLIGHTED, label: t('translation.highlighted') },
+  { value: TranslationStyle.DOTTED, label: t('translation.dotted') },
+  { value: TranslationStyle.LEARNING, label: t('translation.learning') },
+  { value: TranslationStyle.CUSTOM, label: t('translation.custom') },
+]);
 
-const triggerOptions = [
-  { value: TriggerMode.AUTOMATIC, label: '自动触发' },
-  { value: TriggerMode.MANUAL, label: '手动触发' },
-];
+const triggerOptions = computed(() => [
+  { value: TriggerMode.AUTOMATIC, label: t('trigger.automatic') },
+  { value: TriggerMode.MANUAL, label: t('trigger.manual') },
+]);
 
-const originalWordDisplayOptions = [
-  { value: OriginalWordDisplayMode.VISIBLE, label: '显示' },
-  { value: OriginalWordDisplayMode.HIDDEN, label: '不显示' },
-  { value: OriginalWordDisplayMode.LEARNING, label: '学习模式' },
-];
+const originalWordDisplayOptions = computed(() => [
+  { value: OriginalWordDisplayMode.VISIBLE, label: t('display.visible') },
+  { value: OriginalWordDisplayMode.HIDDEN, label: t('display.hidden') },
+  { value: OriginalWordDisplayMode.LEARNING, label: t('display.learning') },
+]);
 const extensionVersion = ref('N/A');
 
 const openOptionsPage = () => {
@@ -280,7 +290,7 @@ const nativeLanguageOptions = computed(() =>
           />
         </div>
         <div class="title-container">
-          <h1>浸入式学语言助手</h1>
+          <h1>{{ $t('app.title') }}</h1>
         </div>
       </div>
       <div class="header-actions">
@@ -288,9 +298,9 @@ const nativeLanguageOptions = computed(() =>
           v-if="settings.triggerMode === 'manual'"
           @click="manualTranslate"
           class="manual-translate-btn"
-          title="翻译"
+          :title="$t('actions.translate')"
         >
-          翻译
+          {{ $t('actions.translate') }}
         </button>
       </div>
     </header>
@@ -300,10 +310,12 @@ const nativeLanguageOptions = computed(() =>
         <div class="settings-card">
           <div class="adaptive-settings-grid">
             <div class="setting-group">
-              <label>母语</label>
+              <label>{{ $t('language.nativeLanguage') }}</label>
               <select v-model="settings.multilingualConfig.nativeLanguage">
-                <option value="" disabled>请选择母语</option>
-                <optgroup label="常用语言">
+                <option value="" disabled>
+                  {{ $t('language.selectNativeLanguage') }}
+                </option>
+                <optgroup :label="$t('language.popularLanguages')">
                   <option
                     v-for="option in nativeLanguageOptions.filter(
                       (opt) => opt.isPopular,
@@ -314,7 +326,7 @@ const nativeLanguageOptions = computed(() =>
                     {{ option.name }} - {{ option.nativeName }}
                   </option>
                 </optgroup>
-                <optgroup label="其他语言">
+                <optgroup :label="$t('language.otherLanguages')">
                   <option
                     v-for="option in nativeLanguageOptions.filter(
                       (opt) => !opt.isPopular,
@@ -329,10 +341,12 @@ const nativeLanguageOptions = computed(() =>
             </div>
 
             <div class="setting-group">
-              <label>目标语言</label>
+              <label>{{ $t('language.targetLanguage') }}</label>
               <select v-model="settings.multilingualConfig.targetLanguage">
-                <option value="" disabled>请选择目标语言</option>
-                <optgroup label="常用语言">
+                <option value="" disabled>
+                  {{ $t('language.selectTargetLanguage') }}
+                </option>
+                <optgroup :label="$t('language.popularLanguages')">
                   <option
                     v-for="option in targetLanguageOptions.filter(
                       (opt) => opt.isPopular,
@@ -343,7 +357,7 @@ const nativeLanguageOptions = computed(() =>
                     {{ option.name }} - {{ option.nativeName }}
                   </option>
                 </optgroup>
-                <optgroup label="其他语言">
+                <optgroup :label="$t('language.otherLanguages')">
                   <option
                     v-for="option in targetLanguageOptions.filter(
                       (opt) => !opt.isPopular,
@@ -358,7 +372,7 @@ const nativeLanguageOptions = computed(() =>
             </div>
 
             <div class="setting-group">
-              <label>语言水平</label>
+              <label>{{ $t('language.languageLevel') }}</label>
               <select v-model="settings.userLevel">
                 <option
                   v-for="option in levelOptions"
@@ -371,7 +385,7 @@ const nativeLanguageOptions = computed(() =>
             </div>
 
             <div class="setting-group">
-              <label>翻译样式</label>
+              <label>{{ $t('translation.style') }}</label>
               <select v-model="settings.translationStyle">
                 <option
                   v-for="option in styleOptions"
@@ -387,16 +401,16 @@ const nativeLanguageOptions = computed(() =>
                 class="custom-style-tip"
               >
                 <p class="tip-text">
-                  💡
+                  {{ $t('common.tip') }}
                   <button @click="openOptionsBasePage" class="tip-link-btn">
-                    设置CSS
+                    {{ $t('translation.setCSS') }}
                   </button>
                 </p>
               </div>
             </div>
 
             <div class="setting-group">
-              <label>触发模式</label>
+              <label>{{ $t('trigger.mode') }}</label>
               <select v-model="settings.triggerMode">
                 <option
                   v-for="option in triggerOptions"
@@ -409,7 +423,7 @@ const nativeLanguageOptions = computed(() =>
             </div>
 
             <div class="setting-group">
-              <label>原文显示</label>
+              <label>{{ $t('display.originalWord') }}</label>
               <select v-model="settings.originalWordDisplayMode">
                 <option
                   v-for="option in originalWordDisplayOptions"
@@ -423,7 +437,8 @@ const nativeLanguageOptions = computed(() =>
 
             <div class="setting-group full-width">
               <label>
-                替换比例: {{ Math.round(settings.replacementRate * 100) }}%
+                {{ $t('replacement.rate') }}:
+                {{ Math.round(settings.replacementRate * 100) }}%
               </label>
               <input
                 type="range"
@@ -435,7 +450,9 @@ const nativeLanguageOptions = computed(() =>
             </div>
 
             <div class="setting-group full-width">
-              <label>段落最大长度: {{ settings.maxLength }}</label>
+              <label>
+                {{ $t('replacement.maxLength') }}: {{ settings.maxLength }}
+              </label>
               <input
                 type="range"
                 v-model.number="settings.maxLength"
@@ -443,85 +460,13 @@ const nativeLanguageOptions = computed(() =>
                 max="2000"
                 step="10"
               />
-              <p class="setting-note" style="margin-top: 2px">
-                段落越短AI响应越快。
-              </p>
-            </div>
-
-            <div class="topping-settings-card">
-              <div class="setting-group">
-                <label>悬浮框</label>
-                <div class="toggle-container">
-                  <input
-                    type="checkbox"
-                    v-model="settings.enablePronunciationTooltip"
-                    id="tooltip-toggle"
-                    class="toggle-input"
-                  />
-                  <label for="tooltip-toggle" class="toggle-label">
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- 快捷键设置 -->
-              <div
-                v-if="settings.enablePronunciationTooltip"
-                class="setting-group"
-              >
-                <label>Ctrl+鼠标悬停</label>
-                <input
-                  type="checkbox"
-                  v-model="settings.pronunciationHotkey.enabled"
-                  id="hotkey-enabled-toggle"
-                  class="toggle-input"
-                />
-                <label for="hotkey-enabled-toggle" class="toggle-label">
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="topping-settings-card">
-              <!-- 悬浮球设置 -->
-              <div class="setting-group">
-                <label>悬浮翻译球</label>
-                <div class="toggle-container">
-                  <input
-                    type="checkbox"
-                    v-model="settings.floatingBall.enabled"
-                    id="floating-ball-toggle"
-                    class="toggle-input"
-                  />
-                  <label for="floating-ball-toggle" class="toggle-label">
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- 悬浮球详细设置 -->
-              <div v-if="settings.floatingBall.enabled">
-                <div class="setting-group">
-                  <label>
-                    透明度:
-                    {{ Math.round(settings.floatingBall.opacity * 100) }}%
-                  </label>
-                  <input
-                    type="range"
-                    v-model.number="settings.floatingBall.opacity"
-                    min="0.1"
-                    max="1"
-                    step="0.05"
-                  />
-                </div>
-              </div>
             </div>
           </div>
 
           <!-- 懒加载设置 -->
-          <div class="topping-settings-card">
+          <div class="topping-settings-card mt-3">
             <div class="setting-group">
-              <label>懒加载翻译</label>
+              <label>{{ $t('lazyLoading.title') }}</label>
               <div class="toggle-container">
                 <input
                   type="checkbox"
@@ -537,7 +482,7 @@ const nativeLanguageOptions = computed(() =>
             <!-- 预加载距离调整 -->
             <div v-if="settings.lazyLoading.enabled" class="setting-group">
               <label>
-                预加载距离:
+                {{ $t('lazyLoading.preloadDistance') }}:
                 {{ Math.round(settings.lazyLoading.preloadDistance * 100) }}%
               </label>
               <input
@@ -548,7 +493,7 @@ const nativeLanguageOptions = computed(() =>
                 step="0.1"
               />
               <p class="setting-note" style="margin-top: 2px; font-size: 11px">
-                较高值可捕获更多段落，但会增加资源消耗
+                {{ $t('lazyLoading.note') }}
               </p>
             </div>
           </div>
@@ -557,11 +502,11 @@ const nativeLanguageOptions = computed(() =>
         <div class="setting-group api-settings">
           <div class="api-header" @click="toggleApiSettings">
             <div class="api-header-left">
-              <span>模型 API 设置</span>
+              <span>{{ $t('api.title') }}</span>
               <button
                 @click.stop="openOptionsPage"
                 class="options-link-btn"
-                title="打开详细设置"
+                :title="$t('api.openSettings')"
               >
                 <ExternalLink class="w-4 h-4" />
               </button>
@@ -586,7 +531,9 @@ const nativeLanguageOptions = computed(() =>
             <div>
               <!-- 配置选择下拉框 -->
               <div class="sub-setting-group">
-                <label class="text-sm mt-2 mb-1">当前配置</label>
+                <label class="text-sm mt-2 mb-1">
+                  {{ $t('api.currentConfig') }}
+                </label>
                 <select
                   v-model="settings.activeApiConfigId"
                   @change="handleActiveConfigChange"
@@ -604,21 +551,21 @@ const nativeLanguageOptions = computed(() =>
               <!-- 当前配置信息显示 -->
               <div v-if="activeConfig" class="current-config-info">
                 <div class="config-info-item">
-                  <span class="info-label">配置名称:</span>
+                  <span class="info-label">{{ $t('api.configName') }}:</span>
                   <span class="info-value">{{ activeConfig.name }}</span>
                 </div>
                 <div class="config-info-item">
-                  <span class="info-label">服务商:</span>
+                  <span class="info-label">{{ $t('api.provider') }}:</span>
                   <span class="info-value">{{ activeConfig.provider }}</span>
                 </div>
                 <div class="config-info-item">
-                  <span class="info-label">模型:</span>
+                  <span class="info-label">{{ $t('api.model') }}:</span>
                   <span class="info-value">
                     {{ activeConfig.config.model }}
                   </span>
                 </div>
                 <div class="config-info-item">
-                  <span class="info-label">状态:</span>
+                  <span class="info-label">{{ $t('api.status') }}:</span>
                   <span
                     class="info-value"
                     :class="
@@ -626,7 +573,9 @@ const nativeLanguageOptions = computed(() =>
                     "
                   >
                     {{
-                      activeConfig.config.apiKey ? '已配置' : '未配置API密钥'
+                      activeConfig.config.apiKey
+                        ? $t('api.configured')
+                        : $t('api.notConfigured')
                     }}
                   </span>
                 </div>
@@ -664,15 +613,19 @@ const nativeLanguageOptions = computed(() =>
                   >
                     <div v-if="isTestingConnection" class="spinner"></div>
                     <ZapIcon v-else class="w-3 h-3" />
-                    <span>{{ isTestingConnection ? '测试中' : '测试' }}</span>
+                    <span>
+                      {{
+                        isTestingConnection ? $t('api.testing') : $t('api.test')
+                      }}
+                    </span>
                   </button>
                 </div>
               </div>
 
               <p class="setting-note">
-                注意: API 密钥仅保存在本地，不会发送到其他地方。
+                {{ $t('api.note') }}
                 <br />
-                如需管理配置，请打开设置中心。
+                {{ $t('api.manageConfig') }}
               </p>
             </div>
           </div>
@@ -687,11 +640,11 @@ const nativeLanguageOptions = computed(() =>
       <div class="footer-row floating-footer">
         <div class="footer-row-left flex flex-col items-center">
           <p>
-            💖 基于"i+1"理论，让学习自然发生
+            {{ $t('footer.slogan') }}
             <span
               class="text-gray-500 ml-2 cursor-pointer hover:text-blue-500 transition-colors"
               @click="hasUpdate ? openAdvancedSettings() : undefined"
-              :title="hasUpdate ? '点击查看更新详情' : ''"
+              :title="hasUpdate ? $t('footer.clickForUpdate') : ''"
               style="white-space: nowrap"
             >
               v{{ extensionVersion }}
@@ -706,7 +659,7 @@ const nativeLanguageOptions = computed(() =>
                   display: inline-block;
                 "
               >
-                NEW
+                {{ $t('common.new') }}
               </span>
             </span>
           </p>
@@ -714,7 +667,7 @@ const nativeLanguageOptions = computed(() =>
         <button
           class="footer-settings-btn"
           @click="openAdvancedSettings"
-          title="设置中心"
+          :title="$t('footer.settings')"
         >
           <svg
             width="16"
@@ -734,7 +687,7 @@ const nativeLanguageOptions = computed(() =>
               stroke-width="2"
             />
           </svg>
-          <span class="footer-settings-text">设置</span>
+          <span class="footer-settings-text">{{ $t('footer.settings') }}</span>
         </button>
       </div>
     </footer>
@@ -760,7 +713,7 @@ const nativeLanguageOptions = computed(() =>
   --select-option-bg-color: #fff;
 
   width: 360px;
-  padding: 10px;
+  padding: 5px;
   font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);

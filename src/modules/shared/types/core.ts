@@ -19,27 +19,27 @@ export enum UserLevel {
 export const USER_LEVEL_OPTIONS = [
   {
     value: UserLevel.A1,
-    label: 'A1 入门',
+    label: 'A1',
   },
   {
     value: UserLevel.A2,
-    label: 'A2 初级',
+    label: 'A2',
   },
   {
     value: UserLevel.B1,
-    label: 'B1 中级',
+    label: 'B1',
   },
   {
     value: UserLevel.B2,
-    label: 'B2 中高级',
+    label: 'B2',
   },
   {
     value: UserLevel.C1,
-    label: 'C1 高级',
+    label: 'C1',
   },
   {
     value: UserLevel.C2,
-    label: 'C2 精通',
+    label: 'C2',
   },
 ];
 

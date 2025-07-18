@@ -4,13 +4,15 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-2xl font-bold text-foreground">网站管理</h2>
+          <h2 class="text-2xl font-bold text-foreground">
+            {{ $t('websiteManagement.title') }}
+          </h2>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-6">
         <div class="space-y-2">
           <p class="text-muted-foreground">
-            管理翻译功能的网站规则。黑名单禁用翻译，白名单强制自动翻译。
+            {{ $t('websiteManagement.description') }}
           </p>
         </div>
 
@@ -29,7 +31,7 @@
                 <input
                   v-model="searchQuery"
                   type="text"
-                  placeholder="搜索网站模式..."
+                  :placeholder="$t('websiteManagement.search')"
                   class="w-full pl-10 pr-4 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -45,7 +47,9 @@
                       : 'border border-border hover:bg-accent hover:text-accent-foreground',
                   ]"
                 >
-                  全部 ({{ allRules.length }})
+                  {{ $t('websiteManagement.filterAll') }} ({{
+                    allRules.length
+                  }})
                 </button>
                 <button
                   @click="filterType = 'blacklist'"
@@ -57,7 +61,9 @@
                   ]"
                 >
                   <Shield class="w-3 h-3" />
-                  黑名单 ({{ blacklistCount }})
+                  {{ $t('websiteManagement.filterBlacklist') }} ({{
+                    blacklistCount
+                  }})
                 </button>
                 <button
                   @click="filterType = 'whitelist'"
@@ -69,7 +75,9 @@
                   ]"
                 >
                   <Heart class="w-3 h-3" />
-                  白名单 ({{ whitelistCount }})
+                  {{ $t('websiteManagement.filterWhitelist') }} ({{
+                    whitelistCount
+                  }})
                 </button>
               </div>
             </div>
@@ -81,7 +89,7 @@
                 class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
                 <Plus class="w-4 h-4" />
-                添加规则
+                {{ $t('websiteManagement.addRule') }}
               </button>
 
               <button
@@ -90,7 +98,9 @@
                 class="inline-flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
               >
                 <Trash2 class="w-4 h-4" />
-                删除选中 ({{ selectedRules.length }})
+                {{ $t('websiteManagement.deleteSelected') }} ({{
+                  selectedRules.length
+                }})
               </button>
             </div>
           </div>
@@ -109,11 +119,21 @@
                     class="rounded border-border focus:ring-ring"
                   />
                 </TableHead>
-                <TableHead class="w-24">类型</TableHead>
-                <TableHead class="w-96">网站模式</TableHead>
-                <TableHead class="w-64">描述</TableHead>
-                <TableHead class="w-20">状态</TableHead>
-                <TableHead class="w-12 text-right">操作</TableHead>
+                <TableHead class="w-24">
+                  {{ $t('websiteManagement.tableType') }}
+                </TableHead>
+                <TableHead class="w-96">
+                  {{ $t('websiteManagement.tablePattern') }}
+                </TableHead>
+                <TableHead class="w-64">
+                  {{ $t('websiteManagement.tableDescription') }}
+                </TableHead>
+                <TableHead class="w-20">
+                  {{ $t('websiteManagement.tableStatus') }}
+                </TableHead>
+                <TableHead class="w-12 text-right">
+                  {{ $t('websiteManagement.tableActions') }}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -147,7 +167,11 @@
                       <Heart v-else class="w-3 h-3" />
                     </div>
                     <span class="text-xs font-medium">
-                      {{ rule.type === 'blacklist' ? '黑名单' : '白名单' }}
+                      {{
+                        rule.type === 'blacklist'
+                          ? $t('websiteManagement.blacklist')
+                          : $t('websiteManagement.whitelist')
+                      }}
                     </span>
                   </div>
                 </TableCell>
@@ -162,7 +186,7 @@
                     <button
                       @click="copyToClipboard(rule.pattern)"
                       class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-background rounded text-xs"
-                      title="复制"
+                      :title="$t('websiteManagement.copy')"
                     >
                       📋
                     </button>
@@ -192,14 +216,20 @@
                         rule.enabled ? 'bg-green-500' : 'bg-gray-400',
                       ]"
                     />
-                    {{ rule.enabled ? '启用' : '禁用' }}
+                    {{
+                      rule.enabled
+                        ? $t('websiteManagement.enabled')
+                        : $t('websiteManagement.disabled')
+                    }}
                   </button>
                 </TableCell>
                 <TableCell class="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger as-child>
                       <Button variant="ghost" class="h-8 w-8 p-0">
-                        <span class="sr-only">打开菜单</span>
+                        <span class="sr-only">
+                          {{ $t('websiteManagement.openMenu') }}
+                        </span>
                         <svg
                           class="h-4 w-4"
                           fill="currentColor"
@@ -214,14 +244,14 @@
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem @click="editRule(rule)">
                         <Edit3 class="mr-2 h-4 w-4" />
-                        编辑
+                        {{ $t('websiteManagement.edit') }}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         @click="removeRule(rule.id)"
                         class="text-destructive"
                       >
                         <Trash2 class="mr-2 h-4 w-4" />
-                        删除
+                        {{ $t('websiteManagement.delete') }}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -234,13 +264,17 @@
           <div v-if="filteredRules.length === 0" class="text-center py-12">
             <Globe class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 class="text-lg font-medium text-foreground mb-2">
-              {{ searchQuery ? '未找到匹配的规则' : '暂无网站规则' }}
+              {{
+                searchQuery
+                  ? $t('websiteManagement.noMatchingRules')
+                  : $t('websiteManagement.noRules')
+              }}
             </h3>
             <p class="text-muted-foreground mb-4">
               {{
                 searchQuery
-                  ? '试试其他搜索关键词'
-                  : '开始添加网站规则来管理翻译行为'
+                  ? $t('websiteManagement.tryOtherKeywords')
+                  : $t('websiteManagement.startAddingRules')
               }}
             </p>
             <button
@@ -249,19 +283,29 @@
               class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
             >
               <Plus class="w-4 h-4" />
-              添加第一个规则
+              {{ $t('websiteManagement.addFirstRule') }}
             </button>
           </div>
         </div>
 
         <!-- 统计信息 -->
         <div class="text-sm text-muted-foreground">
-          共 {{ allRules.length }} 个网站规则
+          {{ $t('websiteManagement.totalRules', { count: allRules.length }) }}
           <span v-if="searchQuery || filterType !== 'all'">
-            ，显示 {{ filteredRules.length }} 个匹配结果
+            {{
+              $t('websiteManagement.showingResults', {
+                count: filteredRules.length,
+              })
+            }}
           </span>
           <span class="ml-4">
-            黑名单: {{ blacklistCount }} | 白名单: {{ whitelistCount }}
+            {{
+              $t('websiteManagement.blacklistCount', { count: blacklistCount })
+            }}
+            |
+            {{
+              $t('websiteManagement.whitelistCount', { count: whitelistCount })
+            }}
           </span>
         </div>
 
@@ -280,6 +324,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import {
   Search,
   Plus,
@@ -308,6 +353,8 @@ import {
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 import { WebsiteRule } from '@/src/modules/options/website-management/types';
 import WebsiteRuleDialog from './WebsiteRuleDialog.vue';
+
+const { t } = useI18n();
 
 const manager = new WebsiteManager();
 
@@ -360,7 +407,7 @@ const loadRules = async () => {
   try {
     allRules.value = await manager.getRules();
   } catch (error) {
-    console.error('加载规则失败:', error);
+    console.error(t('errors.loadRulesFailed'), error);
   }
 };
 
@@ -396,7 +443,7 @@ const handleSaveRule = async (
     await loadRules();
     handleCancelEdit();
   } catch (error) {
-    console.error('保存规则失败:', error);
+    console.error(t('errors.saveRuleFailed'), error);
   }
 };
 
@@ -406,7 +453,7 @@ const handleCancelEdit = () => {
 };
 
 const removeRule = async (id: string) => {
-  if (confirm('确定要删除这个规则吗？')) {
+  if (confirm(t('websiteManagement.confirmDeleteRule'))) {
     try {
       await manager.removeRule(id);
       await loadRules();
@@ -414,20 +461,26 @@ const removeRule = async (id: string) => {
         (ruleId) => ruleId !== id,
       );
     } catch (error) {
-      console.error('删除规则失败:', error);
+      console.error(t('errors.deleteRuleFailed'), error);
     }
   }
 };
 
 const bulkDeleteRules = async () => {
-  if (confirm(`确定要删除选中的 ${selectedRules.value.length} 个规则吗？`)) {
+  if (
+    confirm(
+      t('websiteManagement.confirmDeleteSelected', {
+        count: selectedRules.value.length,
+      }),
+    )
+  ) {
     try {
       await manager.removeRules(selectedRules.value);
       await loadRules();
       selectedRules.value = [];
       selectAll.value = false;
     } catch (error) {
-      console.error('批量删除规则失败:', error);
+      console.error(t('errors.batchDeleteRulesFailed'), error);
     }
   }
 };
@@ -437,7 +490,7 @@ const toggleRule = async (id: string) => {
     await manager.toggleRule(id);
     await loadRules();
   } catch (error) {
-    console.error('切换规则状态失败:', error);
+    console.error(t('errors.toggleRuleStatusFailed'), error);
   }
 };
 
@@ -447,7 +500,7 @@ const copyToClipboard = async (text: string) => {
     // 这里可以添加一个toast提示
     console.log('已复制到剪贴板:', text);
   } catch (error) {
-    console.error('复制失败:', error);
+    console.error(t('errors.copyFailed'), error);
     // 降级方案
     const textArea = document.createElement('textarea');
     textArea.value = text;

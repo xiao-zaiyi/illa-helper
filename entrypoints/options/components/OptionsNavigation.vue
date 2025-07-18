@@ -27,7 +27,7 @@
             <h4
               class="text-sm font-semibold text-center font-mono bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.8)] animate-flicker relative"
             >
-              浸入式学语言助手 illa-helper
+              {{ $t('options.title') }}
             </h4>
           </div>
           <!-- 移动端关闭按钮 -->
@@ -59,7 +59,7 @@
         <div class="space-y-6">
           <!-- 基础功能组 -->
           <NavigationGroup
-            title="基础功能"
+            :title="$t('options.basicFunctions')"
             :items="basicFeatures"
             :current-section="currentSection"
             @section-change="handleSectionChange"
@@ -67,7 +67,7 @@
 
           <!-- 高级功能组 -->
           <NavigationGroup
-            title="高级功能"
+            :title="$t('options.advancedFunctions')"
             :items="advancedFeatures"
             :current-section="currentSection"
             @section-change="handleSectionChange"
@@ -75,7 +75,7 @@
 
           <!-- 管理工具组 -->
           <NavigationGroup
-            title="管理工具"
+            :title="$t('options.managementTools')"
             :items="managementTools"
             :current-section="currentSection"
             @section-change="handleSectionChange"
@@ -105,6 +105,9 @@ import {
 } from 'lucide-vue-next';
 import NavigationGroup from './NavigationGroup.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 interface Props {
   currentSection: string;
@@ -128,58 +131,58 @@ const isMobile = ref(false);
 const mobileMenuOpen = ref(false);
 
 // 基础功能组
-const basicFeatures: NavigationItem[] = [
+const basicFeatures = computed<NavigationItem[]>(() => [
   {
     key: 'basic',
-    label: '基本设置',
+    label: t('options.navigation.basic'),
     icon: Settings,
-    description: '基础配置和用户偏好',
+    description: t('options.navigation.basicDescription'),
   },
   {
     key: 'floating',
-    label: '悬浮球',
+    label: t('options.navigation.floating'),
     icon: Circle,
-    description: '悬浮工具球配置',
+    description: t('options.navigation.floatingDescription'),
   },
   {
     key: 'hotkey',
-    label: '快捷键',
+    label: t('options.navigation.hotkey'),
     icon: Keyboard,
-    description: '翻译快捷键设置',
+    description: t('options.navigation.hotkeyDescription'),
   },
-];
+]);
 
 // 高级功能组
-const advancedFeatures: NavigationItem[] = [
+const advancedFeatures = computed<NavigationItem[]>(() => [
   {
     key: 'translation',
-    label: '翻译服务',
+    label: t('options.navigation.translation'),
     icon: Languages,
-    description: 'API配置和翻译策略',
+    description: t('options.navigation.translationDescription'),
   },
-];
+]);
 
 // 管理工具组
-const managementTools: NavigationItem[] = [
+const managementTools = computed<NavigationItem[]>(() => [
   {
     key: 'website-management',
-    label: '网站管理',
+    label: t('options.navigation.websiteManagement'),
     icon: Shield,
-    description: '黑名单和白名单管理',
+    description: t('options.navigation.websiteManagementDescription'),
   },
   {
     key: 'data',
-    label: '导入/导出',
+    label: t('options.navigation.data'),
     icon: Download,
-    description: '配置备份和恢复',
+    description: t('options.navigation.dataDescription'),
   },
   {
     key: 'about',
-    label: '关于',
+    label: t('options.navigation.about'),
     icon: Info,
-    description: '版本信息和帮助',
+    description: t('options.navigation.aboutDescription'),
   },
-];
+]);
 
 const handleLogoClick = () => {
   window.open('https://illa.xlike.cc', '_blank');
