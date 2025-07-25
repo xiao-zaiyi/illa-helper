@@ -9,6 +9,7 @@ import type {
   TriggerMode,
   OriginalWordDisplayMode,
   TranslationPosition,
+  TranslationMode,
   ContextMenuActionType,
   UrlPatternType,
   LazyLoadingConfig,
@@ -26,6 +27,7 @@ export interface UserSettings {
   apiConfigs: ApiConfigItem[];
   activeApiConfigId: string;
   translationStyle: TranslationStyle;
+  translationMode: TranslationMode;
   triggerMode: TriggerMode;
   maxLength?: number;
   originalWordDisplayMode: OriginalWordDisplayMode;

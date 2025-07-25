@@ -153,6 +153,59 @@
           </RadioGroup>
         </div>
 
+        <!-- 翻译模式选择 -->
+        <div class="border-t border-border pt-6">
+          <div class="space-y-1">
+            <Label>{{ $t('basicSettings.translationMode') }}</Label>
+            <p class="text-xs text-muted-foreground">
+              {{ $t('basicSettings.translationModeDescription') }}
+            </p>
+          </div>
+          <div class="mt-2">
+            <RadioGroup
+              :model-value="settings.translationMode"
+              @update:model-value="
+                settings.translationMode = $event as TranslationMode
+              "
+            >
+              <div class="space-y-3">
+                <div class="flex items-start space-x-2">
+                  <RadioGroupItem id="mode-word" value="word" />
+                  <div class="grid gap-1.5 leading-none">
+                    <Label
+                      for="mode-word"
+                      class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {{ $t('basicSettings.translationModes.word') }}
+                    </Label>
+                    <p class="text-xs text-muted-foreground">
+                      {{ $t('basicSettings.translationModes.wordDescription') }}
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-start space-x-2">
+                  <RadioGroupItem id="mode-paragraph" value="paragraph" />
+                  <div class="grid gap-1.5 leading-none">
+                    <Label
+                      for="mode-paragraph"
+                      class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {{ $t('basicSettings.translationModes.paragraph') }}
+                    </Label>
+                    <p class="text-xs text-muted-foreground">
+                      {{
+                        $t(
+                          'basicSettings.translationModes.paragraphDescription',
+                        )
+                      }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </RadioGroup>
+          </div>
+        </div>
+
         <div>
           <Label
             for="translation-style"
@@ -195,6 +248,7 @@
                 <SelectItem value="learning">
                   {{ $t('basicSettings.styles.learning') }}
                 </SelectItem>
+
                 <SelectItem value="custom">
                   {{ $t('basicSettings.styles.custom') }}
                 </SelectItem>
@@ -437,6 +491,7 @@ import {
   DEFAULT_SETTINGS,
   TranslationPosition,
   TranslationStyle,
+  TranslationMode,
 } from '@/src/modules/shared/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';

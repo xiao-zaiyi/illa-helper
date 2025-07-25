@@ -218,6 +218,7 @@
       "highlighted": "Highlighted",
       "dotted": "Dotted",
       "learning": "Learning Mode",
+      
       "custom": "Custom"
     },
     "customCSSPlaceholder": "e.g., color: #ff0000; font-weight: bold; background-color: #f0f0f0;",
@@ -235,6 +236,15 @@
     "userLevel": "Word Familiarity",
     "selectUserLevel": "Please select your language level",
     "replacementRate": "Replacement Rate",
+    "translationMode": "Translation Mode",
+    "translationModeDescription": "Choose translation method: word mode (partial replacement) or paragraph mode (full translation)",
+    "translationModes": {
+      "word": "Word Translation Mode",
+      "wordDescription": "Intelligently select partial words for translation, maintaining original text structure, suitable for language learning",
+      "paragraph": "Paragraph Translation Mode",
+      "paragraphDescription": "Translate entire paragraphs, displaying complete translations, suitable for content comprehension"
+    },
+
     "lazyLoading": {
       "title": "Lazy Loading Settings",
       "enabled": "Enable Lazy Loading",

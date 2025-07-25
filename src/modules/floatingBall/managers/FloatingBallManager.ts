@@ -12,6 +12,7 @@ import {
   MENU_ACTIONS,
 } from '../config';
 import { safeSetInnerHTML } from '@/src/utils';
+import { StorageService } from '../../core/storage';
 
 export class FloatingBallManager {
   private config: FloatingBallConfig;
@@ -22,6 +23,8 @@ export class FloatingBallManager {
   private ballStartY = 0;
   private onTranslateCallback?: () => void;
   private savePositionTimer: number | null = null;
+
+  private storageService: StorageService;
   // 事件监听器引用管理
   private eventListeners: Array<{
     target: EventTarget;
@@ -45,6 +48,9 @@ export class FloatingBallManager {
       isMenuExpanded: false,
       currentPosition: config.position,
     };
+
+    // 初始化服务
+    this.storageService = StorageService.getInstance();
 
     // 初始化触摸设备检测
     this.isTouchDevice =
@@ -1284,6 +1290,47 @@ export class FloatingBallManager {
     }
 
     this.ballElement.title = `${modeText}`;
+  }
+
+  /**
+   * 显示通知消息
+   */
+  private showNotification(message: string): void {
+    // 创建简单的通知提示
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #333;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 10001;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      max-width: 300px;
+      word-wrap: break-word;
+    `;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    // 显示动画
+    setTimeout(() => {
+      notification.style.opacity = '1';
+    }, 10);
+
+    // 3秒后自动消失
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 3000);
   }
 
   /**

@@ -6,6 +6,7 @@
 import { ApiServiceFactory } from '../../api';
 import { StyleManager } from '../../styles';
 import { StorageService } from '../storage';
+
 // 替换结果接口
 export interface ReplacementResult {
   original: string; // 原始文本

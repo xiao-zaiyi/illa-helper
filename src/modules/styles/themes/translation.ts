@@ -83,4 +83,11 @@ a .wxt-original-word--learning:hover,
 a:hover .wxt-original-word--learning {
   filter: blur(0) !important;
 }
+
+
+
+/* 段落翻译兼容性样式 - 仅保留翻译状态控制 */
+.wxt-translation-hidden .illa-paragraph-translation {
+  display: none !important;
+}
 `;

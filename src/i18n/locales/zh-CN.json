@@ -218,6 +218,7 @@
       "highlighted": "高亮",
       "dotted": "点画线",
       "learning": "学习模式",
+      
       "custom": "自定义"
     },
     "customCSSPlaceholder": "例如: color: #ff0000; font-weight: bold; background-color: #f0f0f0;",
@@ -235,6 +236,15 @@
     "userLevel": "单词熟悉度",
     "selectUserLevel": "请选择您的语言水平",
     "replacementRate": "替换率",
+    "translationMode": "翻译模式",
+    "translationModeDescription": "选择翻译方式：单词模式（部分替换）或段落模式（整段翻译）",
+    "translationModes": {
+      "word": "单词翻译模式",
+      "wordDescription": "智能选择部分单词进行翻译，保持原文结构，适合语言学习",
+      "paragraph": "段落翻译模式", 
+      "paragraphDescription": "翻译整个段落，显示完整译文，适合内容理解"
+    },
+
     "lazyLoading": {
       "title": "懒加载设置",
       "enabled": "启用懒加载翻译",

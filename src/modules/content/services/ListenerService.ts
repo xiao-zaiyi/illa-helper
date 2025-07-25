@@ -3,6 +3,7 @@ import { ProcessingService } from './ProcessingService';
 import { ConfigurationService } from './ConfigurationService';
 import { StyleManager } from '@/src/modules/styles';
 import { TextReplacerService } from '@/src/modules/core/translation/TextReplacerService';
+import { ParagraphTranslationService } from '@/src/modules/core/translation/ParagraphTranslationService';
 import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { IListenerService } from '../types';
 import { isProcessingResultNode, isDescendant } from '../utils/domUtils';
@@ -17,6 +18,7 @@ export class ListenerService implements IListenerService {
   private configurationService: ConfigurationService;
   private styleManager: StyleManager;
   private textReplacer: TextReplacerService;
+  private paragraphService: ParagraphTranslationService;
   private floatingBallManager: FloatingBallManager;
   private translationStateManager: TranslationStateManager;
   private domObserver?: MutationObserver;
@@ -36,6 +38,7 @@ export class ListenerService implements IListenerService {
     this.configurationService = configurationService;
     this.styleManager = styleManager;
     this.textReplacer = textReplacer;
+    this.paragraphService = ParagraphTranslationService.getInstance();
     this.floatingBallManager = floatingBallManager;
     this.translationStateManager = translationStateManager;
   }

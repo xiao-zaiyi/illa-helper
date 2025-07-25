@@ -1,8 +1,11 @@
 import { browser } from 'wxt/browser';
 import { UserSettings, TriggerMode } from '@/src/modules/shared/types';
+import { TranslationMode } from '@/src/modules/shared/types/core';
 import { StyleManager } from '@/src/modules/styles';
 import { TextProcessorService } from '@/src/modules/core/translation/TextProcessorService';
 import { TextReplacerService } from '@/src/modules/core/translation/TextReplacerService';
+import { ParagraphTranslationService } from '@/src/modules/core/translation/ParagraphTranslationService';
+
 import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
 
@@ -35,6 +38,9 @@ export class TranslationStateManager {
   /** 页面处理服务引用 */
   private processingService?: ProcessingService;
 
+  /** 段落翻译服务引用 */
+  private paragraphTranslationService?: ParagraphTranslationService;
+
   /** 悬浮球管理器引用 */
   private floatingBallManager?: any;
 
@@ -47,9 +53,11 @@ export class TranslationStateManager {
   constructor(
     processingService?: ProcessingService,
     floatingBallManager?: any,
+    paragraphTranslationService?: ParagraphTranslationService,
   ) {
     this.processingService = processingService;
     this.floatingBallManager = floatingBallManager;
+    this.paragraphTranslationService = paragraphTranslationService;
   }
 
   /**
@@ -80,9 +88,24 @@ export class TranslationStateManager {
    * @private
    */
   private async executeTranslation(): Promise<void> {
-    if (this.processingService) {
-      await this.processingService.processPage();
+    // 获取用户设置来确定翻译模式
+    const storageService = (
+      await import('../core/storage/StorageService')
+    ).StorageService.getInstance();
+    const settings = await storageService.getUserSettings();
+
+    if (settings.translationMode === TranslationMode.PARAGRAPH) {
+      // 段落翻译模式：使用段落翻译服务
+      if (this.paragraphTranslationService) {
+        await this.paragraphTranslationService.start();
+      }
+    } else {
+      // 单词翻译模式：使用原有的处理服务
+      if (this.processingService) {
+        await this.processingService.processPage();
+      }
     }
+
     this.isTranslationVisible = true;
     document.body.classList.remove(this.HIDDEN_CLASS);
   }
@@ -116,7 +139,15 @@ export class TranslationStateManager {
    * @private
    */
   private hasTranslatedContent(): boolean {
-    return document.querySelector(this.TRANSLATION_SELECTOR) !== null;
+    // 检查单词翻译内容
+    const hasWordTranslation =
+      document.querySelector(this.TRANSLATION_SELECTOR) !== null;
+
+    // 检查段落翻译内容
+    const hasParagraphTranslation =
+      document.querySelector('.illa-paragraph-translation') !== null;
+
+    return hasWordTranslation || hasParagraphTranslation;
   }
 
   /**
@@ -124,6 +155,25 @@ export class TranslationStateManager {
    */
   getTranslationVisibility(): boolean {
     return this.isTranslationVisible;
+  }
+
+  /**
+   * 清除所有翻译内容（包括段落翻译）
+   */
+  public clearAllTranslations(): void {
+    try {
+      // 清除段落翻译
+      if (this.paragraphTranslationService) {
+        this.paragraphTranslationService.clearAllTranslations();
+      }
+
+      // 清除单词翻译 - 通过重新加载页面或其他方式
+      // 这里可以根据需要添加单词翻译的清除逻辑
+
+      console.log('[ContentManager] 所有翻译已清除');
+    } catch (error) {
+      console.error('[ContentManager] 清除翻译失败:', error);
+    }
   }
 
   /**
@@ -337,12 +387,16 @@ export class ContentManager implements IContentManager {
       this.configurationService.createReplacementConfig(optimizedSettings),
     );
 
+    // 创建懒加载服务
+    const lazyLoadingService = this.initializeLazyLoading(this.settings);
+
+    // 初始化段落翻译服务，传递懒加载服务
+    const paragraphTranslationService =
+      ParagraphTranslationService.getInstance(lazyLoadingService);
+
     const floatingBallManager = new FloatingBallManager(
       this.settings.floatingBall,
     );
-
-    // 创建懒加载服务
-    const lazyLoadingService = this.initializeLazyLoading(this.settings);
 
     // 保存服务容器
     this.services = {
@@ -351,6 +405,7 @@ export class ContentManager implements IContentManager {
       textReplacer,
       floatingBallManager,
       lazyLoadingService,
+      paragraphTranslationService, // 添加段落翻译服务
     };
 
     // 创建业务服务
@@ -365,6 +420,7 @@ export class ContentManager implements IContentManager {
     this.translationStateManager = new TranslationStateManager(
       this.processingService,
       this.services.floatingBallManager,
+      this.services.paragraphTranslationService, // 直接传入段落翻译服务
     );
 
     this.listenerService = new ListenerService(

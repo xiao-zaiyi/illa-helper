@@ -17,6 +17,7 @@ import {
   TriggerMode,
   OriginalWordDisplayMode,
   TranslationPosition,
+  TranslationMode,
 } from '../types/core';
 
 // 默认API配置
@@ -83,6 +84,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   apiConfigs: [createDefaultApiConfigItem()],
   activeApiConfigId: 'default-config',
   translationStyle: TranslationStyle.DEFAULT,
+  translationMode: TranslationMode.WORD,
   triggerMode: TriggerMode.MANUAL,
   maxLength: 400,
   originalWordDisplayMode: OriginalWordDisplayMode.VISIBLE,

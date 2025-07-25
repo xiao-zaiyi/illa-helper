@@ -46,6 +46,7 @@ export class StyleManager {
     if (this.currentStyle === TranslationStyle.CUSTOM) {
       return 'wxt-style-custom';
     }
+
     return `wxt-style-${this.currentStyle}`;
   }
 

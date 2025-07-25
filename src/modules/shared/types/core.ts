@@ -75,6 +75,12 @@ export enum TranslationPosition {
   AFTER = 'after',
 }
 
+// 翻译模式枚举
+export enum TranslationMode {
+  WORD = 'word', // 单词/短语翻译模式（当前）
+  PARAGRAPH = 'paragraph', // 段落翻译模式（新增）
+}
+
 // 翻译服务提供商枚举
 export enum TranslationProvider {
   OpenAI = 'OpenAI',
