@@ -1,7 +1,6 @@
 {
   "app": {
-    "title": "illa-helper",
-    "subtitle": "Intelligent Language Learning Assistant"
+    "title": "illa-helper"
   },
   "common": {
     "tip": "💡",
@@ -29,8 +28,7 @@
     "notifyConfigChangeFailed": "Failed to notify configuration change",
     "saveSettingsFailed": "Failed to save settings",
     "getHotkeyFailed": "Failed to get current hotkey",
-    "checkHotkeyFailed": "Failed to check hotkey status",
-    "unknownError": "Unknown error"
+    "checkHotkeyFailed": "Failed to check hotkey status"
   },
   "settings": {
     "selectLanguageFirst": "Please select a language first",
@@ -42,7 +40,6 @@
     "translate": "Translate"
   },
   "language": {
-    "select": "Select Language",
     "nativeLanguage": "Native Language",
     "targetLanguage": "Target Language",
     "languageLevel": "Language Level",
@@ -85,17 +82,10 @@
   },
   "replacement": {
     "rate": "Replacement Rate",
-    "maxLength": "Max Length",
-    "note": "Higher values capture more paragraphs but increase resource consumption"
+    "maxLength": "Max Length"
   },
-  "pronunciation": {
-    "tooltip": "Pronunciation Tooltip",
-    "hotkey": "Ctrl+Mouse Hover"
-  },
-  "floatingBall": {
-    "title": "Floating Translation Ball",
-    "opacity": "Opacity"
-  },
+  "pronunciation": {},
+  "floatingBall": {},
   "lazyLoading": {
     "title": "Lazy Loading Translation",
     "enabled": "Enable Lazy Loading",
@@ -218,7 +208,6 @@
       "highlighted": "Highlighted",
       "dotted": "Dotted",
       "learning": "Learning Mode",
-      
       "custom": "Custom"
     },
     "customCSSPlaceholder": "e.g., color: #ff0000; font-weight: bold; background-color: #f0f0f0;",
@@ -244,18 +233,7 @@
       "paragraph": "Paragraph Translation Mode",
       "paragraphDescription": "Translate entire paragraphs, displaying complete translations, suitable for content comprehension"
     },
-
-    "lazyLoading": {
-      "title": "Lazy Loading Settings",
-      "enabled": "Enable Lazy Loading",
-      "description": "Translate paragraphs only when they are scrolled into view, reducing resource consumption and improving performance.",
-      "preloadDistance": "Preload Distance",
-      "preloadDistanceHint": "Higher values can capture more paragraphs but will increase resource consumption. Recommended range: 50%-100%",
-      "performanceHintTitle": "Performance Tip",
-      "performanceHintEnabled": "Lazy loading is enabled. Content will be translated on-demand as you scroll, effectively reducing memory usage and improving page load speed.",
-      "performanceHintDisabled": "Lazy loading is disabled. The entire page will be translated at once. It's recommended to enable lazy loading on content-heavy pages.",
-      "settingsSaved": "Settings saved"
-    }
+    "lazyLoading": {}
   },
   "hotkeySettings": {
     "title": "Hotkey Settings",
@@ -449,7 +427,6 @@
     }
   },
   "appearanceSettings": {
-    "title": "Appearance Settings",
     "floatingBall": {
       "title": "Floating Ball Settings",
       "enabled": "Enable Floating Ball",

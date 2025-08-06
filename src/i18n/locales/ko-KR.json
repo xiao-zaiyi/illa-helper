@@ -1,7 +1,6 @@
 {
   "app": {
-    "title": "illa-helper",
-    "subtitle": "지능형 언어 학습 도우미"
+    "title": "illa-helper"
   },
   "common": {
     "tip": "💡",
@@ -29,8 +28,7 @@
     "notifyConfigChangeFailed": "구성 변경 알림 실패",
     "saveSettingsFailed": "설정 저장 실패",
     "getHotkeyFailed": "현재 단축키 가져오기 실패",
-    "checkHotkeyFailed": "단축키 상태 확인 실패",
-    "unknownError": "알 수 없는 오류"
+    "checkHotkeyFailed": "단축키 상태 확인 실패"
   },
   "settings": {
     "selectLanguageFirst": "먼저 언어를 선택하세요",
@@ -42,7 +40,6 @@
     "translate": "번역"
   },
   "language": {
-    "select": "언어 선택",
     "nativeLanguage": "모국어",
     "targetLanguage": "목표 언어",
     "languageLevel": "언어 수준",
@@ -85,17 +82,10 @@
   },
   "replacement": {
     "rate": "대체 비율",
-    "maxLength": "최대 길이",
-    "note": "값이 높을수록 더 많은 단락을 처리하지만 리소스 소모가 증가합니다."
+    "maxLength": "최대 길이"
   },
-  "pronunciation": {
-    "tooltip": "발음 팁",
-    "hotkey": "Ctrl+마우스 오버"
-  },
-  "floatingBall": {
-    "title": "플로팅 번역 볼",
-    "opacity": "투명도"
-  },
+  "pronunciation": {},
+  "floatingBall": {},
   "lazyLoading": {
     "title": "지연 로딩 번역",
     "enabled": "지연 로딩 번역 활성화",
@@ -235,17 +225,15 @@
     "userLevel": "단어 숙련도",
     "selectUserLevel": "언어 수준을 선택하세요",
     "replacementRate": "대체율",
-    "lazyLoading": {
-      "title": "지연 로딩 설정",
-      "enabled": "지연 로딩 번역 활성화",
-      "description": "단락으로 스크롤할 때만 번역하여 리소스 소모를 줄이고 성능을 향상시킵니다.",
-      "preloadDistance": "미리 로드 거리",
-      "preloadDistanceHint": "값이 높을수록 더 많은 단락을 처리하지만 리소스 소모가 증가합니다. 권장 범위: 50%-100%",
-      "performanceHintTitle": "성능 팁",
-      "performanceHintEnabled": "지연 로딩이 활성화되었습니다. 스크롤할 때 필요에 따라 콘텐츠를 번역하여 메모리 사용량을 효과적으로 줄이고 페이지 로딩 속도를 향상시킵니다.",
-      "performanceHintDisabled": "지연 로딩이 비활성화되었습니다. 전체 페이지를 한 번에 번역합니다. 콘텐츠가 많은 페이지에서는 지연 로딩을 활성화하는 것이 좋습니다.",
-      "settingsSaved": "설정이 저장되었습니다"
-    }
+    "translationMode": "번역 모드",
+    "translationModeDescription": "번역 방법 선택: 단어 모드 (부분 대체) 또는 단락 모드 (전체 번역)",
+    "translationModes": {
+      "word": "단어 번역 모드",
+      "wordDescription": "지능적으로 부분 단어를 선택하여 번역하고 원문 구조를 유지하며, 언어 학습에 적합",
+      "paragraph": "단락 번역 모드",
+      "paragraphDescription": "전체 문단을 번역하고, 전체 번역문을 표시하여 내용을 이해하기 쉽게 해 주세요."
+    },
+    "lazyLoading": {}
   },
   "hotkeySettings": {
     "title": "단축키 설정",
@@ -439,7 +427,6 @@
     }
   },
   "appearanceSettings": {
-    "title": "외형 설정",
     "floatingBall": {
       "title": "플로팅 볼 설정",
       "enabled": "플로팅 볼 활성화",

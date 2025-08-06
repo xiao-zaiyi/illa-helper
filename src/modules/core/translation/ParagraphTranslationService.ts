@@ -154,41 +154,122 @@ export class ParagraphTranslationService {
   }
 
   /**
-   * 查找段落元素
+   * 查找段落元素 - 沉浸式翻译风格
+   * 智能识别页面中的文本内容块，类似沉浸式翻译的元素识别逻辑
    */
   private findParagraphElements(): HTMLElement[] {
-    // 只选择最核心的内容元素
-    const paragraphSelectors = [
-      'p',
-      'h1',
-      'h2',
-      'h3',
-      'h4',
-      'h5',
-      'h6',
-      'blockquote',
-      'li',
+    const elements: HTMLElement[] = [];
+    const processedElements = new Set<HTMLElement>();
+
+    // 沉浸式翻译风格的选择器 - 按优先级排序
+    const selectorGroups = [
+      // 主要内容区域
+      {
+        selectors: [
+          'main p',
+          'article p',
+          '[role="main"] p',
+          '.content p',
+          '.article p',
+        ],
+        priority: 1,
+      },
+      // 标题元素
+      {
+        selectors: [
+          'main h1',
+          'main h2',
+          'main h3',
+          'main h4',
+          'main h5',
+          'main h6',
+          'article h1',
+          'article h2',
+          'article h3',
+          'article h4',
+          'article h5',
+          'article h6',
+        ],
+        priority: 1,
+      },
+      // 引用和特殊文本
+      {
+        selectors: ['blockquote', 'figcaption', '.caption', '[data-caption]'],
+        priority: 2,
+      },
+      // 列表项（避免嵌套列表）
+      {
+        selectors: ['li:not(:has(ul)):not(:has(ol))', 'dd', 'dt'],
+        priority: 3,
+      },
+      // 通用段落（降级选择）
+      {
+        selectors: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+        priority: 4,
+      },
+      // 其他文本容器
+      {
+        selectors: [
+          'div:not(:has(p)):not(:has(h1)):not(:has(h2)):not(:has(h3)):not(:has(h4)):not(:has(h5)):not(:has(h6))',
+          'span:not(:has(p)):not(:has(div))',
+        ],
+        priority: 5,
+      },
     ];
 
-    const elements: HTMLElement[] = [];
-
-    // 遍历所有段落选择器
-    for (const selector of paragraphSelectors) {
-      const foundElements = document.querySelectorAll<HTMLElement>(selector);
-      for (const element of foundElements) {
-        // 检查元素是否应该被翻译
-        if (this.shouldTranslateElement(element)) {
-          elements.push(element);
+    // 按优先级处理选择器组
+    for (const group of selectorGroups) {
+      for (const selector of group.selectors) {
+        try {
+          const foundElements =
+            document.querySelectorAll<HTMLElement>(selector);
+          for (const element of foundElements) {
+            // 避免重复处理和父子元素冲突
+            if (
+              !processedElements.has(element) &&
+              !this.hasProcessedAncestor(element, processedElements)
+            ) {
+              if (this.shouldTranslateElement(element)) {
+                elements.push(element);
+                processedElements.add(element);
+              }
+            }
+          }
+        } catch (error) {
+          console.warn(`[段落翻译] 选择器 "${selector}" 执行失败:`, error);
         }
       }
     }
+
+    // 按文档顺序排序
+    elements.sort((a, b) => {
+      const position = a.compareDocumentPosition(b);
+      return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
 
     console.log('[段落翻译] 找到段落元素数量:', elements.length);
     return elements;
   }
 
   /**
-   * 判断元素是否应该被翻译
+   * 检查元素是否有已处理的祖先元素
+   */
+  private hasProcessedAncestor(
+    element: HTMLElement,
+    processedElements: Set<HTMLElement>,
+  ): boolean {
+    let parent = element.parentElement;
+    while (parent) {
+      if (processedElements.has(parent)) {
+        return true;
+      }
+      parent = parent.parentElement;
+    }
+    return false;
+  }
+
+  /**
+   * 判断元素是否应该被翻译 - 沉浸式翻译风格的智能过滤
    */
   private shouldTranslateElement(element: HTMLElement): boolean {
     // 跳过已翻译的元素
@@ -206,9 +287,47 @@ export class ParagraphTranslationService {
       return false;
     }
 
-    // 跳过系统元素
-    if (element.closest('script, style, noscript, code, pre')) {
+    // 跳过系统元素和非内容元素
+    if (
+      element.closest(
+        'script, style, noscript, code, pre, nav, menu, .nav, .menu, .navigation, .sidebar, .footer, .header',
+      )
+    ) {
       return false;
+    }
+
+    // 跳过 wxt-floating-menu 及其所有子元素
+    // 检查多种可能的选择器模式
+    if (
+      element.matches(
+        'wxt-floating-menu, wxt-floating-menu *, [data-wxt-floating-menu], [data-wxt-floating-menu] *',
+      )
+    ) {
+      return false;
+    }
+
+    // 检查元素是否在 wxt-floating-menu 内部
+    if (element.closest('wxt-floating-menu, [data-wxt-floating-menu]')) {
+      return false;
+    }
+
+    // 检查包含 wxt 的 id 或 class
+    if (element.id?.includes('wxt') || element.className?.includes('wxt')) {
+      return false;
+    }
+
+    // 检查父元素链中是否有 wxt 相关属性
+    let parent = element.parentElement;
+    while (parent) {
+      if (
+        parent.tagName?.toLowerCase() === 'wxt-floating-menu' ||
+        parent.hasAttribute('data-wxt-floating-menu') ||
+        parent.id?.includes('wxt') ||
+        parent.className?.includes('wxt')
+      ) {
+        return false;
+      }
+      parent = parent.parentElement;
     }
 
     // 跳过可编辑元素
@@ -222,24 +341,75 @@ export class ParagraphTranslationService {
 
     // 跳过隐藏元素
     const style = window.getComputedStyle(element);
-    if (style.display === 'none' || style.visibility === 'hidden') {
+    if (
+      style.display === 'none' ||
+      style.visibility === 'hidden' ||
+      style.opacity === '0'
+    ) {
       return false;
     }
 
-    // 检查是否有文本内容
+    // 跳过尺寸过小的元素（可能是装饰性元素）
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 20 || rect.height < 10) {
+      return false;
+    }
+
+    // 检查文本内容质量
     const textContent = element.textContent?.trim();
-    if (!textContent || textContent.length < 10) {
+    if (!textContent) {
       return false;
     }
 
-    // 跳过太长的内容（可能是整个页面内容）
-    if (textContent.length > 1000) {
+    // 改进的文本长度判断 - 沉浸式翻译通常处理更短的文本
+    if (textContent.length < 3) {
       return false;
     }
 
-    // 跳过包含太多数字的内容
+    // 提高最大长度限制，支持更长的段落
+    if (textContent.length > 3000) {
+      return false;
+    }
+
+    // 跳过纯数字或简单符号
+    if (/^[\d\s\.\,\!\?\-\+\=\(\)\[\]\{\}]*$/.test(textContent)) {
+      return false;
+    }
+
+    // 跳过过多数字的内容（但比之前更宽松）
     const digitCount = (textContent.match(/\d/g) || []).length;
-    if (digitCount > textContent.length * 0.3) {
+    if (digitCount > textContent.length * 0.5) {
+      return false;
+    }
+
+    // 跳过重复字符过多的内容
+    const uniqueChars = new Set(textContent.toLowerCase().replace(/\s/g, ''))
+      .size;
+    if (uniqueChars < 3) {
+      return false;
+    }
+
+    // 检查是否为链接文本（通常较短，可能不需要翻译）
+    if (element.tagName.toLowerCase() === 'a' && textContent.length < 20) {
+      return false;
+    }
+
+    // 检查是否为按钮文本
+    if (
+      element.tagName.toLowerCase() === 'button' ||
+      element.getAttribute('role') === 'button'
+    ) {
+      return textContent.length > 10; // 只翻译较长的按钮文本
+    }
+
+    // 跳过可能的元数据元素
+    if (
+      element.classList.contains('date') ||
+      element.classList.contains('time') ||
+      element.classList.contains('author') ||
+      element.classList.contains('tag') ||
+      element.classList.contains('category')
+    ) {
       return false;
     }
 
@@ -361,38 +531,62 @@ export class ParagraphTranslationService {
     const tagName = element.tagName.toLowerCase();
     const styleClass = this.styleManager.getCurrentStyleClass();
 
+    // 为了防止显示异常，需要正确处理不同类型的元素
+    let translationElement: HTMLElement;
+
     if (['table', 'td', 'th', 'li'].includes(tagName)) {
       // 内联插入
       const span = document.createElement('span');
       span.classList.add(PARAGRAPH_TRANSLATION.WRAPPER_CLASS, styleClass);
-      span.style.marginLeft = '8px';
+      span.style.cssText = 'margin-left: 8px; display: inline-block;';
       span.textContent = translatedText;
       element.appendChild(span);
+    } else if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
+      // 标题元素：创建同级标题
+      translationElement = document.createElement(tagName);
+      translationElement.classList.add(
+        PARAGRAPH_TRANSLATION.WRAPPER_CLASS,
+        styleClass,
+      );
+      translationElement.textContent = translatedText;
+
+      // 复制原标题的一些样式属性，避免显示异常
+      const computedStyle = window.getComputedStyle(element);
+      translationElement.style.cssText = `
+        margin-top: ${computedStyle.marginTop};
+        margin-bottom: ${computedStyle.marginBottom};
+        font-size: ${computedStyle.fontSize};
+        font-weight: ${computedStyle.fontWeight};
+        line-height: ${computedStyle.lineHeight};
+      `;
+
+      element.parentNode?.insertBefore(translationElement, element.nextSibling);
     } else if (
-      [
-        'h1',
-        'h2',
-        'h3',
-        'h4',
-        'h5',
-        'h6',
-        'p',
-        'div',
-        'blockquote',
-        'section',
-        'article',
-      ].includes(tagName)
+      ['p', 'div', 'blockquote', 'section', 'article'].includes(tagName)
     ) {
-      // 继承父标签
-      const clone = document.createElement(tagName);
-      clone.classList.add(PARAGRAPH_TRANSLATION.WRAPPER_CLASS, styleClass);
-      clone.textContent = translatedText;
-      element.parentNode?.insertBefore(clone, element.nextSibling);
+      // 块级元素：继承原元素类型
+      translationElement = document.createElement(tagName);
+      translationElement.classList.add(
+        PARAGRAPH_TRANSLATION.WRAPPER_CLASS,
+        styleClass,
+      );
+      translationElement.textContent = translatedText;
+
+      // 保持基本的布局属性
+      const computedStyle = window.getComputedStyle(element);
+      translationElement.style.cssText = `
+        margin-top: ${computedStyle.marginTop};
+        margin-bottom: ${computedStyle.marginBottom};
+        padding: ${computedStyle.padding};
+      `;
+
+      element.parentNode?.insertBefore(translationElement, element.nextSibling);
     } else {
-      // 块级插入
+      // 其他元素：使用div包装
       const div = document.createElement('div');
       div.classList.add(PARAGRAPH_TRANSLATION.WRAPPER_CLASS, styleClass);
       div.textContent = translatedText;
+      div.style.cssText = 'margin-top: 0.5em; margin-bottom: 0.5em;';
       element.parentNode?.insertBefore(div, element.nextSibling);
     }
   }

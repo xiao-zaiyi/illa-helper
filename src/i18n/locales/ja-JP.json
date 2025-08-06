@@ -1,7 +1,6 @@
 {
   "app": {
-    "title": "illa-helper",
-    "subtitle": "インテリジェント言語学習アシスタント"
+    "title": "illa-helper"
   },
   "common": {
     "tip": "💡",
@@ -29,8 +28,7 @@
     "notifyConfigChangeFailed": "設定変更の通知に失敗しました",
     "saveSettingsFailed": "設定の保存に失敗しました",
     "getHotkeyFailed": "現在のホットキーの取得に失敗しました",
-    "checkHotkeyFailed": "ホットキーの状態確認に失敗しました",
-    "unknownError": "不明なエラー"
+    "checkHotkeyFailed": "ホットキーの状態確認に失敗しました"
   },
   "settings": {
     "selectLanguageFirst": "まず言語を選択してください",
@@ -42,7 +40,6 @@
     "translate": "翻訳"
   },
   "language": {
-    "select": "言語を選択",
     "nativeLanguage": "母国語",
     "targetLanguage": "目標言語",
     "languageLevel": "言語レベル",
@@ -85,17 +82,10 @@
   },
   "replacement": {
     "rate": "置換率",
-    "maxLength": "最大長",
-    "note": "値を大きくするとより多くの段落をキャプチャできますが、リソース消費が増加します"
+    "maxLength": "最大長"
   },
-  "pronunciation": {
-    "tooltip": "発音ヒント",
-    "hotkey": "Ctrl+マウスホバー"
-  },
-  "floatingBall": {
-    "title": "フローティング翻訳ボール",
-    "opacity": "透明度"
-  },
+  "pronunciation": {},
+  "floatingBall": {},
   "lazyLoading": {
     "title": "遅延読み込み翻訳",
     "enabled": "遅延読み込み翻訳を有効にする",
@@ -235,17 +225,15 @@
     "userLevel": "単語の習熟度",
     "selectUserLevel": "言語レベルを選択してください",
     "replacementRate": "置換率",
-    "lazyLoading": {
-      "title": "遅延読み込み設定",
-      "enabled": "遅延読み込み翻訳を有効にする",
-      "description": "段落までスクロールした時に翻訳を行い、リソース消費を削減しパフォーマンスを向上させます",
-      "preloadDistance": "事前読み込み距離",
-      "preloadDistanceHint": "値を大きくするとより多くの段落をキャプチャできますが、リソース消費が増加します。推奨範囲：50%-100%",
-      "performanceHintTitle": "パフォーマンスヒント",
-      "performanceHintEnabled": "遅延読み込みが有効です。スクロールに応じてコンテンツを翻訳し、メモリ使用量を効果的に削減し、ページの読み込み速度を向上させます。",
-      "performanceHintDisabled": "遅延読み込みが無効です。ページ全体を一度に翻訳します。コンテンツの多いページでは遅延読み込みを有効にすることをお勧めします。",
-      "settingsSaved": "設定が保存されました"
-    }
+    "translationMode": "翻訳モード",
+    "translationModeDescription": "翻訳方法を選択：単語モード（部分置換）または段落モード（全文翻訳）",
+    "translationModes": {
+      "word": "単語翻訳モード",
+      "wordDescription": "部分的な単語を知的に選択して翻訳し、原文の構造を維持、言語学習に適している",
+      "paragraph": "段落翻訳モード",
+      "paragraphDescription": "全文を翻訳し、完全な訳文を表示して、内容を理解しやすくしてください。"
+    },
+    "lazyLoading": {}
   },
   "hotkeySettings": {
     "title": "ホットキー設定",
@@ -439,7 +427,6 @@
     }
   },
   "appearanceSettings": {
-    "title": "外観設定",
     "floatingBall": {
       "title": "フローティングボール設定",
       "enabled": "フローティングボールを有効にする",

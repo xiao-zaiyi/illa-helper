@@ -1,7 +1,6 @@
 {
   "app": {
-    "title": "illa-helper",
-    "subtitle": "智能语言学习助手"
+    "title": "illa-helper"
   },
   "common": {
     "tip": "💡",
@@ -29,8 +28,7 @@
     "notifyConfigChangeFailed": "通知配置更改失败",
     "saveSettingsFailed": "保存设置失败",
     "getHotkeyFailed": "获取当前快捷键失败",
-    "checkHotkeyFailed": "检查快捷键状态失败",
-    "unknownError": "未知错误"
+    "checkHotkeyFailed": "检查快捷键状态失败"
   },
   "settings": {
     "selectLanguageFirst": "请先选择语言",
@@ -42,7 +40,6 @@
     "translate": "翻译"
   },
   "language": {
-    "select": "选择语言",
     "nativeLanguage": "母语",
     "targetLanguage": "目标语言",
     "languageLevel": "语言水平",
@@ -85,17 +82,10 @@
   },
   "replacement": {
     "rate": "替换比例",
-    "maxLength": "最大长度",
-    "note": "较高值可捕获更多段落，但会增加资源消耗"
+    "maxLength": "最大长度"
   },
-  "pronunciation": {
-    "tooltip": "发音提示",
-    "hotkey": "Ctrl+鼠标悬停"
-  },
-  "floatingBall": {
-    "title": "悬浮翻译球",
-    "opacity": "透明度"
-  },
+  "pronunciation": {},
+  "floatingBall": {},
   "lazyLoading": {
     "title": "懒加载翻译",
     "enabled": "启用懒加载翻译",
@@ -218,7 +208,6 @@
       "highlighted": "高亮",
       "dotted": "点画线",
       "learning": "学习模式",
-      
       "custom": "自定义"
     },
     "customCSSPlaceholder": "例如: color: #ff0000; font-weight: bold; background-color: #f0f0f0;",
@@ -241,21 +230,10 @@
     "translationModes": {
       "word": "单词翻译模式",
       "wordDescription": "智能选择部分单词进行翻译，保持原文结构，适合语言学习",
-      "paragraph": "段落翻译模式", 
+      "paragraph": "段落翻译模式",
       "paragraphDescription": "翻译整个段落，显示完整译文，适合内容理解"
     },
-
-    "lazyLoading": {
-      "title": "懒加载设置",
-      "enabled": "启用懒加载翻译",
-      "description": "滚动到段落时才进行翻译，减少资源消耗和提高性能",
-      "preloadDistance": "预加载距离",
-      "preloadDistanceHint": "较高的值可以捕获更多段落，但会增加资源消耗。推荐范围：50%-100%",
-      "performanceHintTitle": "性能提示",
-      "performanceHintEnabled": "懒加载已启用，将在您滚动时按需翻译内容，有效减少内存使用和提高页面加载速度。",
-      "performanceHintDisabled": "懒加载未启用，将一次性翻译整个页面。建议在内容较多的页面开启懒加载。",
-      "settingsSaved": "设置已保存"
-    }
+    "lazyLoading": {}
   },
   "hotkeySettings": {
     "title": "快捷键设置",
@@ -449,7 +427,6 @@
     }
   },
   "appearanceSettings": {
-    "title": "外观设置",
     "floatingBall": {
       "title": "悬浮球设置",
       "enabled": "启用悬浮球",

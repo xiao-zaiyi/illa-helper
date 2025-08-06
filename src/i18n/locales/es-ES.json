@@ -1,7 +1,6 @@
 {
   "app": {
-    "title": "illa-helper",
-    "subtitle": "Asistente Inteligente de Aprendizaje de Idiomas"
+    "title": "illa-helper"
   },
   "common": {
     "tip": "💡",
@@ -29,8 +28,7 @@
     "notifyConfigChangeFailed": "Error al notificar el cambio de configuración",
     "saveSettingsFailed": "Error al guardar los ajustes",
     "getHotkeyFailed": "Error al obtener el atajo de teclado actual",
-    "checkHotkeyFailed": "Error al comprobar el estado del atajo de teclado",
-    "unknownError": "Error desconocido"
+    "checkHotkeyFailed": "Error al comprobar el estado del atajo de teclado"
   },
   "settings": {
     "selectLanguageFirst": "Por favor, selecciona un idioma primero",
@@ -42,7 +40,6 @@
     "translate": "Traducir"
   },
   "language": {
-    "select": "Seleccionar Idioma",
     "nativeLanguage": "Idioma Nativo",
     "targetLanguage": "Idioma Objetivo",
     "languageLevel": "Nivel de Idioma",
@@ -85,17 +82,10 @@
   },
   "replacement": {
     "rate": "Tasa de Reemplazo",
-    "maxLength": "Longitud Máxima",
-    "note": "Valores más altos capturan más párrafos pero aumentan el consumo de recursos"
+    "maxLength": "Longitud Máxima"
   },
-  "pronunciation": {
-    "tooltip": "Información de Pronunciación",
-    "hotkey": "Ctrl+Pasar el ratón"
-  },
-  "floatingBall": {
-    "title": "Burbuja Flotante de Traducción",
-    "opacity": "Opacidad"
-  },
+  "pronunciation": {},
+  "floatingBall": {},
   "lazyLoading": {
     "title": "Traducción con Carga Diferida (Lazy Loading)",
     "enabled": "Activar Carga Diferida",
@@ -235,17 +225,15 @@
     "userLevel": "Familiaridad con Palabras",
     "selectUserLevel": "Por favor, selecciona tu nivel de idioma",
     "replacementRate": "Tasa de Reemplazo",
-    "lazyLoading": {
-      "title": "Ajustes de Carga Diferida",
-      "enabled": "Activar Carga Diferida",
-      "description": "Traduce los párrafos solo cuando se desplazan a la vista, reduciendo el consumo de recursos y mejorando el rendimiento.",
-      "preloadDistance": "Distancia de Precarga",
-      "preloadDistanceHint": "Valores más altos pueden capturar más párrafos pero aumentarán el consumo de recursos. Rango recomendado: 50%-100%",
-      "performanceHintTitle": "Consejo de Rendimiento",
-      "performanceHintEnabled": "La carga diferida está activada. El contenido se traducirá bajo demanda a medida que te desplaces, reduciendo eficazmente el uso de memoria y mejorando la velocidad de carga de la página.",
-      "performanceHintDisabled": "La carga diferida está desactivada. Se traducirá toda la página de una vez. Se recomienda activar la carga diferida en páginas con mucho contenido.",
-      "settingsSaved": "Ajustes guardados"
-    }
+    "translationMode": "Modo de Traducción",
+    "translationModeDescription": "Selecciona el método de traducción: modo palabra (reemplazo parcial) o modo párrafo (traducción completa)",
+    "translationModes": {
+      "word": "Modo de Traducción de Palabras",
+      "wordDescription": "Selecciona inteligentemente palabras parciales para traducir, manteniendo la estructura del texto original, adecuado para el aprendizaje de idiomas",
+      "paragraph": "Modo de Traducción de Párrafos",
+      "paragraphDescription": "Traduce párrafos completos, mostrando traducciones completas, adecuado para la comprensión de contenido"
+    },
+    "lazyLoading": {}
   },
   "hotkeySettings": {
     "title": "Ajustes de Atajos de Teclado",
@@ -395,6 +383,7 @@
     },
     "versionUpdate": "Actualización de Versión",
     "currentVersion": "Versión Actual: v{version}",
+    "newVersionFound": "New version found: v{version}",
     "latestVersion": "Ya estás en la última versión",
     "lastCheck": "Última comprobación: {time}",
     "checking": "Comprobando...",
@@ -438,7 +427,6 @@
     }
   },
   "appearanceSettings": {
-    "title": "Ajustes de Apariencia",
     "floatingBall": {
       "title": "Ajustes de la Burbuja Flotante",
       "enabled": "Activar Burbuja Flotante",
