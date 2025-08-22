@@ -608,6 +608,17 @@ export class ParagraphTranslationService {
         @keyframes illa-spin {
           100% { transform: rotate(360deg); }
         }
+        /* 确保加载指示器不阻断任何元素的点击事件 */
+        .illa-paragraph-loading {
+          pointer-events: none !important;
+          user-select: none;
+        }
+        /* 特殊处理链接元素的加载指示器 */
+        a + .illa-paragraph-loading {
+          position: relative;
+          z-index: 1;
+          margin-left: 2px;
+        }
       `;
       document.head.appendChild(style);
     }
@@ -615,12 +626,20 @@ export class ParagraphTranslationService {
     const loadingSpan = document.createElement('span');
     loadingSpan.classList.add(this.LOADING_CLASS);
     loadingSpan.innerHTML = this.LOADING_ICON;
+    
+    // 统一的加载指示器样式，由CSS控制pointer-events
     loadingSpan.style.cssText = `
       display: inline-block;
       margin-left: 8px;
       vertical-align: middle;
       opacity: 0.8;
     `;
+    
+    // 特殊处理链接元素：减少间距
+    if (element.tagName.toLowerCase() === 'a') {
+      loadingSpan.style.marginLeft = '4px';
+    }
+    
     element.parentNode?.insertBefore(loadingSpan, element.nextSibling);
   }
 

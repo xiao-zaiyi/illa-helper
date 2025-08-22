@@ -191,6 +191,34 @@ export class TextProcessorService {
         animation: wxt-processing-animation 2s infinite ease-in-out;
         border-radius: 3px;
         transition: background-color 0.3s ease-out;
+        pointer-events: none !important;
+      }
+      
+      /* 确保链接元素在处理状态下仍然可以点击 */
+      a.wxt-processing,
+      a.wxt-processing *,
+      .wxt-processing a,
+      .wxt-processing a * {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+      }
+      
+      /* 确保按钮元素在处理状态下仍然可以点击 */
+      button.wxt-processing,
+      button.wxt-processing *,
+      .wxt-processing button,
+      .wxt-processing button * {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+      }
+      
+      /* 确保可点击元素在处理状态下仍然可以点击 */
+      [onclick].wxt-processing,
+      [onclick].wxt-processing *,
+      .wxt-processing [onclick],
+      .wxt-processing [onclick] * {
+        pointer-events: auto !important;
+        cursor: pointer !important;
       }
     `;
 
