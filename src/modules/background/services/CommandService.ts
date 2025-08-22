@@ -114,8 +114,6 @@ export class CommandService {
       await browser.tabs.sendMessage(tabs[0].id, {
         type: 'translate-page-command',
       });
-
-      console.log('[CommandService] 翻译页面命令已发送');
       return {
         success: true,
       };

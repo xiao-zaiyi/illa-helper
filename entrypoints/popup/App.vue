@@ -161,14 +161,16 @@ const showSavedMessage = (message: string) => {
   setTimeout(() => (saveMessage.value = ''), 2000);
 };
 
-const manualTranslate = async () => {
+const handleTranslate = async () => {
   try {
     const tabs = await browser.tabs.query({
       active: true,
       currentWindow: true,
     });
     if (tabs[0]?.id) {
-      await browser.tabs.sendMessage(tabs[0].id, { type: 'MANUAL_TRANSLATE' });
+      await browser.tabs.sendMessage(tabs[0].id, {
+        type: 'translate-page-command',
+      });
     }
   } catch (error) {
     console.error(t('errors.manualTranslateFailed'), error);
@@ -295,8 +297,7 @@ const nativeLanguageOptions = computed(() =>
       </div>
       <div class="header-actions">
         <button
-          v-if="settings.triggerMode === 'manual'"
-          @click="manualTranslate"
+          @click="handleTranslate"
           class="manual-translate-btn"
           :title="$t('actions.translate')"
         >

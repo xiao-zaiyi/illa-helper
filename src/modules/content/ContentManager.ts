@@ -166,11 +166,6 @@ export class TranslationStateManager {
       if (this.paragraphTranslationService) {
         this.paragraphTranslationService.clearAllTranslations();
       }
-
-      // 清除单词翻译 - 通过重新加载页面或其他方式
-      // 这里可以根据需要添加单词翻译的清除逻辑
-
-      console.log('[ContentManager] 所有翻译已清除');
     } catch (error) {
       console.error('[ContentManager] 清除翻译失败:', error);
     }
@@ -250,8 +245,6 @@ export class ContentManager implements IContentManager {
 
       // 根据触发模式执行初始处理
       await this.handleInitialProcessing(websiteStatus);
-
-      console.log('[ContentManager] 初始化完成');
     } catch (error) {
       console.error('[ContentManager] 初始化失败:', error);
       throw error;

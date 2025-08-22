@@ -13,14 +13,23 @@ const LEGACY_BLACKLIST_KEY = 'blacklist-settings';
 
 export class WebsiteManager {
   private settingsCache: WebsiteManagementSettings | null = null;
+  private cacheTimestamp: number | null = null;
 
   /**
    * 获取网站状态
    */
   async getWebsiteStatus(url: string): Promise<WebsiteStatus> {
-    // 清除缓存确保获取最新状态
-    this.clearCache();
+    console.log(`[WebsiteManager] 获取网站状态: ${url}`);
+
+    // 不立即清除缓存，先检查缓存是否有效
     const settings = await this.getSettings();
+
+    // 添加缓存时间戳检查，如果缓存超过5秒则清除
+    const now = Date.now();
+    if (this.cacheTimestamp && now - this.cacheTimestamp > 5000) {
+      console.log('[WebsiteManager] 缓存过期，清除缓存');
+      this.clearCache();
+    }
 
     // 先检查黑名单规则（优先级最高）
     const blacklistRules = settings.rules.filter(
@@ -29,6 +38,7 @@ export class WebsiteManager {
 
     for (const rule of blacklistRules) {
       if (glob.match(rule.pattern, url)) {
+        console.log(`[WebsiteManager] 匹配黑名单规则: ${rule.pattern}`);
         return 'blacklisted';
       }
     }
@@ -40,10 +50,12 @@ export class WebsiteManager {
 
     for (const rule of whitelistRules) {
       if (glob.match(rule.pattern, url)) {
+        console.log(`[WebsiteManager] 匹配白名单规则: ${rule.pattern}`);
         return 'whitelisted';
       }
     }
 
+    console.log('[WebsiteManager] 网站状态正常');
     return 'normal';
   }
 
@@ -209,6 +221,7 @@ export class WebsiteManager {
           }));
         }
         this.settingsCache = settings;
+        this.cacheTimestamp = Date.now();
         return settings;
       }
 
@@ -268,7 +281,8 @@ export class WebsiteManager {
     try {
       const serializedSettings = JSON.stringify(settings);
       await browser.storage.sync.set({ [STORAGE_KEY]: serializedSettings });
-      this.settingsCache = settings; // 更新缓存
+      this.settingsCache = settings;
+      this.cacheTimestamp = Date.now(); // 更新缓存
     } catch (error) {
       console.error('保存网站管理设置失败:', error);
     }
@@ -286,5 +300,6 @@ export class WebsiteManager {
    */
   clearCache(): void {
     this.settingsCache = null;
+    this.cacheTimestamp = null;
   }
 }

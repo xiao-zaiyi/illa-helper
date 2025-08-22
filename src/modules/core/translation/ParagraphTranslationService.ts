@@ -626,7 +626,7 @@ export class ParagraphTranslationService {
     const loadingSpan = document.createElement('span');
     loadingSpan.classList.add(this.LOADING_CLASS);
     loadingSpan.innerHTML = this.LOADING_ICON;
-    
+
     // 统一的加载指示器样式，由CSS控制pointer-events
     loadingSpan.style.cssText = `
       display: inline-block;
@@ -634,12 +634,12 @@ export class ParagraphTranslationService {
       vertical-align: middle;
       opacity: 0.8;
     `;
-    
+
     // 特殊处理链接元素：减少间距
     if (element.tagName.toLowerCase() === 'a') {
       loadingSpan.style.marginLeft = '4px';
     }
-    
+
     element.parentNode?.insertBefore(loadingSpan, element.nextSibling);
   }
 

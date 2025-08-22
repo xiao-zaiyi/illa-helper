@@ -39,6 +39,11 @@ export class ContextMenuManager {
       browser.tabs.onUpdated.addListener(this.handleTabUpdate.bind(this));
       browser.tabs.onActivated.addListener(this.handleTabActivated.bind(this));
 
+      // 监听导航事件，确保SPA应用路由变化时也能更新菜单
+      browser.webNavigation.onCommitted.addListener(
+        this.handleNavigation.bind(this),
+      );
+
       // 初始化当前标签页的菜单状态
       const tabs = await browser.tabs.query({
         active: true,
@@ -53,10 +58,13 @@ export class ContextMenuManager {
   }
 
   /**
-   * 更新菜单状态（V3兼容版本）
+   * 更新菜单状态（恢复原来的逻辑）
    */
   private async updateMenuState(tabId: number, url: string): Promise<void> {
+    console.log(`[ContextMenu] 更新菜单状态 - TabID: ${tabId}, URL: ${url}`);
+
     if (!url || !url.startsWith('http')) {
+      console.log(`[ContextMenu] 无效URL，隐藏所有菜单: ${url}`);
       await this.hideAllDynamicMenus();
       return;
     }
@@ -65,6 +73,9 @@ export class ContextMenuManager {
       // 验证URL
       const validation = validateUrlForRule(url);
       if (!validation.valid) {
+        console.log(
+          `[ContextMenu] URL验证失败，隐藏所有菜单: ${validation.error || '未知原因'}`,
+        );
         await this.hideAllDynamicMenus();
         return;
       }
@@ -73,7 +84,11 @@ export class ContextMenuManager {
       const websiteStatus = await this.websiteManager.getWebsiteStatus(url);
       const domain = extractDomain(url);
 
-      // 根据网站状态更新菜单可见性
+      console.log(
+        `[ContextMenu] 网站状态 - Domain: ${domain}, Status: ${websiteStatus}`,
+      );
+
+      // 根据网站状态更新菜单可见性和标题
       await this.updateMenuVisibility(url, domain, websiteStatus);
     } catch (error) {
       console.error('[ContextMenu] 更新菜单状态失败:', {
@@ -82,29 +97,15 @@ export class ContextMenuManager {
         tabId,
         stack: error instanceof Error ? error.stack : undefined,
       });
-      await this.hideAllDynamicMenus();
-    }
-  }
-
-  /**
-   * 隐藏所有动态菜单项
-   */
-  private async hideAllDynamicMenus(): Promise<void> {
-    const dynamicMenuIds = [
-      'illa-add-blacklist-domain',
-      'illa-add-blacklist-exact',
-      'illa-remove-blacklist',
-      'illa-add-whitelist-domain',
-      'illa-add-whitelist-exact',
-      'illa-remove-whitelist',
-    ];
-
-    for (const menuId of dynamicMenuIds) {
+      // 不立即隐藏菜单，先重试一次
       try {
-        await browser.contextMenus.update(menuId, { visible: false });
-      } catch (error) {
-        console.error('更新菜单可见性失败:', error);
-        // 忽略更新失败的错误
+        console.log('[ContextMenu] 尝试重新获取网站状态...');
+        const websiteStatus = await this.websiteManager.getWebsiteStatus(url);
+        const domain = extractDomain(url);
+        await this.updateMenuVisibility(url, domain, websiteStatus);
+      } catch (retryError) {
+        console.error('[ContextMenu] 重试失败，隐藏所有菜单:', retryError);
+        await this.hideAllDynamicMenus();
       }
     }
   }
@@ -175,6 +176,29 @@ export class ContextMenuManager {
   }
 
   /**
+   * 隐藏所有动态菜单项
+   */
+  private async hideAllDynamicMenus(): Promise<void> {
+    const dynamicMenuIds = [
+      'illa-add-blacklist-domain',
+      'illa-add-blacklist-exact',
+      'illa-remove-blacklist',
+      'illa-add-whitelist-domain',
+      'illa-add-whitelist-exact',
+      'illa-remove-whitelist',
+    ];
+
+    for (const menuId of dynamicMenuIds) {
+      try {
+        await browser.contextMenus.update(menuId, { visible: false });
+      } catch (error) {
+        console.error('更新菜单可见性失败:', error);
+        // 忽略更新失败的错误
+      }
+    }
+  }
+
+  /**
    * 处理菜单点击事件
    */
   private async handleMenuClick(info: any, tab: any): Promise<void> {
@@ -184,12 +208,18 @@ export class ContextMenuManager {
 
     if (!tab?.url) {
       console.warn('[ContextMenu] 缺少标签页URL信息');
+      this.showNotification('操作失败', '无法获取当前页面信息');
       return;
     }
 
     try {
       const url = tab.url;
       const domain = extractDomain(url);
+
+      // 验证当前URL是否与菜单显示时的URL一致
+      console.log(
+        `[ContextMenu] 处理右键页面 - URL: ${url}, Domain: ${domain}`,
+      );
 
       // 解析菜单ID
       if (info.menuItemId === 'illa-open-settings') {
@@ -375,8 +405,15 @@ export class ContextMenuManager {
     changeInfo: any,
     tab: any,
   ): Promise<void> {
-    // 只在URL变化或加载完成时更新菜单
-    if (changeInfo.url || (changeInfo.status === 'complete' && tab.url)) {
+    // 扩展更新条件：URL变化、加载完成、或者标题变化（SPA应用）
+    if (
+      changeInfo.url ||
+      (changeInfo.status === 'complete' && tab.url) ||
+      changeInfo.title
+    ) {
+      console.log(
+        `[ContextMenu] 标签页更新 - TabID: ${tabId}, URL: ${tab.url}, Status: ${changeInfo.status}`,
+      );
       await this.updateMenuState(tabId, tab.url!);
     }
   }
@@ -393,6 +430,19 @@ export class ContextMenuManager {
     } catch (error) {
       // 忽略获取标签页信息失败的错误
       console.error('处理标签页激活事件失败:', error);
+    }
+  }
+
+  /**
+   * 处理导航事件（用于SPA应用）
+   */
+  private async handleNavigation(details: any): Promise<void> {
+    // 只处理主框架的导航事件
+    if (details.frameId === 0 && details.url) {
+      console.log(
+        `[ContextMenu] 导航事件 - URL: ${details.url}, TabID: ${details.tabId}`,
+      );
+      await this.updateMenuState(details.tabId, details.url);
     }
   }
 }

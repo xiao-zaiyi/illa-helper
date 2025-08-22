@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run lint:*)",
+      "Bash(npm run compile:*)",
+      "Bash(npm run check:*)"
     ],
     "deny": [],
     "ask": []

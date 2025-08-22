@@ -102,6 +102,14 @@ export class ListenerService implements IListenerService {
           await this.processingService.processPage();
         }
       }
+    } else if (message.type === 'PARAGRAPH_TRANSLATE') {
+      const isConfigValid = await browser.runtime.sendMessage({
+        type: 'validate-configuration',
+        source: 'user_action',
+      });
+      if (isConfigValid) {
+        await this.paragraphService.start();
+      }
     }
   }
 

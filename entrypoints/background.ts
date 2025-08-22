@@ -47,8 +47,6 @@ export default defineBackground(() => {
    * 处理扩展安装事件
    */
   browser.runtime.onInstalled.addListener(async (details) => {
-    console.log(`[Background] 安装事件: ${details.reason}`);
-
     try {
       const result = await initializationService.handleInstallation(details);
 
