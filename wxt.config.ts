@@ -22,7 +22,7 @@ export default defineConfig({
     },
     description: `浸入式学语言助手(illa-helper) extension turns browsing into language learning. AI uses "i+1" theory, supports 20+ languages.`,
     version,
-    permissions: ['storage', 'notifications', 'contextMenus', 'activeTab'],
+    permissions: ['storage', 'notifications', 'contextMenus', 'activeTab', 'webNavigation'],
     host_permissions: ['<all_urls>', 'https://api.github.com/*'],
     commands: {
       'translate-page': {
