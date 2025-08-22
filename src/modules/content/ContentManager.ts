@@ -201,7 +201,7 @@ export class ContentManager implements IContentManager {
   private detectedPageLanguage?: string;
   // 新增：最终确定的翻译目标语言
   private finalTargetLanguage?: string;
-
+  private paragraphService = ParagraphTranslationService.getInstance();
   constructor() {
     this.configurationService = new ConfigurationService();
   }
@@ -498,7 +498,14 @@ export class ContentManager implements IContentManager {
       this.settings.triggerMode === TriggerMode.AUTOMATIC
     ) {
       try {
-        await this.processingService.processPage();
+        // 判断是单词模式还有还是段落翻译
+        if (this.settings.translationMode === TranslationMode.PARAGRAPH) {
+          // 段落翻译模式
+          await this.paragraphService.start();
+        } else {
+          // 单词翻译模式
+          await this.processingService.processPage();
+        }
       } catch (error) {
         console.error('[ContentManager] 初始页面处理失败:', error);
       }
