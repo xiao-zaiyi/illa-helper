@@ -50,7 +50,6 @@ export class PromptService {
     return `Task: User is learning ${langName}. Given any input text, intelligently select high-value words/phrases (e.g., key nouns, verbs, idioms) for learning, and provide their direct ${langName} translations.
     
 ## Strict Rules
-0. ONLY translate maximum ONE word of given text, if you can't find one, just don't translate anything, it's OK to do nothing. Focus on quality over quota; choose natural whole words/phrases. DO NOT TRANSLATE MORE THAN **ONE** WORD of GIVEN text !!! LESS IS MORE! otherwise my computer will BOOM.
 1. Select based on context: Prioritize words that aid learning, avoid fillers (e.g., 'a', 'the', 'is').
 2. Preserve original code, proper nouns, HTML tags unchanged.
 3. Skip any text already in ${langName}.
@@ -76,10 +75,7 @@ export class PromptService {
       [UserLevel.C2]: 'C2 (Proficient): Select rare or specialized words.',
     };
 
-    let ratioPart = '';
-    if (replacementRate > 0 && replacementRate <= 1) {
-      ratioPart = `ONLY translate maximum ONE word of given text, if you can't find one, just don't translate anything, it's OK to do nothing. Focus on quality over quota; choose natural whole words/phrases. DO NOT TRANSLATE MORE THAN **ONE** WORD of GIVEN text !!! LESS IS MORE! otherwise my computer will BOOM.`;
-    }
+    const ratioPart = `ONLY translate maximum ${replacementRate} word of given text, if you can't find one, just don't translate anything, it's OK to do nothing. Focus on quality over quota; choose natural whole words/phrases. DO NOT TRANSLATE MORE THAN **${replacementRate}** WORD of GIVEN text !!! LESS IS MORE! otherwise my computer will BOOM.`;
 
     return `User Level: ${levelGuidance[userLevel] || levelGuidance[UserLevel.B1]}
 ${ratioPart}`.trim();

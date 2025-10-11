@@ -370,7 +370,7 @@
         <div class="space-y-2">
           <Label for="replacement-rate">
             {{ $t('basicSettings.replacementRate') }} （{{
-              Math.round(settings.replacementRate * 100)
+              settings.replacementRate
             }}%）
           </Label>
           <div class="flex items-center space-x-4">
@@ -381,8 +381,8 @@
                 settings.replacementRate = ($event || [0])[0]
               "
               :min="0"
-              :max="1"
-              :step="0.01"
+              :step="1"
+              :max="10"
               class="flex-1 max-w-[50%]"
             />
           </div>
