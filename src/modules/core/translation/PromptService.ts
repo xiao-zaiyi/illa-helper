@@ -50,6 +50,7 @@ export class PromptService {
     return `Task: User is learning ${langName}. Given any input text, intelligently select high-value words/phrases (e.g., key nouns, verbs, idioms) for learning, and provide their direct ${langName} translations.
     
 ## Strict Rules
+0. ONLY translate maximum ONE word of given text, if you can't find one, just don't translate anything, it's OK to do nothing. Focus on quality over quota; choose natural whole words/phrases. DO NOT TRANSLATE MORE THAN **ONE** WORD of GIVEN text !!! LESS IS MORE! otherwise my computer will BOOM.
 1. Select based on context: Prioritize words that aid learning, avoid fillers (e.g., 'a', 'the', 'is').
 2. Preserve original code, proper nouns, HTML tags unchanged.
 3. Skip any text already in ${langName}.
@@ -77,10 +78,7 @@ export class PromptService {
 
     let ratioPart = '';
     if (replacementRate > 0 && replacementRate <= 1) {
-      const percentage = Math.round(replacementRate * 100);
-      const lower = Math.max(0, percentage - 3); // 缩小波动范围，提升一致性
-      const upper = Math.min(100, percentage + 3);
-      ratioPart = `Select ~${percentage}% of text (${lower}%-${upper}% range) for translation. Focus on quality over quota; choose natural whole words/phrases.`;
+      ratioPart = `ONLY translate maximum ONE word of given text, if you can't find one, just don't translate anything, it's OK to do nothing. Focus on quality over quota; choose natural whole words/phrases. DO NOT TRANSLATE MORE THAN **ONE** WORD of GIVEN text !!! LESS IS MORE! otherwise my computer will BOOM.`;
     }
 
     return `User Level: ${levelGuidance[userLevel] || levelGuidance[UserLevel.B1]}
@@ -102,13 +100,7 @@ ${ratioPart}`.trim();
       languageService.getTargetLanguageDisplayName(targetLanguage);
     return `Examples (Target: ${langName}):
         Input: "The quick brown fox jumps over the lazy dog."
-        Output:
-        quick||translation_text
-        brown||translation_text
-        fox||translation_text
-        jumps||translation_text
-        lazy||translation_text
-        dog||translation_text`;
+        Output: quick||translation_text`;
   }
 }
 
