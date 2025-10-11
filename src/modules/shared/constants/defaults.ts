@@ -78,7 +78,7 @@ function createDefaultApiConfigItem(): ApiConfigItem {
 // 默认用户设置
 export const DEFAULT_SETTINGS: UserSettings = {
   userLevel: UserLevel.B1,
-  replacementRate: 0.3,
+  replacementRate: 1,
   isEnabled: true,
   useGptApi: true,
   apiConfigs: [createDefaultApiConfigItem()],
