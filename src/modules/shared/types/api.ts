@@ -42,6 +42,19 @@ export interface ApiConfig {
   useBackgroundProxy?: boolean; // 是否通过background script发送请求以绕过CORS
 }
 
+// API配置项运行时状态（用于负载均衡故障追踪）
+export interface ApiConfigRuntimeStatus {
+  lastUsed?: number; // 最后使用时间戳
+  successCount?: number; // 成功调用次数
+  failureCount?: number; // 失败调用次数
+  lastError?: {
+    code: number; // HTTP状态码
+    message: string; // 错误信息
+    timestamp: number; // 发生时间
+  };
+  cooldownUntil?: number; // 冷却截止时间（临时禁用）
+}
+
 // API配置项接口，包含配置的元数据
 export interface ApiConfigItem {
   id: string;
@@ -51,7 +64,38 @@ export interface ApiConfigItem {
   isDefault?: boolean;
   createdAt: number;
   updatedAt: number;
+
+  // ===== 负载均衡相关字段 =====
+  enabled: boolean; // 是否启用（默认 true）
+  weight?: number; // 权重（0-100，默认100，用于加权轮询）
+  priority?: number; // 优先级（越小越优先，默认0）
+
+  // 运行时状态（用于故障追踪，不持久化到用户设置）
+  runtimeStatus?: ApiConfigRuntimeStatus;
 }
+
+// 负载均衡策略类型
+export type LoadBalancerStrategy =
+  | 'round-robin'
+  | 'weighted'
+  | 'priority'
+  | 'random';
+
+// 负载均衡配置接口
+export interface LoadBalancerConfig {
+  strategy: LoadBalancerStrategy; // 调度策略
+  cooldownDuration: number; // 失败后冷却时间（毫秒）
+  maxRetries: number; // 最大重试次数
+  retryableStatusCodes: number[]; // 可重试的HTTP状态码
+}
+
+// 默认负载均衡配置
+export const DEFAULT_LOAD_BALANCER_CONFIG: LoadBalancerConfig = {
+  strategy: 'round-robin',
+  cooldownDuration: 60000, // 1分钟
+  maxRetries: 3,
+  retryableStatusCodes: [429, 500, 502, 503, 504],
+};
 
 // 替换配置接口
 export interface ReplacementConfig {

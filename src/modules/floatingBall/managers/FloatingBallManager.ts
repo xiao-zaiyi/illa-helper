@@ -965,7 +965,7 @@ export class FloatingBallManager {
 
     this.savePositionTimer = window.setTimeout(() => {
       this.savePosition();
-    }, 300); // 300ms 防抖
+    }, 1000); // 增加防抖时间至 1000ms，减少与设置页面的写入冲突
   }
 
   /**
@@ -976,6 +976,15 @@ export class FloatingBallManager {
       const { StorageService } = await import('../../core/storage');
       const storageService = StorageService.getInstance();
       const settings = await storageService.getUserSettings();
+
+      // 关键优化：检查位置是否真的发生了变化
+      // 使用 0.1 的阈值比较浮点数，避免不必要的写入
+      if (
+        Math.abs(settings.floatingBall.position - this.config.position) < 0.1
+      ) {
+        return;
+      }
+
       settings.floatingBall.position = this.config.position;
       await storageService.saveUserSettings(settings);
     } catch (error) {

@@ -150,7 +150,6 @@ export class StorageService {
 
       // 检查是否为旧格式配置，如果是则强制重置
       if (this.isOldFormatConfig(userSettings)) {
-        console.log('[StorageService] 检测到旧格式配置，强制重置为新格式');
         await this.saveUserSettings(DEFAULT_SETTINGS);
         this.emitEvent(StorageEventType.SETTINGS_LOADED, DEFAULT_SETTINGS);
         return DEFAULT_SETTINGS;
@@ -264,6 +263,8 @@ export class StorageService {
     name: string,
     provider: string,
     config: ApiConfig,
+    weight?: number,
+    priority?: number,
   ): Promise<StorageOperationResult> {
     try {
       const settings = await this.getUserSettings();
@@ -276,6 +277,9 @@ export class StorageService {
         isDefault: false,
         createdAt: now,
         updatedAt: now,
+        enabled: true, // 新配置默认启用
+        weight: weight !== undefined ? weight : 100,
+        priority: priority !== undefined ? priority : 1,
       };
 
       settings.apiConfigs.push(newConfig);
@@ -302,6 +306,9 @@ export class StorageService {
     name: string,
     provider: string,
     config: ApiConfig,
+    weight?: number,
+    priority?: number,
+    enabled?: boolean,
   ): Promise<StorageOperationResult> {
     try {
       const settings = await this.getUserSettings();
@@ -315,12 +322,16 @@ export class StorageService {
         return { success: false, error: errorMessage };
       }
 
+      const currentConfig = settings.apiConfigs[configIndex];
       const updatedConfig = {
-        ...settings.apiConfigs[configIndex],
+        ...currentConfig,
         name,
         provider,
         config,
         updatedAt: Date.now(),
+        weight: weight !== undefined ? weight : currentConfig.weight,
+        priority: priority !== undefined ? priority : currentConfig.priority,
+        enabled: enabled !== undefined ? enabled : currentConfig.enabled,
       };
 
       settings.apiConfigs[configIndex] = updatedConfig;
@@ -457,6 +468,20 @@ export class StorageService {
       if (!validatedSettings.apiConfigs) {
         validatedSettings.apiConfigs = DEFAULT_SETTINGS.apiConfigs;
       }
+
+      // ===== 负载均衡迁移：为旧配置添加 enabled 字段 =====
+      validatedSettings.apiConfigs = validatedSettings.apiConfigs.map(
+        (config) => {
+          // 如果 enabled 字段不存在，默认设为 true（向后兼容）
+          if (config.enabled === undefined) {
+            return {
+              ...config,
+              enabled: true,
+            };
+          }
+          return config;
+        },
+      );
 
       if (!validatedSettings.activeApiConfigId) {
         if (validatedSettings.apiConfigs.length > 0) {

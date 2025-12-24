@@ -57,8 +57,14 @@ npm run release          # Create release (runs release.js script)
 #### Core Services (`src/modules/`)
 - **Background Services**: `ApiProxyService`, `NotificationService`, `CommandService`, `InitializationService`
 - **Content Services**: `ContentManager`, `ProcessingService`, `ConfigurationService`, `ListenerService`
-- **Translation Services**: `ParagraphTranslationService`, `LanguageService`, `TextProcessorService`
-- **Storage**: `StorageService` with configuration versioning and cross-browser compatibility
+- **Translation Services**: `ParagraphTranslationService`
+- **Storage**: `src/modules/core/storage` (User settings & persistence)
+- **API Layer**: `src/modules/api`
+  - `services/`: Core API services (`UniversalApiService`)
+  - `loadbalancer/`: Multi-key load balancing & failover logic (`ServiceDispatcher`, `FailoverExecutor`)
+  - `providers/`: AI provider implementations (OpenAI, Gemini, etc.)
+- **Translation**: `src/modules/core/translation` (Text processing & replacement logic)
+- **UI Components**: `entrypoints/options/components`
 - **Messaging**: Inter-component communication system
 
 #### API Integration (`src/modules/api/`)

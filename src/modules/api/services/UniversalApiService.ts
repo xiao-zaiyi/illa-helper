@@ -1,6 +1,11 @@
 /**
  * 通用大模型API服务
  * 提供简单易用的大模型调用接口，适用于各种业务场景
+ *
+ * 支持负载均衡功能：
+ * - 多API Key轮询调度
+ * - 自动故障转移
+ * - 可重试错误识别
  */
 
 import { StorageService } from '../../core/storage';
@@ -10,6 +15,13 @@ import { ApiConfigItem, ApiConfig } from '../../shared/types/api';
 import { TranslationProvider } from '../../shared/types/core';
 import { getApiTimeout } from '@/src/utils';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// 负载均衡模块
+import {
+  ServiceDispatcher,
+  FailoverExecutor,
+  RetryableError,
+} from '../loadbalancer';
 
 /**
  * 通用API请求选项
@@ -57,6 +69,12 @@ export interface UniversalApiResult {
   rawData?: any;
   /** 错误信息(失败时) */
   error?: string;
+  /** 负载均衡：实际使用的配置ID */
+  usedConfigId?: string;
+  /** 负载均衡：实际使用的配置名称 */
+  usedConfigName?: string;
+  /** 负载均衡：尝试次数 */
+  attempts?: number;
 }
 
 /**
@@ -66,8 +84,17 @@ export class UniversalApiService {
   private static instance: UniversalApiService | null = null;
   private storageService: StorageService;
 
+  // ===== 负载均衡组件 =====
+  private dispatcher: ServiceDispatcher;
+  private failoverExecutor: FailoverExecutor;
+
+  /** 是否启用负载均衡（多配置轮询） */
+  private enableLoadBalancing: boolean = true;
+
   private constructor() {
     this.storageService = StorageService.getInstance();
+    this.dispatcher = ServiceDispatcher.getInstance();
+    this.failoverExecutor = FailoverExecutor.getInstance();
   }
 
   /**
@@ -81,7 +108,13 @@ export class UniversalApiService {
   }
 
   /**
-   * 通用的大模型调用方法
+   * 通用的大模型调用方法（支持负载均衡）
+   *
+   * 调用流程：
+   * 1. 获取所有启用的API配置
+   * 2. 使用调度器进行轮询选择
+   * 3. 执行API调用，失败时自动故障转移
+   *
    * @param prompt 用户输入的提示词
    * @param options 可选配置
    * @returns API响应结果
@@ -101,29 +134,22 @@ export class UniversalApiService {
         };
       }
 
-      // 获取API配置
-      const apiConfig = await this.getApiConfig(
-        options.configId,
-        options.forceProvider,
-      );
-      if (!apiConfig) {
-        return {
-          success: false,
-          prompt,
-          content: '',
-          error: '未找到可用的API配置',
-        };
+      // 如果指定了特定配置ID，直接使用该配置（不走负载均衡）
+      if (options.configId) {
+        const apiConfig = await this.getApiConfig(options.configId);
+        if (!apiConfig) {
+          return {
+            success: false,
+            prompt,
+            content: '',
+            error: `指定的API配置(${options.configId})不存在`,
+          };
+        }
+        return await this.executeWithConfig(prompt, apiConfig, options);
       }
 
-      // 根据Provider类型选择不同的调用方式
-      if (
-        apiConfig.provider === 'GoogleGemini' ||
-        apiConfig.provider === 'ProxyGemini'
-      ) {
-        return await this.callGoogleGemini(prompt, apiConfig, options);
-      } else {
-        return await this.callHttpApi(prompt, apiConfig, options);
-      }
+      // 使用负载均衡
+      return await this.callWithLoadBalancing(prompt, options);
     } catch (error: any) {
       console.error('UniversalApiService调用失败:', error);
       return {
@@ -132,6 +158,105 @@ export class UniversalApiService {
         content: '',
         error: error.message || '调用过程中发生未知错误',
       };
+    }
+  }
+
+  /**
+   * 带负载均衡的调用方法
+   * @param prompt 提示词
+   * @param options 选项
+   */
+  private async callWithLoadBalancing(
+    prompt: string,
+    options: UniversalApiOptions,
+  ): Promise<UniversalApiResult> {
+    // 获取所有启用的配置
+    const enabledConfigs = await this.dispatcher.getEnabledConfigs(
+      options.forceProvider?.toString(),
+    );
+
+    if (enabledConfigs.length === 0) {
+      return {
+        success: false,
+        prompt,
+        content: '',
+        error: '无可用的API配置（所有配置已禁用或处于冷却期）',
+      };
+    }
+
+    console.log(
+      `[UniversalApiService] 负载均衡: 发现 ${enabledConfigs.length} 个启用的配置`,
+      enabledConfigs.map((c) => `${c.name}(${c.provider})`).join(', '),
+    );
+
+    if (enabledConfigs.length === 1) {
+      console.warn(
+        '[UniversalApiService] 警告: 只有1个配置启用，无法进行故障转移！建议启用更多配置。',
+      );
+    }
+
+    // 使用故障转移执行器
+    const failoverResult = await this.failoverExecutor.executeWithFailover(
+      async (config: ApiConfigItem) => {
+        console.log(
+          `[UniversalApiService] 正在尝试配置: ${config.name} (${config.id})`,
+        );
+        const result = await this.executeWithConfig(prompt, config, options);
+
+        // 如果API调用返回失败，抛出可重试错误
+        if (!result.success) {
+          console.warn(
+            `[UniversalApiService] 配置 ${config.name} 调用失败: ${result.error}`,
+          );
+          throw new RetryableError(
+            result.error || 'API调用失败',
+            undefined,
+            true, // 标记为可重试
+          );
+        }
+
+        return result;
+      },
+      enabledConfigs,
+      { verbose: true },
+    );
+
+    if (failoverResult.success && failoverResult.data) {
+      return {
+        ...failoverResult.data,
+        usedConfigId: failoverResult.usedConfigId,
+        usedConfigName: failoverResult.usedConfigName,
+        attempts: failoverResult.attempts,
+      };
+    } else {
+      return {
+        success: false,
+        prompt,
+        content: '',
+        error: failoverResult.error || '所有API配置均调用失败',
+        attempts: failoverResult.attempts,
+      };
+    }
+  }
+
+  /**
+   * 使用指定配置执行调用
+   * @param prompt 提示词
+   * @param apiConfig API配置
+   * @param options 选项
+   */
+  private async executeWithConfig(
+    prompt: string,
+    apiConfig: ApiConfigItem,
+    options: UniversalApiOptions,
+  ): Promise<UniversalApiResult> {
+    if (
+      apiConfig.provider === 'GoogleGemini' ||
+      apiConfig.provider === 'ProxyGemini'
+    ) {
+      return await this.callGoogleGemini(prompt, apiConfig, options);
+    } else {
+      return await this.callHttpApi(prompt, apiConfig, options);
     }
   }
 
@@ -266,9 +391,13 @@ export class UniversalApiService {
       );
 
       if (!response.ok) {
-        throw new Error(
+        // 引入 RetryableError 并设置状态码，保证故障转移逻辑能识别
+        const retryableError = new RetryableError(
           `API请求失败: ${response.status} ${response.statusText}`,
+          response.status,
+          true, // 标记为可重试，让故障转移尝试下一个配置
         );
+        throw retryableError;
       }
 
       const data = await response.json();

@@ -38,7 +38,9 @@ export interface CacheStats {
 import {
   ReplacementConfig,
   FullTextAnalysisResponse,
+  ApiConfigItem, // 确保 ApiConfigItem 被导入
 } from '../../shared/types/api';
+import { ServiceDispatcher, FailoverExecutor } from '../../api/loadbalancer';
 import { UserSettings } from '../../shared/types/storage';
 import { TranslationStyle } from '../../shared/types/core';
 
@@ -319,24 +321,48 @@ export class TextReplacerService {
   /**
    * 调用翻译API
    */
+  /**
+   * 调用翻译API (集成负载均衡)
+   */
   private async callTranslationAPI(
     text: string,
     settings: UserSettings,
   ): Promise<FullTextAnalysisResponse> {
-    // 获取当前活跃的API配置
-    const activeConfig = settings.apiConfigs.find(
-      (config) => config.id === settings.activeApiConfigId,
-    );
+    const dispatcher = ServiceDispatcher.getInstance();
+    const failoverExecutor = FailoverExecutor.getInstance();
 
-    if (!activeConfig) {
-      throw new Error('没有找到活跃的API配置');
+    // 1. 获取所有启用的API配置
+    const enabledConfigs = await dispatcher.getEnabledConfigs();
+
+    if (enabledConfigs.length === 0) {
+      throw new Error('没有可用的API配置（所有配置已禁用或处于冷却期）');
     }
 
-    // 使用工厂方法创建正确的提供商实例
-    const translationProvider = ApiServiceFactory.createProvider(activeConfig);
+    // 2. 使用故障转移执行器执行翻译任务
+    const failoverResult =
+      await failoverExecutor.executeWithFailover<FullTextAnalysisResponse>(
+        async (config: ApiConfigItem) => {
+          // 使用工厂方法根据当前config创建对应的Provider
+          const translationProvider = ApiServiceFactory.createProvider(config);
 
-    // 调用API进行翻译
-    return await translationProvider.analyzeFullText(text, settings);
+          // 调用Provider进行全文本分析
+          return await translationProvider.analyzeFullText(text, settings);
+        },
+        enabledConfigs,
+        {
+          verbose: true,
+          // 使用默认的重试策略和冷却时间
+        },
+      );
+
+    if (failoverResult.success && failoverResult.data) {
+      console.log(
+        `[TextReplacer] 翻译成功，使用配置: ${failoverResult.usedConfigName}`,
+      );
+      return failoverResult.data;
+    } else {
+      throw new Error(failoverResult.error || '所有API配置均调用失败');
+    }
   }
 
   /**

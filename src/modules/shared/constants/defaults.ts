@@ -72,6 +72,7 @@ function createDefaultApiConfigItem(): ApiConfigItem {
     isDefault: true,
     createdAt: Date.now(),
     updatedAt: Date.now(),
+    enabled: true, // 默认启用
   };
 }
 

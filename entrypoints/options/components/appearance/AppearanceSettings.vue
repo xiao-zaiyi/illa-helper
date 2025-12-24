@@ -143,6 +143,10 @@ onMounted(async () => {
 watch(
   settings,
   async (newSettings) => {
+    // 关键修复：保存前获取最新的 apiConfigs，防止覆盖 TranslationSettings 的修改
+    const latestSettings = await storageService.getUserSettings();
+    newSettings.apiConfigs = latestSettings.apiConfigs;
+
     await storageService.saveUserSettings(newSettings);
     emit('saveMessage', t('settings.save'));
     browser.runtime.sendMessage({

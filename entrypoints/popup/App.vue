@@ -146,6 +146,13 @@ const saveAndNotifySettings = async () => {
       return;
     }
 
+    // 关键修复：保存前获取Storage中的最新配置，防止覆盖Options Page的更改
+    // 特别是 apiConfigs 的 enabled 状态（因为 Popup 不编辑它）
+    const latestStorageSettings = await storageService.getUserSettings();
+
+    // 保留 apiConfigs 的最新状态
+    settings.value.apiConfigs = latestStorageSettings.apiConfigs;
+
     await storageService.saveUserSettings(settings.value);
     await notifySettingsChanged(settings.value);
     showSavedMessage(t('settings.save'));
