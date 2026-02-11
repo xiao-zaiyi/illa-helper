@@ -5,12 +5,7 @@
 
 import type { FloatingBallConfig } from '../../shared/types/ui';
 import type { FloatingBallState, FloatingBallActionType } from '../types';
-import {
-  FLOATING_BALL_STYLES,
-  DRAG_CONFIG,
-  MENU_STYLES,
-  MENU_ACTIONS,
-} from '../config';
+import { FLOATING_BALL_STYLES, DRAG_CONFIG, MENU_ACTIONS } from '../config';
 import { safeSetInnerHTML } from '@/src/utils';
 import { StorageService } from '../../core/storage';
 
@@ -157,7 +152,7 @@ export class FloatingBallManager {
   }
 
   /**
-   * 创建菜单容器
+   * 创建菜单容器 - 卡片式面板
    */
   private createMenu(): void {
     if (this.menuContainer) {
@@ -165,24 +160,211 @@ export class FloatingBallManager {
     }
 
     this.menuContainer = document.createElement('div');
-    this.menuContainer.className = 'wxt-floating-menu';
+    this.menuContainer.className = 'wxt-floating-panel';
     safeSetInnerHTML(this.menuContainer, this.createMenuItems());
 
-    this.updateMenuStyle();
+    // 注入面板样式
+    this.injectPanelStyles();
+
     document.body.appendChild(this.menuContainer);
+    // 初始隐藏
+    this.updateMenuStyle();
   }
 
   /**
-   * 创建菜单项
+   * 创建面板内容
    */
   private createMenuItems(): string {
-    return MENU_ACTIONS.map(
-      (action, _) => `
-      <div class="wxt-menu-item" data-action="${action.id}" title="${action.label}" >
-        <span class="wxt-menu-icon" style="color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.2); font-weight: bold;">${action.icon}</span>
+    // 获取翻译状态
+    const hasTranslatedContent =
+      document.querySelector('.wxt-translation-term') !== null ||
+      document.querySelector('.illa-paragraph-translation') !== null;
+    const isTranslationHidden = document.body.classList.contains(
+      'wxt-translation-hidden',
+    );
+
+    let statusClass = 'wxt-status--ready';
+    let statusText = '准备翻译';
+    if (hasTranslatedContent && !isTranslationHidden) {
+      statusClass = 'wxt-status--translated';
+      statusText = '翻译模式';
+    } else if (hasTranslatedContent && isTranslationHidden) {
+      statusClass = 'wxt-status--original';
+      statusText = '原文模式';
+    }
+
+    const actionButtons = MENU_ACTIONS.map((action) => {
+      const dangerClass = action.id === 'close' ? ' wxt-panel-btn--danger' : '';
+      return `
+        <div class="wxt-panel-btn${dangerClass}" data-action="${action.id}" title="${action.label}">
+          <div class="wxt-btn-icon">${action.icon}</div>
+          <span class="wxt-btn-label">${action.label}</span>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="wxt-panel-status">
+        <span class="wxt-status-dot ${statusClass}"></span>
+        <span class="wxt-status-text">${statusText}</span>
       </div>
-    `,
-    ).join('');
+      <div class="wxt-panel-divider"></div>
+      <div class="wxt-panel-actions">
+        ${actionButtons}
+      </div>
+    `;
+  }
+
+  /**
+   * 注入面板样式
+   */
+  private injectPanelStyles(): void {
+    const styleId = 'wxt-floating-panel-styles';
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      .wxt-floating-panel {
+        position: fixed;
+        z-index: 9999;
+        width: 180px;
+        padding: 10px;
+        border-radius: 12px;
+        pointer-events: auto;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(106, 136, 224, 0.15);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(106, 136, 224, 0.1);
+        backdrop-filter: blur(20px) saturate(1.4);
+        -webkit-backdrop-filter: blur(20px) saturate(1.4);
+        opacity: 0;
+        transform: translateX(8px) scale(0.92);
+        transform-origin: right center;
+        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .wxt-floating-panel.wxt-panel-visible {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+
+      /* 状态栏 */
+      .wxt-panel-status {
+        display: flex;
+        align-items: center;
+        padding: 0 2px 8px 2px;
+        gap: 6px;
+      }
+      .wxt-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        transition: background 0.3s ease, box-shadow 0.3s ease;
+      }
+      .wxt-status-dot.wxt-status--ready {
+        background: #6A88E0;
+        box-shadow: 0 0 6px rgba(106, 136, 224, 0.4);
+      }
+      .wxt-status-dot.wxt-status--translated {
+        background: #00e676;
+        box-shadow: 0 0 6px rgba(0, 230, 118, 0.4);
+      }
+      .wxt-status-dot.wxt-status--original {
+        background: #ff6b6b;
+        box-shadow: 0 0 6px rgba(255, 107, 107, 0.4);
+      }
+      .wxt-status-text {
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1;
+        color: #444;
+        letter-spacing: 0.2px;
+      }
+
+      /* 分割线 */
+      .wxt-panel-divider {
+        height: 1px;
+        background: rgba(106, 136, 224, 0.12);
+        margin: 0 2px 8px 2px;
+      }
+
+      /* 操作按钮网格 */
+      .wxt-panel-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+      .wxt-panel-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 0;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #555;
+        background: transparent;
+        border: none;
+        transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+      }
+      .wxt-panel-btn:hover {
+        background: rgba(106, 136, 224, 0.1);
+        color: #6A88E0;
+        transform: translateY(-1px);
+      }
+      .wxt-panel-btn:active {
+        transform: translateY(0) scale(0.96);
+      }
+      .wxt-panel-btn--danger:hover {
+        background: rgba(239, 68, 68, 0.08);
+        color: #EF4444;
+      }
+      .wxt-btn-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+      }
+      .wxt-btn-icon svg {
+        width: 18px;
+        height: 18px;
+      }
+      .wxt-btn-label {
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1;
+      }
+
+      /* 深色模式 */
+      @media (prefers-color-scheme: dark) {
+        .wxt-floating-panel {
+          background: rgba(30, 30, 36, 0.85);
+          border-color: rgba(106, 136, 224, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .wxt-status-text {
+          color: rgba(255, 255, 255, 0.8);
+        }
+        .wxt-panel-divider {
+          background: rgba(255, 255, 255, 0.08);
+        }
+        .wxt-panel-btn {
+          color: rgba(255, 255, 255, 0.7);
+        }
+        .wxt-panel-btn:hover {
+          background: rgba(106, 136, 224, 0.2);
+          color: #8BA4F0;
+        }
+        .wxt-panel-btn--danger:hover {
+          background: rgba(239, 68, 68, 0.15);
+          color: #ff7b7b;
+        }
+      }
+    `;
+    document.head.appendChild(style);
   }
 
   /**
@@ -357,80 +539,64 @@ export class FloatingBallManager {
   }
 
   /**
-   * 更新菜单样式
+   * 更新面板位置和可见性
    */
   private updateMenuStyle(): void {
-    if (!this.menuContainer) return;
+    if (!this.menuContainer || !this.ballElement) return;
 
-    const ballRect = this.ballElement?.getBoundingClientRect();
-    if (!ballRect) return;
+    const ballRect = this.ballElement.getBoundingClientRect();
 
-    const { itemSize, itemSpacing, zIndex, transition } = MENU_STYLES;
+    // 面板定位到悬浮球左侧
+    const gap = 8;
+    const rightPos = window.innerWidth - ballRect.left + gap;
 
-    // 菜单容器基础样式 - 定位到悬浮球正下方
-    const menuHeight = MENU_ACTIONS.length * (itemSize + itemSpacing);
-    const containerStyles = `
-      position: fixed;
-      right: ${FLOATING_BALL_STYLES.size / 2 - itemSize / 2 + 10}px;
-      top: ${this.config.position}%;
-      width: ${itemSize}px;
-      height: ${menuHeight}px;
-      transform: translateY(${FLOATING_BALL_STYLES.size / 2 + 15}px);
-      z-index: ${zIndex};
-      pointer-events: ${this.state.isMenuExpanded ? 'auto' : 'none'};
-      opacity: ${this.state.isMenuExpanded ? 1 : 0};
-      transition: ${transition};
-    `;
+    // 垂直居中对齐悬浮球
+    const topPos = ballRect.top + ballRect.height / 2;
 
-    this.menuContainer.style.cssText = containerStyles;
+    this.menuContainer.style.right = `${rightPos}px`;
+    this.menuContainer.style.top = `${topPos}px`;
+    this.menuContainer.style.transform = this.state.isMenuExpanded
+      ? 'translateY(-50%) translateX(0) scale(1)'
+      : 'translateY(-50%) translateX(8px) scale(0.92)';
 
-    // 更新菜单项位置
-    this.updateMenuItemPositions();
+    if (this.state.isMenuExpanded) {
+      this.menuContainer.classList.add('wxt-panel-visible');
+      this.menuContainer.style.pointerEvents = 'auto';
+    } else {
+      this.menuContainer.classList.remove('wxt-panel-visible');
+      this.menuContainer.style.pointerEvents = 'none';
+    }
   }
 
   /**
-   * 更新菜单项位置
+   * 更新面板内容（状态变化时调用）
    */
   private updateMenuItemPositions(): void {
+    // 面板模式下不需要逐项定位，只需更新状态显示
     if (!this.menuContainer) return;
 
-    const items = this.menuContainer.querySelectorAll('.wxt-menu-item');
-    const { itemSize, itemSpacing, background, boxShadow, transition } =
-      MENU_STYLES;
+    const hasTranslatedContent =
+      document.querySelector('.wxt-translation-term') !== null ||
+      document.querySelector('.illa-paragraph-translation') !== null;
+    const isTranslationHidden = document.body.classList.contains(
+      'wxt-translation-hidden',
+    );
 
-    items.forEach((item, index) => {
-      const element = item as HTMLElement;
-      // 垂直排列在悬浮球正下方
-      const x = 0; // 水平居中
-      const y = index * (itemSize + itemSpacing); // 垂直向下排列
+    const dot = this.menuContainer.querySelector('.wxt-status-dot');
+    const text = this.menuContainer.querySelector('.wxt-status-text');
+    if (!dot || !text) return;
 
-      const scale = this.state.isMenuExpanded ? 1 : 0;
-      const delay = this.state.isMenuExpanded
-        ? index * 50
-        : (items.length - index - 1) * 50;
-
-      element.style.cssText = `
-        position: absolute;
-        left: ${x}px;
-        top: ${y}px;
-        width: ${itemSize}px;
-        height: ${itemSize}px;
-        background: ${background};
-        backdrop-filter: ${MENU_STYLES.backdropFilter};
-        -webkit-backdrop-filter: ${MENU_STYLES.backdropFilter};
-        border: ${MENU_STYLES.border};
-        border-radius: 50%;
-        box-shadow: ${boxShadow};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transform: scale(${scale});
-        transition: ${transition};
-        transition-delay: ${delay}ms;
-        font-size: 16px;
-      `;
-    });
+    dot.className = 'wxt-status-dot';
+    if (hasTranslatedContent && !isTranslationHidden) {
+      dot.classList.add('wxt-status--translated');
+      text.textContent = '翻译模式';
+    } else if (hasTranslatedContent && isTranslationHidden) {
+      dot.classList.add('wxt-status--original');
+      text.textContent = '原文模式';
+    } else {
+      dot.classList.add('wxt-status--ready');
+      text.textContent = '准备翻译';
+    }
   }
 
   /**
@@ -1097,6 +1263,10 @@ export class FloatingBallManager {
     this.updateMenuStyle();
 
     switch (action) {
+      case 'translate':
+        this.handleTranslate();
+        break;
+
       case 'settings':
         this.openSettings();
         break;
@@ -1169,7 +1339,7 @@ export class FloatingBallManager {
   private bindMenuItemListeners(): void {
     if (!this.menuContainer) return;
 
-    const menuItems = this.menuContainer.querySelectorAll('.wxt-menu-item');
+    const menuItems = this.menuContainer.querySelectorAll('.wxt-panel-btn');
     menuItems.forEach((item) => {
       const element = item as HTMLElement;
       const action = element.dataset.action as FloatingBallActionType;
@@ -1178,22 +1348,6 @@ export class FloatingBallManager {
         e.preventDefault();
         e.stopPropagation();
         this.handleMenuAction(action);
-      });
-
-      // 添加悬停效果
-      this.bindEventListener(element, 'mouseenter', () => {
-        element.style.background = MENU_STYLES.hoverBackground;
-        element.style.transform = 'scale(1.1)';
-        element.style.boxShadow =
-          '0 12px 32px rgba(106, 136, 224, 0.3), 0 6px 16px rgba(0, 0, 0, 0.15)';
-        element.style.backdropFilter = 'blur(16px) saturate(1.8)';
-      });
-
-      this.bindEventListener(element, 'mouseleave', () => {
-        element.style.background = MENU_STYLES.background;
-        element.style.transform = 'scale(1)';
-        element.style.boxShadow = MENU_STYLES.boxShadow;
-        element.style.backdropFilter = MENU_STYLES.backdropFilter;
       });
     });
   }
@@ -1226,6 +1380,7 @@ export class FloatingBallManager {
     // 延迟更新内容，创造平滑的过渡效果
     setTimeout(() => {
       this.updateBallContent();
+      this.updateMenuItemPositions(); // 同步更新面板状态
       this.endTransitionAnimation();
     }, 100);
   }
@@ -1374,6 +1529,12 @@ export class FloatingBallManager {
     );
     if (animationStyle) {
       animationStyle.remove();
+    }
+
+    // 清理面板样式
+    const panelStyle = document.getElementById('wxt-floating-panel-styles');
+    if (panelStyle) {
+      panelStyle.remove();
     }
 
     // 重置状态

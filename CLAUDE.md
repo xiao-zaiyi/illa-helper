@@ -4,168 +4,124 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is **illa-helper**, a browser extension for immersive language learning based on the "i+1" comprehensible input theory. It intelligently replaces selected words with translations to create a natural language learning environment while browsing the web.
+**illa-helper** is a browser extension for immersive language learning based on the "i+1" comprehensible input theory. It intelligently replaces words on web pages with translations based on user proficiency level, creating a natural language learning environment while browsing.
 
-## Common Development Commands
+Built with WXT (WebExtension Toolkit) + Vue 3 + TypeScript + Vite. Supports Chrome, Edge, Firefox.
 
-### Development
+## Common Commands
+
 ```bash
-npm run dev              # Start development server (Chrome)
-npm run dev:firefox      # Start development server (Firefox)
+npm run dev              # Dev server (Chrome), hot reload
+npm run dev:firefox      # Dev server (Firefox)
+npm run build            # Production build (Chrome)
+npm run build:firefox    # Production build (Firefox)
+npm run zip              # Package for Chrome store
+npm run zip:firefox      # Package for Firefox store
+npm run zip:all          # Package all browsers
+
+npm run lint             # ESLint check
+npm run lint:fix         # ESLint auto-fix
+npm run format           # Prettier format
+npm run check            # format + lint:fix combined
+npm run compile          # TypeScript type check (vue-tsc --noEmit)
 ```
 
-### Building
-```bash
-npm run build            # Build for production (Chrome)
-npm run build:firefox    # Build for production (Firefox)
-npm run zip              # Create zip package (Chrome)
-npm run zip:firefox      # Create zip package (Firefox)
-npm run zip:all          # Create packages for all browsers
+No test framework is configured. Validation is done via `npm run compile` (type check) and `npm run lint`.
+
+## Environment Setup
+
+Copy `.env.example` to `.env`. Minimum required: `VITE_WXT_DEFAULT_API_KEY`. Variables are injected at build time via Vite.
+
+## Architecture
+
+### Entry Points (`entrypoints/`)
+
+| Entry | Role |
+|-------|------|
+| `background.ts` | Service worker. Initializes singleton services, routes runtime messages, handles extension install/update events. |
+| `content.ts` | Content script. Creates `ContentManager` which orchestrates DOM scanning, translation injection, and cleanup. |
+| `popup/` | Vue 3 app. Quick toggle and status display. |
+| `options/` | Vue 3 app. Full settings UI with multiple tab components. |
+
+### Module Architecture (`src/modules/`)
+
+The codebase follows a service-oriented architecture with clear module boundaries:
+
+```
+src/modules/
+├── core/                    # Shared infrastructure
+│   ├── messaging/           # MessagingService (singleton) - inter-component communication
+│   ├── storage/             # StorageService (singleton) - config persistence with versioning
+│   ├── translation/         # TextProcessorService, TextReplacerService, ParagraphTranslationService,
+│   │                        #   LanguageService, PromptService
+│   └── i18n/                # Internationalization setup
+├── api/                     # AI translation backend
+│   ├── factory/             # ApiServiceFactory - creates provider by config type
+│   ├── providers/           # OpenAIProvider, GoogleGeminiProvider (extend BaseProvider)
+│   ├── services/            # UniversalApiService - unified API with retry logic
+│   └── utils/               # Request helpers, structured text parser
+├── content/                 # Content script services
+│   ├── ContentManager.ts    # Main coordinator - owns all content-side services
+│   ├── ConfigurationService # Loads and watches user config
+│   ├── ProcessingService    # Triggers translation pipeline
+│   ├── ListenerService      # DOM mutation and message listeners
+│   ├── LazyLoadingService   # IntersectionObserver-based lazy translation
+│   └── utils/               # domUtils, SegmentObserver
+├── processing/              # Translation pipeline
+│   ├── ContentSegmenter     # Splits page into translatable segments
+│   ├── ProcessingCoordinator # Orchestrates segment processing
+│   └── ProcessingStateManager # Tracks what's been processed
+├── pronunciation/           # Pronunciation ecosystem
+│   ├── services/            # PronunciationService, TTSService
+│   ├── phonetic/            # PhoneticProviderFactory, DictionaryApiProvider
+│   ├── tts/                 # TTSProviderFactory, YoudaoTTSProvider, WebSpeechTTSProvider
+│   └── translation/         # AITranslationProvider (AI definitions)
+├── background/services/     # ApiProxyService, NotificationService, CommandService,
+│                            #   InitializationService, UpdateCheckService
+├── floatingBall/            # FloatingBallManager - configurable floating UI widget
+├── contextMenu/             # ContextMenuManager - browser right-click menu
+├── infrastructure/ratelimit/ # RateLimiterService
+├── shared/                  # Shared types, constants, utils
+│   ├── types/               # storage.ts, core.ts, api.ts, ui.ts
+│   └── constants/defaults.ts # Default configuration values
+└── styles/                  # Component styles, themes, constants
 ```
 
-### Code Quality
-```bash
-npm run lint             # Run ESLint
-npm run lint:fix         # Run ESLint with auto-fix
-npm run format           # Format code with Prettier
-npm run check            # Run format + lint:fix
-npm run compile          # TypeScript compilation check
+### Data Flow
+
+```
+User Settings (Popup/Options)
+  → MessagingService → Background Script → StorageService
+  → MessagingService → Content Script → ContentManager
+  → ProcessingCoordinator → ContentSegmenter → ApiServiceFactory → Provider
+  → TextReplacerService → DOM injection
 ```
 
-### Release
-```bash
-npm run release          # Create release (runs release.js script)
-```
+### Key Design Patterns
 
-## Architecture Overview
+- **Singleton services**: StorageService, MessagingService, all background services. Instantiated once and shared.
+- **Factory pattern**: `ApiServiceFactory` (selects OpenAI/Gemini provider), `PhoneticProviderFactory`, `TTSProviderFactory`. Adding a new provider means implementing the interface and registering in the factory.
+- **Event-driven messaging**: `MessagingService` wraps `browser.runtime.sendMessage` / `browser.tabs.sendMessage`. Message types defined in `core/messaging/types.ts` (e.g., `SETTINGS_UPDATED`, `WEBSITE_MANAGEMENT_UPDATED`, `CONTEXT_MENU_ACTION`).
 
-### Core Framework
-- **Extension Framework**: WXT (WebExtension Toolkit)
-- **Frontend**: Vue 3 + TypeScript + Vite
-- **UI**: Tailwind CSS + Lucide Icons + Reka UI components
-- **State Management**: Vue 3 Composition API with reactive storage
-- **Internationalization**: Vue I18n with 5 language support
+### Content Script Pipeline
 
-### Entry Points
-- `entrypoints/background.ts` - Background service worker with service-oriented architecture
-- `entrypoints/content.ts` - Content script for DOM manipulation and translation
-- `entrypoints/popup/` - Popup interface for quick settings
-- `entrypoints/options/` - Full settings interface with Vue components
+`ContentManager` is the root coordinator in the content script. It initializes:
+1. `ConfigurationService` - loads user settings from storage
+2. `ListenerService` - watches for DOM mutations and incoming messages
+3. `ProcessingService` - when triggered, uses `ContentSegmenter` to split visible text into segments, then `ProcessingCoordinator` sends them through the API for translation
+4. `LazyLoadingService` - uses IntersectionObserver to translate only visible segments
+5. `TextReplacerService` - uses Range API to safely replace text nodes in the DOM
 
-### Module Architecture
+### Browser-Specific Notes
 
-#### Core Services (`src/modules/`)
-- **Background Services**: `ApiProxyService`, `NotificationService`, `CommandService`, `InitializationService`
-- **Content Services**: `ContentManager`, `ProcessingService`, `ConfigurationService`, `ListenerService`
-- **Translation Services**: `ParagraphTranslationService`, `LanguageService`, `TextProcessorService`
-- **Storage**: `StorageService` with configuration versioning and cross-browser compatibility
-- **Messaging**: Inter-component communication system
+- Firefox requires explicit addon ID in manifest (`browser_specific_settings.gecko.id` in `wxt.config.ts`)
+- Firefox uses MV2; Chrome/Edge use MV3
+- Production builds strip `console.log` and `console.warn` via `vite-plugin-remove-console`
 
-#### API Integration (`src/modules/api/`)
-- **Factory Pattern**: `ApiServiceFactory` for provider abstraction
-- **Providers**: `OpenAIProvider`, `GoogleGeminiProvider` with extensible architecture
-- **Services**: `UniversalApiService` with intelligent retry and error handling
-- **Support**: OpenAI-compatible APIs, Google Gemini, and custom endpoints
+### i18n
 
-#### Pronunciation System (`src/modules/pronunciation/`)
-- **Factory Pattern**: `PhoneticProviderFactory`, `TTSProviderFactory`
-- **Providers**: Dictionary API, Youdao TTS, Web Speech API
-- **Services**: `PronunciationService`, `TTSService` with caching
-- **UI**: Interactive tooltips with phonetic display and audio playback
+5 UI languages supported. Locale files in `src/i18n/locales/`. Uses `@intlify/unplugin-vue-i18n` for compile-time optimization. All user-facing strings must go through Vue I18n.
 
-#### Processing Pipeline (`src/modules/processing/`)
-- **Content Segmentation**: `ContentSegmenter` for intelligent text grouping
-- **Processing Coordinator**: `ProcessingCoordinator` for workflow management
-- **State Management**: `ProcessingStateManager` for tracking translation state
+### UI Stack
 
-### Key Features
-
-#### Translation Engine
-- AI-powered intelligent vocabulary selection based on user proficiency level
-- Smart language detection (20+ languages supported)
-- Precise translation ratio control (1%-100%)
-- Context-aware vocabulary selection
-- Lazy loading for performance optimization
-
-#### Pronunciation Ecosystem
-- Interactive tooltips with phonetics, AI definitions, and TTS
-- Dual TTS support (Youdao + Web Speech API)
-- Smart caching for phonetic data and audio
-- British/American pronunciation switching
-- Progressive loading with nested tooltip support
-
-#### Configuration System
-- Multi-API configuration with flexible switching
-- User level adaptation (5 levels from beginner to advanced)
-- Website blacklist/whitelist management
-- Import/export configuration functionality
-- Cross-browser storage synchronization
-
-## Development Guidelines
-
-### Code Style
-- **TypeScript**: Strict mode enabled, comprehensive type definitions
-- **ESLint**: Custom configuration with Vue support and Prettier integration
-- **Prettier**: Consistent formatting with 2-space indentation
-- **Vue**: Composition API, single-file components with proper TypeScript
-
-### Key Patterns
-- **Service Architecture**: Singleton services with clear responsibility separation
-- **Factory Pattern**: For extensible provider systems (API, TTS, Phonetic)
-- **Event-Driven**: Messaging system for inter-component communication
-- **Modular Design**: Feature-based module organization
-- **Caching Strategy**: Multi-level caching for performance optimization
-
-### Browser Compatibility
-- **Primary**: Chrome, Edge (full support)
-- **Secondary**: Firefox (requires special configuration)
-- **Limited**: Safari (additional setup required)
-- **Storage**: Firefox requires explicit addon ID in manifest
-
-### Environment Configuration
-- Copy `.env.example` to `.env` for local development
-- Minimum required: `VITE_WXT_DEFAULT_API_KEY`
-- Optional: Custom API endpoint, model, temperature settings
-- Environment variables are injected at build time
-
-### Performance Considerations
-- **DOM Safety**: Use Range API for text replacement to maintain structure integrity
-- **Memory Management**: Proper cleanup of listeners and cached data
-- **Incremental Processing**: Only process new content, avoid duplicate operations
-- **Lazy Loading**: On-demand translation when scrolling
-- **Debouncing**: Smart delayed processing for dynamic content
-
-## Testing and Debugging
-
-### Extension Testing
-- Use browser developer tools for debugging
-- Background script: Service worker debugging in extensions page
-- Content script: Regular browser devtools on target pages
-- Popup/Options: Vue devtools integration
-
-### Common Issues
-- **Firefox Storage**: Ensure proper addon ID configuration
-- **API Configuration**: Verify API keys and endpoints in `.env`
-- **Content Script**: Check website permissions and blacklist status
-- **Performance**: Monitor memory usage and DOM mutation frequency
-
-## Build and Deployment
-
-### Multi-Browser Support
-- Chrome: `npm run build && npm run zip`
-- Firefox: `npm run build:firefox && npm run zip:firefox`
-- Safari: Additional packaging required (see docs)
-
-### Release Process
-1. Update version in `package.json`
-2. Run `npm run release` (executes `scripts/release.js`)
-3. Upload to respective browser stores
-4. Update documentation and version notes
-
-## Important Notes
-
-- **Security**: Never commit API keys or sensitive configuration
-- **Internationalization**: All UI text must support i18n
-- **Accessibility**: Ensure ARIA compliance for UI components
-- **Performance**: Profile memory usage and optimize hot paths
-- **Browser APIs**: Use WebExtension APIs with fallbacks for compatibility
+Tailwind CSS v4 + Reka UI (headless components) + Lucide icons. Shared UI components live in `entrypoints/options/components/ui/`. Styles in `src/modules/styles/`.

@@ -18,7 +18,6 @@ import { globalProcessingState } from '../../processing/ProcessingStateManager';
 export interface SegmentConfig {
   maxSegmentLength: number;
   minSegmentLength: number;
-  enableSmartBoundary: boolean;
   mergeSmallSegments: boolean;
 }
 
@@ -253,7 +252,6 @@ export class TextProcessorService {
       this.updateSegmentConfig({
         maxSegmentLength: maxLength,
         minSegmentLength: 20,
-        enableSmartBoundary: true,
         mergeSmallSegments: true,
       });
 

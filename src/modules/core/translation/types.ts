@@ -63,7 +63,6 @@ export interface CacheStats {
 export interface SegmentConfig {
   maxSegmentLength: number;
   minSegmentLength: number;
-  enableSmartBoundary: boolean;
   mergeSmallSegments: boolean;
 }
 

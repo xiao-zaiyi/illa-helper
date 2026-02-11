@@ -1,10 +1,10 @@
 /**
- * 段落翻译服务 - 简化版本
+ * 段落翻译服务
  *
  * 设计原则：
- * 1. 使用简单的选择器查找段落元素
- * 2. 直接翻译找到的元素
- * 3. 避免复杂的DOM遍历
+ * 1. 使用 DomWalker 统一遍历 DOM，基于计算样式识别段落
+ * 2. 直接翻译找到的段落元素
+ * 3. 与单词翻译模式共用同一套 DOM 获取逻辑
  */
 
 import { StorageService } from '../storage';
@@ -14,9 +14,13 @@ import { PARAGRAPH_TRANSLATION } from '../../shared/constants';
 import type { LazyLoadingService } from '../../content/services/LazyLoadingService';
 import type { ContentSegment } from '../../processing/ProcessingStateManager';
 import { globalProcessingState } from '../../processing/ProcessingStateManager';
+import {
+  walkAndCollectParagraphs,
+  collectTextNodes,
+} from '../../processing/DomWalker';
 
 /**
- * 段落翻译服务类 - 简化版本
+ * 段落翻译服务类
  */
 export class ParagraphTranslationService {
   private static instance: ParagraphTranslationService | null = null;
@@ -154,266 +158,30 @@ export class ParagraphTranslationService {
   }
 
   /**
-   * 查找段落元素 - 沉浸式翻译风格
-   * 智能识别页面中的文本内容块，类似沉浸式翻译的元素识别逻辑
+   * 查找段落元素 - 基于 DomWalker 统一遍历
    */
   private findParagraphElements(): HTMLElement[] {
-    const elements: HTMLElement[] = [];
-    const processedElements = new Set<HTMLElement>();
+    const paragraphs = walkAndCollectParagraphs(document.body);
 
-    // 沉浸式翻译风格的选择器 - 按优先级排序
-    const selectorGroups = [
-      // 主要内容区域
-      {
-        selectors: [
-          'main p',
-          'article p',
-          '[role="main"] p',
-          '.content p',
-          '.article p',
-        ],
-        priority: 1,
-      },
-      // 标题元素
-      {
-        selectors: [
-          'main h1',
-          'main h2',
-          'main h3',
-          'main h4',
-          'main h5',
-          'main h6',
-          'article h1',
-          'article h2',
-          'article h3',
-          'article h4',
-          'article h5',
-          'article h6',
-        ],
-        priority: 1,
-      },
-      // 引用和特殊文本
-      {
-        selectors: ['blockquote', 'figcaption', '.caption', '[data-caption]'],
-        priority: 2,
-      },
-      // 列表项（避免嵌套列表）
-      {
-        selectors: ['li:not(:has(ul)):not(:has(ol))', 'dd', 'dt'],
-        priority: 3,
-      },
-      // 通用段落（降级选择）
-      {
-        selectors: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
-        priority: 4,
-      },
-      // 其他文本容器
-      {
-        selectors: [
-          'div:not(:has(p)):not(:has(h1)):not(:has(h2)):not(:has(h3)):not(:has(h4)):not(:has(h5)):not(:has(h6))',
-          'span:not(:has(p)):not(:has(div))',
-        ],
-        priority: 5,
-      },
-    ];
+    // 过滤掉已翻译、正在翻译、文本过短的元素
+    const elements = paragraphs
+      .map((p) => p.element)
+      .filter((element) => {
+        if (this.translatedElements.has(element)) return false;
+        if (this.translatingElements.has(element)) return false;
 
-    // 按优先级处理选择器组
-    for (const group of selectorGroups) {
-      for (const selector of group.selectors) {
-        try {
-          const foundElements =
-            document.querySelectorAll<HTMLElement>(selector);
-          for (const element of foundElements) {
-            // 避免重复处理和父子元素冲突
-            if (
-              !processedElements.has(element) &&
-              !this.hasProcessedAncestor(element, processedElements)
-            ) {
-              if (this.shouldTranslateElement(element)) {
-                elements.push(element);
-                processedElements.add(element);
-              }
-            }
-          }
-        } catch (error) {
-          console.warn(`[段落翻译] 选择器 "${selector}" 执行失败:`, error);
-        }
-      }
-    }
+        const text = element.textContent?.trim();
+        if (!text || text.length < 3) return false;
+        if (text.length > 3000) return false;
 
-    // 按文档顺序排序
-    elements.sort((a, b) => {
-      const position = a.compareDocumentPosition(b);
-      return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-    });
+        // 跳过纯数字或简单符号
+        if (/^[\d\s.,!?\-+=()[\]{}]*$/.test(text)) return false;
+
+        return true;
+      });
 
     console.log('[段落翻译] 找到段落元素数量:', elements.length);
     return elements;
-  }
-
-  /**
-   * 检查元素是否有已处理的祖先元素
-   */
-  private hasProcessedAncestor(
-    element: HTMLElement,
-    processedElements: Set<HTMLElement>,
-  ): boolean {
-    let parent = element.parentElement;
-    while (parent) {
-      if (processedElements.has(parent)) {
-        return true;
-      }
-      parent = parent.parentElement;
-    }
-    return false;
-  }
-
-  /**
-   * 判断元素是否应该被翻译 - 沉浸式翻译风格的智能过滤
-   */
-  private shouldTranslateElement(element: HTMLElement): boolean {
-    // 跳过已翻译的元素
-    if (this.translatedElements.has(element)) {
-      return false;
-    }
-
-    // 跳过正在翻译的元素
-    if (this.translatingElements.has(element)) {
-      return false;
-    }
-
-    // 跳过翻译容器
-    if (element.classList.contains(PARAGRAPH_TRANSLATION.WRAPPER_CLASS)) {
-      return false;
-    }
-
-    // 跳过系统元素和非内容元素
-    if (
-      element.closest(
-        'script, style, noscript, code, pre, nav, menu, .nav, .menu, .navigation, .sidebar, .footer, .header',
-      )
-    ) {
-      return false;
-    }
-
-    // 跳过 wxt-floating-menu 及其所有子元素
-    // 检查多种可能的选择器模式
-    if (
-      element.matches(
-        'wxt-floating-menu, wxt-floating-menu *, [data-wxt-floating-menu], [data-wxt-floating-menu] *',
-      )
-    ) {
-      return false;
-    }
-
-    // 检查元素是否在 wxt-floating-menu 内部
-    if (element.closest('wxt-floating-menu, [data-wxt-floating-menu]')) {
-      return false;
-    }
-
-    // 检查包含 wxt 的 id 或 class
-    if (element.id?.includes('wxt') || element.className?.includes('wxt')) {
-      return false;
-    }
-
-    // 检查父元素链中是否有 wxt 相关属性
-    let parent = element.parentElement;
-    while (parent) {
-      if (
-        parent.tagName?.toLowerCase() === 'wxt-floating-menu' ||
-        parent.hasAttribute('data-wxt-floating-menu') ||
-        parent.id?.includes('wxt') ||
-        parent.className?.includes('wxt')
-      ) {
-        return false;
-      }
-      parent = parent.parentElement;
-    }
-
-    // 跳过可编辑元素
-    if (
-      element.isContentEditable ||
-      element.tagName.toLowerCase() === 'input' ||
-      element.tagName.toLowerCase() === 'textarea'
-    ) {
-      return false;
-    }
-
-    // 跳过隐藏元素
-    const style = window.getComputedStyle(element);
-    if (
-      style.display === 'none' ||
-      style.visibility === 'hidden' ||
-      style.opacity === '0'
-    ) {
-      return false;
-    }
-
-    // 跳过尺寸过小的元素（可能是装饰性元素）
-    const rect = element.getBoundingClientRect();
-    if (rect.width < 20 || rect.height < 10) {
-      return false;
-    }
-
-    // 检查文本内容质量
-    const textContent = element.textContent?.trim();
-    if (!textContent) {
-      return false;
-    }
-
-    // 改进的文本长度判断 - 沉浸式翻译通常处理更短的文本
-    if (textContent.length < 3) {
-      return false;
-    }
-
-    // 提高最大长度限制，支持更长的段落
-    if (textContent.length > 3000) {
-      return false;
-    }
-
-    // 跳过纯数字或简单符号
-    if (/^[\d\s\.\,\!\?\-\+\=\(\)\[\]\{\}]*$/.test(textContent)) {
-      return false;
-    }
-
-    // 跳过过多数字的内容（但比之前更宽松）
-    const digitCount = (textContent.match(/\d/g) || []).length;
-    if (digitCount > textContent.length * 0.5) {
-      return false;
-    }
-
-    // 跳过重复字符过多的内容
-    const uniqueChars = new Set(textContent.toLowerCase().replace(/\s/g, ''))
-      .size;
-    if (uniqueChars < 3) {
-      return false;
-    }
-
-    // 检查是否为链接文本（通常较短，可能不需要翻译）
-    if (element.tagName.toLowerCase() === 'a' && textContent.length < 20) {
-      return false;
-    }
-
-    // 检查是否为按钮文本
-    if (
-      element.tagName.toLowerCase() === 'button' ||
-      element.getAttribute('role') === 'button'
-    ) {
-      return textContent.length > 10; // 只翻译较长的按钮文本
-    }
-
-    // 跳过可能的元数据元素
-    if (
-      element.classList.contains('date') ||
-      element.classList.contains('time') ||
-      element.classList.contains('author') ||
-      element.classList.contains('tag') ||
-      element.classList.contains('category')
-    ) {
-      return false;
-    }
-
-    return true;
   }
 
   /**
@@ -729,19 +497,7 @@ export class ParagraphTranslationService {
         domPath,
       );
 
-      // 获取文本节点
-      const textNodes: Text[] = [];
-      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
-        acceptNode: (node) => {
-          const text = node.textContent?.trim();
-          return text ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-        },
-      });
-
-      let node: Node | null;
-      while ((node = walker.nextNode())) {
-        textNodes.push(node as Text);
-      }
+      const textNodes: Text[] = collectTextNodes(element);
 
       return {
         id: `${element.tagName.toLowerCase()}-${fingerprint}-${index}`,

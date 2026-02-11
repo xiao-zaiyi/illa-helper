@@ -1,10 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "mcp__ide__getDiagnostics",
-      "Bash(npm run lint:*)",
-      "Bash(npm run compile:*)",
-      "Bash(npm run check:*)"
+      "Bash(gh api:*)",
+      "mcp__fetch__fetch",
+      "Bash(python -m base64:*)",
+      "Bash(certutil -decode - -)",
+      "Bash(python:*)",
+      "Bash(npm run lint:fix:*)",
+      "Bash(python3:*)",
+      "Bash(npx vue-tsc:*)"
     ],
     "deny": [],
     "ask": []
