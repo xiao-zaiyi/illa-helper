@@ -75,13 +75,7 @@ export class PromptService {
       [UserLevel.C2]: 'C2 (Proficient): Select rare or specialized words.',
     };
 
-    let ratioPart = '';
-    if (replacementRate > 0 && replacementRate <= 1) {
-      const percentage = Math.round(replacementRate * 100);
-      const lower = Math.max(0, percentage - 3); // 缩小波动范围，提升一致性
-      const upper = Math.min(100, percentage + 3);
-      ratioPart = `Select ~${percentage}% of text (${lower}%-${upper}% range) for translation. Focus on quality over quota; choose natural whole words/phrases.`;
-    }
+    const ratioPart = `ONLY translate maximum ${replacementRate} word of given text, if you can't find one, just don't translate anything, it's OK to do nothing. Focus on quality over quota; choose natural whole words/phrases. DO NOT TRANSLATE MORE THAN **${replacementRate}** WORD of GIVEN text !!! LESS IS MORE! otherwise my computer will BOOM.`;
 
     return `User Level: ${levelGuidance[userLevel] || levelGuidance[UserLevel.B1]}
 ${ratioPart}`.trim();
@@ -102,13 +96,7 @@ ${ratioPart}`.trim();
       languageService.getTargetLanguageDisplayName(targetLanguage);
     return `Examples (Target: ${langName}):
         Input: "The quick brown fox jumps over the lazy dog."
-        Output:
-        quick||translation_text
-        brown||translation_text
-        fox||translation_text
-        jumps||translation_text
-        lazy||translation_text
-        dog||translation_text`;
+        Output: quick||translation_text`;
   }
 }
 

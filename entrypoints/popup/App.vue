@@ -439,14 +439,14 @@ const nativeLanguageOptions = computed(() =>
             <div class="setting-group full-width">
               <label>
                 {{ $t('replacement.rate') }}:
-                {{ Math.round(settings.replacementRate * 100) }}%
+                {{ settings.replacementRate }}
               </label>
               <input
                 type="range"
                 v-model.number="settings.replacementRate"
-                min="0.01"
-                max="1"
-                step="0.01"
+                max="10"
+                min="0"
+                step="1"
               />
             </div>
 
