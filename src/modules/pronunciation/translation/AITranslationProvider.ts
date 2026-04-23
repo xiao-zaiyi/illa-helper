@@ -175,11 +175,38 @@ export class AITranslationProvider implements IPhoneticProvider {
     source: string,
     isCached: boolean,
   ): void {
+    console.log('[Vocabulary] 准备记录翻译到生词本:', {
+      word,
+      originalWord: word,
+      translation: translation?.substring(0, 50),
+      source,
+      isCached,
+      timestamp: new Date().toISOString(),
+    });
+
     // 异步记录，不等待结果
     vocabularyService
       .recordTranslation(word, translation, source)
+      .then((entry) => {
+        console.log('[Vocabulary] ✅ 翻译记录成功:', {
+          word: entry.word,
+          originalWord: entry.originalWord,
+          frequency: entry.frequency,
+          isFavorite: entry.isFavorite,
+          firstTranslatedAt: new Date(entry.firstTranslatedAt).toISOString(),
+          lastTranslatedAt: new Date(entry.lastTranslatedAt).toISOString(),
+        });
+      })
       .catch((error) => {
-        console.debug('记录到生词本失败:', error);
+        console.error('[Vocabulary] ❌ 记录到生词本失败:', {
+          word,
+          translation: translation?.substring(0, 50),
+          source,
+          errorMessage: error?.message || String(error),
+          errorStack: error?.stack,
+          timestamp: new Date().toISOString(),
+        });
+        console.error('[Vocabulary] 详细错误:', error);
       });
   }
 

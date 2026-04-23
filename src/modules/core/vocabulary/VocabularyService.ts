@@ -111,32 +111,98 @@ export class VocabularyService {
   }
 
   private async loadFromStorage(): Promise<void> {
+    console.log('[VocabularyService] loadFromStorage 开始执行:', {
+      storageKey: this.storageKey,
+      cacheSizeBefore: this.entriesCache.size,
+      timestamp: new Date().toISOString(),
+    });
+
     try {
       const result = await browser.storage.local.get(this.storageKey);
       const serializedData = result[this.storageKey];
 
+      console.log('[VocabularyService] 从存储读取结果:', {
+        hasData: !!serializedData,
+        dataLength: serializedData?.length || 0,
+      });
+
       if (serializedData) {
-        const entries: VocabularyEntry[] = JSON.parse(serializedData);
-        this.entriesCache.clear();
-        entries.forEach((entry) => {
-          this.entriesCache.set(entry.word, entry);
-        });
+        try {
+          const entries: VocabularyEntry[] = JSON.parse(serializedData);
+          console.log('[VocabularyService] 解析数据成功:', {
+            entryCount: entries.length,
+          });
+
+          this.entriesCache.clear();
+          entries.forEach((entry) => {
+            this.entriesCache.set(entry.word, entry);
+          });
+
+          console.log('[VocabularyService] 缓存加载完成:', {
+            cacheSizeAfter: this.entriesCache.size,
+          });
+        } catch (parseError) {
+          const err = parseError as Error;
+          console.error('[VocabularyService] ❌ 解析存储数据失败:', {
+            errorMessage: err?.message || String(parseError),
+            errorStack: err?.stack,
+            dataPreview: serializedData?.substring(0, 200),
+          });
+          throw parseError;
+        }
+      } else {
+        console.log('[VocabularyService] 存储中没有数据，使用空缓存');
       }
 
       this.cacheLoaded = true;
+      console.log('[VocabularyService] ✅ loadFromStorage 执行完成');
     } catch (error) {
-      console.error('Failed to load vocabulary data:', error);
+      const err = error as Error;
+      console.error('[VocabularyService] ❌ loadFromStorage 执行失败:', {
+        storageKey: this.storageKey,
+        errorMessage: err?.message || String(error),
+        errorStack: err?.stack,
+        timestamp: new Date().toISOString(),
+      });
+      console.error('[VocabularyService] 详细错误:', error);
       this.cacheLoaded = true;
     }
   }
 
   private async saveToStorage(): Promise<void> {
+    console.log('[VocabularyService] saveToStorage 开始执行:', {
+      storageKey: this.storageKey,
+      cacheSize: this.entriesCache.size,
+      timestamp: new Date().toISOString(),
+    });
+
     try {
       const entries = Array.from(this.entriesCache.values());
+      console.log('[VocabularyService] 准备序列化数据:', {
+        entryCount: entries.length,
+      });
+
       const serializedData = JSON.stringify(entries);
+      console.log('[VocabularyService] 序列化完成:', {
+        dataSize: serializedData.length,
+      });
+
       await browser.storage.local.set({ [this.storageKey]: serializedData });
+      console.log('[VocabularyService] ✅ 保存到存储成功:', {
+        storageKey: this.storageKey,
+        entryCount: entries.length,
+        dataSize: serializedData.length,
+      });
     } catch (error) {
-      console.error('Failed to save vocabulary data:', error);
+      const err = error as Error;
+      console.error('[VocabularyService] ❌ saveToStorage 执行失败:', {
+        storageKey: this.storageKey,
+        cacheSize: this.entriesCache.size,
+        errorMessage: err?.message || String(error),
+        errorStack: err?.stack,
+        timestamp: new Date().toISOString(),
+      });
+      console.error('[VocabularyService] 详细错误:', error);
     }
   }
 
@@ -149,52 +215,112 @@ export class VocabularyService {
     phonetic?: string,
     partOfSpeech?: string,
   ): Promise<VocabularyEntry> {
-    await this.ensureCacheLoaded();
+    console.log('[VocabularyService] recordTranslation 开始执行:', {
+      word,
+      normalizedWord: word?.toLowerCase()?.trim(),
+      translation: translation?.substring(0, 50),
+      source,
+      phonetic,
+      partOfSpeech,
+      cacheLoaded: this.cacheLoaded,
+      cacheSize: this.entriesCache.size,
+      timestamp: new Date().toISOString(),
+    });
 
-    const normalizedWord = word.toLowerCase().trim();
-    const now = Date.now();
+    try {
+      await this.ensureCacheLoaded();
 
-    let entry = this.entriesCache.get(normalizedWord);
+      const normalizedWord = word.toLowerCase().trim();
+      const now = Date.now();
 
-    if (entry) {
-      entry.frequency += 1;
-      entry.lastTranslatedAt = now;
-      entry.translation = translation || entry.translation;
-      if (phonetic) entry.phonetic = phonetic;
-      if (partOfSpeech) entry.partOfSpeech = partOfSpeech;
-
-      this.emitEvent(VocabularyEventType.WORD_UPDATED, {
-        word: normalizedWord,
-        entry,
+      console.log('[VocabularyService] 缓存加载完成:', {
+        normalizedWord,
+        cacheLoaded: this.cacheLoaded,
+        cacheSize: this.entriesCache.size,
       });
-    } else {
-      await this.ensureSpaceAvailable();
 
-      entry = {
-        id: this.generateId(),
-        word: normalizedWord,
-        originalWord: word,
-        translation,
+      let entry = this.entriesCache.get(normalizedWord);
+
+      if (entry) {
+        console.log('[VocabularyService] 找到现有条目，更新频次:', {
+          word: entry.word,
+          originalWord: entry.originalWord,
+          oldFrequency: entry.frequency,
+          newFrequency: entry.frequency + 1,
+          isFavorite: entry.isFavorite,
+        });
+
+        entry.frequency += 1;
+        entry.lastTranslatedAt = now;
+        entry.translation = translation || entry.translation;
+        if (phonetic) entry.phonetic = phonetic;
+        if (partOfSpeech) entry.partOfSpeech = partOfSpeech;
+
+        this.emitEvent(VocabularyEventType.WORD_UPDATED, {
+          word: normalizedWord,
+          entry,
+        });
+      } else {
+        console.log('[VocabularyService] 未找到现有条目，创建新条目:', {
+          normalizedWord,
+          originalWord: word,
+          cacheSizeBefore: this.entriesCache.size,
+        });
+
+        await this.ensureSpaceAvailable();
+
+        entry = {
+          id: this.generateId(),
+          word: normalizedWord,
+          originalWord: word,
+          translation,
+          source,
+          frequency: 1,
+          isFavorite: false,
+          firstTranslatedAt: now,
+          lastTranslatedAt: now,
+          phonetic,
+          partOfSpeech,
+          tags: [],
+        };
+
+        console.log('[VocabularyService] 创建新条目:', {
+          id: entry.id,
+          word: entry.word,
+          originalWord: entry.originalWord,
+          frequency: entry.frequency,
+        });
+
+        this.entriesCache.set(normalizedWord, entry);
+
+        console.log('[VocabularyService] 缓存更新后大小:', {
+          cacheSizeAfter: this.entriesCache.size,
+        });
+
+        this.emitEvent(VocabularyEventType.WORD_ADDED, {
+          word: normalizedWord,
+          entry,
+        });
+      }
+
+      console.log('[VocabularyService] 准备保存到存储...');
+      await this.saveToStorage();
+      console.log('[VocabularyService] ✅ 保存到存储成功');
+
+      return entry;
+    } catch (error) {
+      const err = error as Error;
+      console.error('[VocabularyService] ❌ recordTranslation 执行失败:', {
+        word,
+        translation: translation?.substring(0, 50),
         source,
-        frequency: 1,
-        isFavorite: false,
-        firstTranslatedAt: now,
-        lastTranslatedAt: now,
-        phonetic,
-        partOfSpeech,
-        tags: [],
-      };
-
-      this.entriesCache.set(normalizedWord, entry);
-
-      this.emitEvent(VocabularyEventType.WORD_ADDED, {
-        word: normalizedWord,
-        entry,
+        errorMessage: err?.message || String(error),
+        errorStack: err?.stack,
+        timestamp: new Date().toISOString(),
       });
+      console.error('[VocabularyService] 详细错误:', error);
+      throw error;
     }
-
-    await this.saveToStorage();
-    return entry;
   }
 
   private async ensureSpaceAvailable(): Promise<void> {
