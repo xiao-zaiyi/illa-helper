@@ -87,6 +87,7 @@ const sectionTitles: Record<string, string> = {
   hotkey: t('options.hotkey'),
   data: t('options.data'),
   about: t('options.about'),
+  vocabulary: t('vocabulary.title'),
 };
 
 // 检查设备是否为移动端

@@ -29,6 +29,7 @@ import { ApiConfig } from '../../shared/types/api';
 import { API_CONSTANTS } from '../config';
 import { cleanMarkdownFromResponse } from '@/src/utils';
 import { UniversalApiService } from '../../api/services/UniversalApiService';
+import { vocabularyService } from '../../core/vocabulary';
 
 export class AITranslationProvider implements IPhoneticProvider {
   /** 提供者名称标识 */
@@ -87,10 +88,13 @@ export class AITranslationProvider implements IPhoneticProvider {
       }
 
       const cleanWord = word.toLowerCase().trim();
+      const originalWord = word;
 
       // 检查缓存
       const cached = this.getFromCache(cleanWord);
       if (cached) {
+        // 记录到生词本（缓存命中也需要记录频次）
+        this.recordToVocabulary(originalWord, cached.explain, cached.source, true);
         return {
           success: true,
           data: cached,
@@ -144,6 +148,9 @@ export class AITranslationProvider implements IPhoneticProvider {
       // 存入缓存
       this.setCache(cleanWord, meaningInfo);
 
+      // 记录到生词本
+      this.recordToVocabulary(originalWord, meaningInfo.explain, meaningInfo.source, false);
+
       return {
         success: true,
         data: meaningInfo,
@@ -156,6 +163,24 @@ export class AITranslationProvider implements IPhoneticProvider {
         error: error instanceof Error ? error.message : '未知错误',
       };
     }
+  }
+
+  /**
+   * 记录翻译到生词本
+   * 异步执行，不阻塞主流程
+   */
+  private recordToVocabulary(
+    word: string,
+    translation: string,
+    source: string,
+    isCached: boolean,
+  ): void {
+    // 异步记录，不等待结果
+    vocabularyService
+      .recordTranslation(word, translation, source)
+      .catch((error) => {
+        console.debug('记录到生词本失败:', error);
+      });
   }
 
   /**

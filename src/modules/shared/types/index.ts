@@ -15,5 +15,8 @@ export * from './ui';
 // 存储配置类型
 export * from './storage';
 
+// 生词本类型
+export * from './vocabulary';
+
 // 导出常量
 export * from '../constants/defaults';

@@ -102,6 +102,7 @@ import {
   Download,
   Info,
   Keyboard,
+  BookOpen,
 } from 'lucide-vue-next';
 import NavigationGroup from './NavigationGroup.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
@@ -164,6 +165,12 @@ const advancedFeatures = computed<NavigationItem[]>(() => [
 
 // 管理工具组
 const managementTools = computed<NavigationItem[]>(() => [
+  {
+    key: 'vocabulary',
+    label: t('options.navigation.vocabulary'),
+    icon: BookOpen,
+    description: t('options.navigation.vocabularyDescription'),
+  },
   {
     key: 'website-management',
     label: t('options.navigation.websiteManagement'),
