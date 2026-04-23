@@ -313,12 +313,12 @@
           class="flex items-center justify-between"
         >
           <div class="text-sm text-muted-foreground">
-            {{ $t('vocabulary.showingEntries', { from: offset + 1, to: Math.min(offset + pageSize, total), total: total }) }}
+            {{ $t('vocabulary.showingEntries', { from: paginationFrom, to: paginationTo, total: total }) }}
           </div>
           <div class="flex gap-2">
             <Button
               variant="ghost"
-              :disabled="offset === 0"
+              :disabled="isPrevDisabled"
               @click="prevPage"
               class="flex items-center gap-1"
             >
@@ -327,7 +327,7 @@
             </Button>
             <Button
               variant="ghost"
-              :disabled="offset + pageSize >= total"
+              :disabled="isNextDisabled"
               @click="nextPage"
               class="flex items-center gap-1"
             >
@@ -454,6 +454,18 @@ const paginatedEntries = computed(() => {
 });
 
 const total = computed(() => filteredEntries.value.length);
+
+const paginationFrom = computed(() => offset.value + 1);
+
+const paginationTo = computed(() => {
+  return Math.min(offset.value + pageSize.value, total.value);
+});
+
+const isPrevDisabled = computed(() => offset.value === 0);
+
+const isNextDisabled = computed(() => {
+  return offset.value + pageSize.value >= total.value;
+});
 
 // 生命周期
 onMounted(async () => {
