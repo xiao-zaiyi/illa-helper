@@ -201,6 +201,24 @@
                     </p>
                   </div>
                 </div>
+                <div class="flex items-start space-x-2">
+                  <RadioGroupItem id="mode-bilingual" value="bilingual" />
+                  <div class="grid gap-1.5 leading-none">
+                    <Label
+                      for="mode-bilingual"
+                      class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {{ $t('basicSettings.translationModes.bilingual') }}
+                    </Label>
+                    <p class="text-xs text-muted-foreground">
+                      {{
+                        $t(
+                          'basicSettings.translationModes.bilingualDescription',
+                        )
+                      }}
+                    </p>
+                  </div>
+                </div>
               </div>
             </RadioGroup>
           </div>

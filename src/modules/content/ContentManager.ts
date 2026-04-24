@@ -5,6 +5,7 @@ import { StyleManager } from '@/src/modules/styles';
 import { TextProcessorService } from '@/src/modules/core/translation/TextProcessorService';
 import { TextReplacerService } from '@/src/modules/core/translation/TextReplacerService';
 import { ParagraphTranslationService } from '@/src/modules/core/translation/ParagraphTranslationService';
+import { BilingualTranslationService } from '@/src/modules/core/translation/BilingualTranslationService';
 
 import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { WebsiteManager } from '@/src/modules/options/website-management/manager';
@@ -41,6 +42,9 @@ export class TranslationStateManager {
   /** 段落翻译服务引用 */
   private paragraphTranslationService?: ParagraphTranslationService;
 
+  /** 双语对照翻译服务引用 */
+  private bilingualTranslationService?: BilingualTranslationService;
+
   /** 悬浮球管理器引用 */
   private floatingBallManager?: any;
 
@@ -54,10 +58,12 @@ export class TranslationStateManager {
     processingService?: ProcessingService,
     floatingBallManager?: any,
     paragraphTranslationService?: ParagraphTranslationService,
+    bilingualTranslationService?: BilingualTranslationService,
   ) {
     this.processingService = processingService;
     this.floatingBallManager = floatingBallManager;
     this.paragraphTranslationService = paragraphTranslationService;
+    this.bilingualTranslationService = bilingualTranslationService;
   }
 
   /**
@@ -98,6 +104,11 @@ export class TranslationStateManager {
       // 段落翻译模式：使用段落翻译服务
       if (this.paragraphTranslationService) {
         await this.paragraphTranslationService.start();
+      }
+    } else if (settings.translationMode === TranslationMode.BILINGUAL) {
+      // 双语对照模式：使用双语对照翻译服务
+      if (this.bilingualTranslationService) {
+        await this.bilingualTranslationService.start();
       }
     } else {
       // 单词翻译模式：使用原有的处理服务
@@ -147,7 +158,13 @@ export class TranslationStateManager {
     const hasParagraphTranslation =
       document.querySelector('.illa-paragraph-translation') !== null;
 
-    return hasWordTranslation || hasParagraphTranslation;
+    // 检查双语对照翻译内容
+    const hasBilingualTranslation =
+      document.querySelector('.illa-bilingual-translation') !== null;
+
+    return (
+      hasWordTranslation || hasParagraphTranslation || hasBilingualTranslation
+    );
   }
 
   /**
@@ -158,13 +175,17 @@ export class TranslationStateManager {
   }
 
   /**
-   * 清除所有翻译内容（包括段落翻译）
+   * 清除所有翻译内容（包括段落翻译和双语对照翻译）
    */
   public clearAllTranslations(): void {
     try {
       // 清除段落翻译
       if (this.paragraphTranslationService) {
         this.paragraphTranslationService.clearAllTranslations();
+      }
+      // 清除双语对照翻译
+      if (this.bilingualTranslationService) {
+        this.bilingualTranslationService.clearAllTranslations();
       }
     } catch (error) {
       console.error('[ContentManager] 清除翻译失败:', error);
@@ -387,6 +408,10 @@ export class ContentManager implements IContentManager {
     const paragraphTranslationService =
       ParagraphTranslationService.getInstance(lazyLoadingService);
 
+    // 初始化双语对照翻译服务，传递懒加载服务
+    const bilingualTranslationService =
+      BilingualTranslationService.getInstance(lazyLoadingService);
+
     const floatingBallManager = new FloatingBallManager(
       this.settings.floatingBall,
     );
@@ -398,7 +423,8 @@ export class ContentManager implements IContentManager {
       textReplacer,
       floatingBallManager,
       lazyLoadingService,
-      paragraphTranslationService, // 添加段落翻译服务
+      paragraphTranslationService,
+      bilingualTranslationService,
     };
 
     // 创建业务服务
@@ -413,7 +439,8 @@ export class ContentManager implements IContentManager {
     this.translationStateManager = new TranslationStateManager(
       this.processingService,
       this.services.floatingBallManager,
-      this.services.paragraphTranslationService, // 直接传入段落翻译服务
+      this.services.paragraphTranslationService,
+      this.services.bilingualTranslationService,
     );
 
     this.listenerService = new ListenerService(
@@ -498,10 +525,17 @@ export class ContentManager implements IContentManager {
       this.settings.triggerMode === TriggerMode.AUTOMATIC
     ) {
       try {
-        // 判断是单词模式还有还是段落翻译
+        // 根据翻译模式选择不同的服务
         if (this.settings.translationMode === TranslationMode.PARAGRAPH) {
           // 段落翻译模式
           await this.paragraphService.start();
+        } else if (
+          this.settings.translationMode === TranslationMode.BILINGUAL
+        ) {
+          // 双语对照模式
+          if (this.services?.bilingualTranslationService) {
+            await this.services.bilingualTranslationService.start();
+          }
         } else {
           // 单词翻译模式
           await this.processingService.processPage();

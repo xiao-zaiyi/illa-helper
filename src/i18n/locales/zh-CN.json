@@ -231,7 +231,9 @@
       "word": "单词翻译模式",
       "wordDescription": "智能选择部分单词进行翻译，保持原文结构，适合语言学习",
       "paragraph": "段落翻译模式",
-      "paragraphDescription": "翻译整个段落，显示完整译文，适合内容理解"
+      "paragraphDescription": "翻译整个段落，显示完整译文，适合内容理解",
+      "bilingual": "双语对照模式",
+      "bilingualDescription": "保留原文并显示译文，原文与译文对照展示，适合语言学习与资料整理"
     },
     "lazyLoading": {}
   },

@@ -130,6 +130,7 @@ export const IGNORE_SELECTORS = [
   '[data-wxt-text-processed]',
   '[data-wxt-word-processed]',
   '.illa-paragraph-translation',
+  '.illa-bilingual-translation',
   `[${DOM_LABELS.WALKED}]`,
 ].join(', ');
 
@@ -228,4 +229,28 @@ export const PARAGRAPH_TRANSLATION = {
   WRAPPER_CLASS: 'illa-paragraph-translation',
   CONTENT_CLASS: 'illa-paragraph-content',
   MARKER_ATTR: 'data-illa-translated',
+};
+
+// 双语对照翻译相关常量
+export const BILINGUAL_TRANSLATION = {
+  // 可翻译的元素标签（与段落翻译相同）
+  TRANSLATABLE_TAGS: PARAGRAPH_TRANSLATION.TRANSLATABLE_TAGS,
+
+  // 需要跳过的类名关键词（与段落翻译相同）
+  SKIP_CLASS_KEYWORDS: PARAGRAPH_TRANSLATION.SKIP_CLASS_KEYWORDS,
+
+  // 最小文本长度要求（与段落翻译相同）
+  MIN_TEXT_LENGTH: PARAGRAPH_TRANSLATION.MIN_TEXT_LENGTH,
+
+  // CSS类名
+  WRAPPER_CLASS: 'illa-bilingual-translation',
+  ORIGINAL_CLASS: 'illa-bilingual-original',
+  TRANSLATION_CLASS: 'illa-bilingual-translation-text',
+  MARKER_ATTR: 'data-illa-bilingual',
+
+  // 双语对照模式的样式类
+  STYLE_WRAPPER: 'illa-bilingual-wrapper',
+  STYLE_ORIGINAL: 'illa-bilingual-original-text',
+  STYLE_TRANSLATION: 'illa-bilingual-translation-text',
+  STYLE_SEPARATOR: 'illa-bilingual-separator',
 };
