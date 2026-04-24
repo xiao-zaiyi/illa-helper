@@ -85,25 +85,48 @@ export class BilingualTranslationService {
    * 启动双语对照翻译
    */
   public async start(): Promise<number> {
-    console.log('[双语对照翻译] 开始启动翻译服务...');
+    console.log('[双语对照翻译] ========== 开始启动翻译服务 ==========');
 
-    if (this.isActive) {
-      console.warn('[双语对照翻译] 翻译服务已在运行');
+    try {
+      if (this.isActive) {
+        console.warn('[双语对照翻译] 翻译服务已在运行，跳过');
+        return 0;
+      }
+
+      this.isActive = true;
+
+      console.log('[双语对照翻译] 获取用户设置...');
+      const settings = await this.storageService.getUserSettings();
+      console.log('[双语对照翻译] 用户设置:', {
+        translationMode: settings?.translationMode,
+        lazyLoadingEnabled: settings?.lazyLoading?.enabled,
+        targetLanguage: settings?.multilingualConfig?.targetLanguage,
+      });
+
+      const isLazyLoadingEnabled =
+        settings?.lazyLoading?.enabled && this.lazyLoadingService?.isEnabled();
+
+      console.log(
+        '[双语对照翻译] lazyLoadingService 存在:',
+        !!this.lazyLoadingService,
+      );
+      console.log('[双语对照翻译] 懒加载模式是否启用:', isLazyLoadingEnabled);
+
+      if (isLazyLoadingEnabled) {
+        console.log('[双语对照翻译] 使用懒加载模式');
+        return await this.startLazyLoading();
+      } else {
+        console.log('[双语对照翻译] 使用全量翻译模式');
+        return await this.startFullTranslation();
+      }
+    } catch (error) {
+      console.error('[双语对照翻译] 启动翻译服务失败:', error);
+      console.error('[双语对照翻译] 错误详情:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      this.isActive = false;
       return 0;
-    }
-
-    this.isActive = true;
-
-    const settings = await this.storageService.getUserSettings();
-    const isLazyLoadingEnabled =
-      settings?.lazyLoading?.enabled && this.lazyLoadingService?.isEnabled();
-
-    if (isLazyLoadingEnabled) {
-      console.log('[双语对照翻译] 使用懒加载模式');
-      return this.startLazyLoading();
-    } else {
-      console.log('[双语对照翻译] 使用全量翻译模式');
-      return this.startFullTranslation();
     }
   }
 
@@ -145,25 +168,94 @@ export class BilingualTranslationService {
    * 查找段落元素 - 基于 DomWalker 统一遍历
    */
   private findParagraphElements(): HTMLElement[] {
-    const paragraphs = walkAndCollectParagraphs(document.body);
+    console.log('[双语对照翻译] findParagraphElements: 开始查找段落元素...');
 
-    const elements = paragraphs
-      .map((p) => p.element)
-      .filter((element) => {
-        if (this.translatedElements.has(element)) return false;
-        if (this.translatingElements.has(element)) return false;
+    try {
+      const paragraphs = walkAndCollectParagraphs(document.body);
+      console.log(
+        '[双语对照翻译] findParagraphElements: DomWalker 找到段落数量:',
+        paragraphs.length,
+      );
 
-        const text = element.textContent?.trim();
-        if (!text || text.length < 3) return false;
-        if (text.length > 3000) return false;
+      if (paragraphs.length === 0) {
+        console.warn(
+          '[双语对照翻译] findParagraphElements: DomWalker 未找到任何段落',
+        );
+      }
 
-        if (/^[\d\s.,!?\-+=()[\]{}]*$/.test(text)) return false;
+      const elements = paragraphs
+        .map((p) => p.element)
+        .filter((element) => {
+          if (this.translatedElements.has(element)) {
+            console.log(
+              '[双语对照翻译] findParagraphElements: 跳过已翻译元素:',
+              element.tagName,
+            );
+            return false;
+          }
+          if (this.translatingElements.has(element)) {
+            console.log(
+              '[双语对照翻译] findParagraphElements: 跳过正在翻译的元素:',
+              element.tagName,
+            );
+            return false;
+          }
 
-        return true;
+          const text = element.textContent?.trim();
+          if (!text || text.length < 3) {
+            console.log(
+              '[双语对照翻译] findParagraphElements: 跳过文本过短的元素:',
+              element.tagName,
+              '文本长度:',
+              text?.length,
+            );
+            return false;
+          }
+          if (text.length > 3000) {
+            console.log(
+              '[双语对照翻译] findParagraphElements: 跳过文本过长的元素:',
+              element.tagName,
+              '文本长度:',
+              text.length,
+            );
+            return false;
+          }
+
+          if (/^[\d\s.,!?\-+=()[\]{}]*$/.test(text)) {
+            console.log(
+              '[双语对照翻译] findParagraphElements: 跳过纯符号/数字的元素:',
+              element.tagName,
+            );
+            return false;
+          }
+
+          return true;
+        });
+
+      console.log(
+        '[双语对照翻译] findParagraphElements: 过滤后找到段落元素数量:',
+        elements.length,
+      );
+
+      if (elements.length > 0) {
+        console.log(
+          '[双语对照翻译] findParagraphElements: 前5个元素标签:',
+          elements.slice(0, 5).map((e) => e.tagName),
+        );
+      }
+
+      return elements;
+    } catch (error) {
+      console.error(
+        '[双语对照翻译] findParagraphElements: 查找段落元素失败:',
+        error,
+      );
+      console.error('[双语对照翻译] 错误详情:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
-
-    console.log('[双语对照翻译] 找到段落元素数量:', elements.length);
-    return elements;
+      return [];
+    }
   }
 
   /**
@@ -216,40 +308,69 @@ export class BilingualTranslationService {
    */
   private async translateElement(element: HTMLElement): Promise<boolean> {
     if (this.translatedElements.has(element)) {
+      console.log('[双语对照翻译] translateElement: 元素已翻译，跳过');
       return false;
     }
 
     const textContent = element.textContent?.trim();
     if (!textContent || textContent.length < 5) {
+      console.log(
+        '[双语对照翻译] translateElement: 文本过短，跳过，长度:',
+        textContent?.length,
+      );
       return false;
     }
+
+    console.log('[双语对照翻译] translateElement: 准备翻译元素:', {
+      tagName: element.tagName,
+      textLength: textContent.length,
+      textPreview: textContent.substring(0, 100),
+    });
 
     this.translatingElements.add(element);
     this.showLoadingIndicator(element);
 
     try {
       console.log(
-        '[双语对照翻译] 翻译元素:',
-        element.tagName,
-        textContent.substring(0, 50),
+        '[双语对照翻译] translateElement: 调用 translateParagraph API...',
       );
 
+      const startTime = performance.now();
       const translatedText =
         await this.paragraphApi.translateParagraph(textContent);
+      const endTime = performance.now();
+
+      console.log(
+        '[双语对照翻译] translateElement: API调用耗时:',
+        Math.round(endTime - startTime),
+        'ms',
+      );
+      console.log('[双语对照翻译] translateElement: 翻译结果:', {
+        hasResult: !!translatedText,
+        resultLength: translatedText?.length,
+        resultPreview: translatedText?.substring(0, 100),
+      });
 
       if (translatedText && translatedText.trim()) {
         this.removeLoadingIndicator(element);
         this.translatingElements.delete(element);
 
+        console.log('[双语对照翻译] translateElement: 显示双语对照翻译结果...');
         this.showBilingualTranslation(element, textContent, translatedText);
         this.translatedElements.add(element);
-        console.log('[双语对照翻译] 翻译成功:', element.tagName);
+        console.log(
+          '[双语对照翻译] translateElement: 翻译成功:',
+          element.tagName,
+        );
         return true;
       } else {
         this.removeLoadingIndicator(element);
         this.translatingElements.delete(element);
 
-        console.log('[双语对照翻译] 翻译结果为空，跳过:', element.tagName);
+        console.warn('[双语对照翻译] translateElement: 翻译结果为空，跳过:', {
+          tagName: element.tagName,
+          originalText: textContent.substring(0, 50),
+        });
         return false;
       }
     } catch (error) {

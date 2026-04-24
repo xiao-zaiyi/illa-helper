@@ -94,31 +94,103 @@ export class TranslationStateManager {
    * @private
    */
   private async executeTranslation(): Promise<void> {
-    // 获取用户设置来确定翻译模式
-    const storageService = (
-      await import('../core/storage/StorageService')
-    ).StorageService.getInstance();
-    const settings = await storageService.getUserSettings();
+    console.log('[TranslationStateManager] executeTranslation: 开始执行翻译');
 
-    if (settings.translationMode === TranslationMode.PARAGRAPH) {
-      // 段落翻译模式：使用段落翻译服务
-      if (this.paragraphTranslationService) {
-        await this.paragraphTranslationService.start();
+    try {
+      // 获取用户设置来确定翻译模式
+      const storageService = (
+        await import('../core/storage/StorageService')
+      ).StorageService.getInstance();
+      const settings = await storageService.getUserSettings();
+
+      console.log(
+        '[TranslationStateManager] executeTranslation: 翻译模式:',
+        settings.translationMode,
+      );
+      console.log(
+        '[TranslationStateManager] executeTranslation: paragraphTranslationService 存在:',
+        !!this.paragraphTranslationService,
+      );
+      console.log(
+        '[TranslationStateManager] executeTranslation: bilingualTranslationService 存在:',
+        !!this.bilingualTranslationService,
+      );
+      console.log(
+        '[TranslationStateManager] executeTranslation: processingService 存在:',
+        !!this.processingService,
+      );
+
+      if (settings.translationMode === TranslationMode.PARAGRAPH) {
+        // 段落翻译模式：使用段落翻译服务
+        console.log(
+          '[TranslationStateManager] executeTranslation: 使用段落翻译模式',
+        );
+        if (this.paragraphTranslationService) {
+          console.log(
+            '[TranslationStateManager] executeTranslation: 调用 paragraphTranslationService.start()',
+          );
+          await this.paragraphTranslationService.start();
+          console.log(
+            '[TranslationStateManager] executeTranslation: 段落翻译完成',
+          );
+        } else {
+          console.error(
+            '[TranslationStateManager] executeTranslation: paragraphTranslationService 为空，无法执行段落翻译',
+          );
+        }
+      } else if (settings.translationMode === TranslationMode.BILINGUAL) {
+        // 双语对照模式：使用双语对照翻译服务
+        console.log(
+          '[TranslationStateManager] executeTranslation: 使用双语对照模式',
+        );
+        if (this.bilingualTranslationService) {
+          console.log(
+            '[TranslationStateManager] executeTranslation: 调用 bilingualTranslationService.start()',
+          );
+          await this.bilingualTranslationService.start();
+          console.log(
+            '[TranslationStateManager] executeTranslation: 双语对照翻译完成',
+          );
+        } else {
+          console.error(
+            '[TranslationStateManager] executeTranslation: bilingualTranslationService 为空，无法执行双语对照翻译',
+          );
+        }
+      } else {
+        // 单词翻译模式：使用原有的处理服务
+        console.log(
+          '[TranslationStateManager] executeTranslation: 使用单词翻译模式',
+        );
+        if (this.processingService) {
+          console.log(
+            '[TranslationStateManager] executeTranslation: 调用 processingService.processPage()',
+          );
+          await this.processingService.processPage();
+          console.log(
+            '[TranslationStateManager] executeTranslation: 单词翻译完成',
+          );
+        } else {
+          console.error(
+            '[TranslationStateManager] executeTranslation: processingService 为空，无法执行单词翻译',
+          );
+        }
       }
-    } else if (settings.translationMode === TranslationMode.BILINGUAL) {
-      // 双语对照模式：使用双语对照翻译服务
-      if (this.bilingualTranslationService) {
-        await this.bilingualTranslationService.start();
-      }
-    } else {
-      // 单词翻译模式：使用原有的处理服务
-      if (this.processingService) {
-        await this.processingService.processPage();
-      }
+
+      this.isTranslationVisible = true;
+      document.body.classList.remove(this.HIDDEN_CLASS);
+      console.log(
+        '[TranslationStateManager] executeTranslation: 翻译执行完成，已显示翻译内容',
+      );
+    } catch (error) {
+      console.error(
+        '[TranslationStateManager] executeTranslation: 执行翻译失败:',
+        error,
+      );
+      console.error('[TranslationStateManager] 错误详情:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
-
-    this.isTranslationVisible = true;
-    document.body.classList.remove(this.HIDDEN_CLASS);
   }
 
   /**
@@ -223,6 +295,7 @@ export class ContentManager implements IContentManager {
   // 新增：最终确定的翻译目标语言
   private finalTargetLanguage?: string;
   private paragraphService = ParagraphTranslationService.getInstance();
+  private bilingualService = BilingualTranslationService.getInstance();
   constructor() {
     this.configurationService = new ConfigurationService();
   }
@@ -517,32 +590,86 @@ export class ContentManager implements IContentManager {
    * 处理初始页面处理
    */
   private async handleInitialProcessing(websiteStatus: string): Promise<void> {
-    if (!this.settings || !this.processingService) return;
+    if (!this.settings) {
+      console.warn(
+        '[ContentManager] handleInitialProcessing: settings 为空，跳过',
+      );
+      return;
+    }
+
+    console.log(
+      '[ContentManager] handleInitialProcessing: 翻译模式:',
+      this.settings.translationMode,
+    );
+    console.log(
+      '[ContentManager] handleInitialProcessing: 触发模式:',
+      this.settings.triggerMode,
+    );
+    console.log(
+      '[ContentManager] handleInitialProcessing: 网站状态:',
+      websiteStatus,
+    );
 
     // 根据触发模式或白名单执行操作
-    if (
+    const shouldAutoTranslate =
       websiteStatus === 'whitelisted' ||
-      this.settings.triggerMode === TriggerMode.AUTOMATIC
-    ) {
-      try {
-        // 根据翻译模式选择不同的服务
-        if (this.settings.translationMode === TranslationMode.PARAGRAPH) {
-          // 段落翻译模式
-          await this.paragraphService.start();
-        } else if (
-          this.settings.translationMode === TranslationMode.BILINGUAL
-        ) {
-          // 双语对照模式
-          if (this.services?.bilingualTranslationService) {
-            await this.services.bilingualTranslationService.start();
-          }
-        } else {
-          // 单词翻译模式
-          await this.processingService.processPage();
+      this.settings.triggerMode === TriggerMode.AUTOMATIC;
+
+    if (!shouldAutoTranslate) {
+      console.log(
+        '[ContentManager] handleInitialProcessing: 不满足自动翻译条件，跳过',
+      );
+      return;
+    }
+
+    try {
+      // 根据翻译模式选择不同的服务
+      const translationMode = this.settings.translationMode;
+      console.log(
+        '[ContentManager] handleInitialProcessing: 开始执行翻译，模式:',
+        translationMode,
+      );
+
+      if (translationMode === TranslationMode.PARAGRAPH) {
+        // 段落翻译模式
+        console.log(
+          '[ContentManager] handleInitialProcessing: 使用段落翻译模式',
+        );
+        await this.paragraphService.start();
+        console.log('[ContentManager] handleInitialProcessing: 段落翻译完成');
+      } else if (translationMode === TranslationMode.BILINGUAL) {
+        // 双语对照模式
+        console.log(
+          '[ContentManager] handleInitialProcessing: 使用双语对照模式',
+        );
+        console.log(
+          '[ContentManager] handleInitialProcessing: bilingualService 是否存在:',
+          !!this.bilingualService,
+        );
+        await this.bilingualService.start();
+        console.log(
+          '[ContentManager] handleInitialProcessing: 双语对照翻译完成',
+        );
+      } else {
+        // 单词翻译模式
+        if (!this.processingService) {
+          console.error(
+            '[ContentManager] handleInitialProcessing: processingService 为空，无法执行单词翻译',
+          );
+          return;
         }
-      } catch (error) {
-        console.error('[ContentManager] 初始页面处理失败:', error);
+        console.log(
+          '[ContentManager] handleInitialProcessing: 使用单词翻译模式',
+        );
+        await this.processingService.processPage();
+        console.log('[ContentManager] handleInitialProcessing: 单词翻译完成');
       }
+    } catch (error) {
+      console.error('[ContentManager] 初始页面处理失败:', error);
+      console.error('[ContentManager] 错误详情:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
   }
 
