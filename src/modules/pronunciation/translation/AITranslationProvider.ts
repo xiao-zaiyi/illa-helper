@@ -10,27 +10,16 @@
  * - 实现24小时TTL缓存机制减少API调用
  * - 完善的错误处理和超时控制
  * - 支持动态API配置更新
- * - 与现有音标系统完全兼容
  * - 使用统一的UniversalApiService进行API调用
- *
- * @author AI Assistant
- * @version 2.0.0
  */
 
-import { IPhoneticProvider } from '../phonetic/IPhoneticProvider';
-import {
-  PhoneticResult,
-  PhoneticInfo,
-  AITranslationResult,
-  AITranslationEntry,
-  CacheEntry,
-} from '../types';
+import { AITranslationResult, AITranslationEntry, CacheEntry } from '../types';
 import { ApiConfigItem } from '../../shared/types/api';
 import { API_CONSTANTS } from '../config';
 import { cleanMarkdownFromResponse } from '@/src/utils';
 import { UniversalApiService } from '../../api/services/UniversalApiService';
 
-export class AITranslationProvider implements IPhoneticProvider {
+export class AITranslationProvider {
   /** 提供者名称标识 */
   readonly name = 'ai-translation';
 
@@ -167,62 +156,6 @@ export class AITranslationProvider implements IPhoneticProvider {
         error: error instanceof Error ? error.message : '未知错误',
       };
     }
-  }
-
-  /**
-   * 获取单词的音标信息（兼容IPhoneticProvider接口）
-   *
-   * 该方法为了兼容IPhoneticProvider接口而存在，AI翻译提供者主要
-   * 负责词义翻译，不提供音标功能。方法内部调用getMeaning获取翻译
-   * 结果，并将其包装为PhoneticResult格式返回。
-   *
-   * @param word - 要查询的英语单词
-   * @returns Promise<PhoneticResult> - 包含AI翻译结果的音标查询结果
-   */
-  async getPhonetic(word: string): Promise<PhoneticResult> {
-    // AI翻译接口主要用于词义，不提供音标
-    // 这里返回基本结构，词义信息通过getMeaning获取
-    const meaningResult = await this.getMeaning(word);
-
-    if (meaningResult.success && meaningResult.data) {
-      const phoneticInfo: PhoneticInfo = {
-        word,
-        phonetics: [], // 不提供音标
-        aiTranslation: meaningResult.data,
-      };
-
-      return {
-        success: true,
-        data: phoneticInfo,
-        cached: meaningResult.cached,
-      };
-    }
-
-    return {
-      success: false,
-      error: meaningResult.error,
-    };
-  }
-
-  /**
-   * 批量获取音标信息
-   */
-  async getBatchPhonetics(words: string[]): Promise<PhoneticResult[]> {
-    // 批量处理单词翻译
-    const results = await Promise.allSettled(
-      words.map((word) => this.getPhonetic(word)),
-    );
-
-    return results.map((result) => {
-      if (result.status === 'fulfilled') {
-        return result.value;
-      } else {
-        return {
-          success: false,
-          error: result.reason?.message || '批量处理失败',
-        };
-      }
-    });
   }
 
   /**

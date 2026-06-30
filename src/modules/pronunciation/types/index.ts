@@ -22,7 +22,6 @@ export type {
   TTSResult,
   TTSProviderType,
   TTSProviderStatus,
-  TTSServiceStatus,
 } from './tts.types';
 
 // 便捷导入 - UI相关
@@ -32,5 +31,4 @@ export type {
   TooltipState,
   InteractionEventType,
   InteractionEventHandler,
-  ElementEventHandlers,
 } from './ui.types';

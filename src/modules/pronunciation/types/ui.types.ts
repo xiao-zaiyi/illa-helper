@@ -32,9 +32,3 @@ export interface InteractionEventHandler {
   type: InteractionEventType;
   handler: (event: Event) => void;
 }
-
-// 元素事件处理器映射
-export interface ElementEventHandlers {
-  mouseEnterHandler: (event: Event) => void;
-  mouseLeaveHandler: (event: Event) => void;
-}

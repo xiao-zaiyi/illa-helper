@@ -24,7 +24,7 @@ export class PositionUtils {
   static positionTooltip(
     element: HTMLElement,
     tooltip: HTMLElement,
-    zIndex = UI_CONSTANTS.TOOLTIP_Z_INDEX,
+    zIndex: number = UI_CONSTANTS.TOOLTIP_Z_INDEX,
     position: TooltipPosition = 'auto',
   ): void {
     // 先设置基本样式，让tooltip可以被测量

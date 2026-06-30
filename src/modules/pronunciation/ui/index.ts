@@ -3,4 +3,5 @@
  */
 
 export { TooltipRenderer } from './TooltipRenderer';
-export { EventManager } from './EventManager';
+export { TooltipInteractionController } from './TooltipInteractionController';
+export type { TooltipInteractionControllerOptions } from './TooltipInteractionController';

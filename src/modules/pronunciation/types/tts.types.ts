@@ -17,9 +17,3 @@ export interface TTSProviderStatus {
   available: boolean;
   speaking: boolean;
 }
-
-// TTS服务状态
-export interface TTSServiceStatus {
-  primary: TTSProviderStatus;
-  fallback: TTSProviderStatus;
-}

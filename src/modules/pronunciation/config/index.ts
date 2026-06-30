@@ -11,15 +11,11 @@ export {
   DEFAULT_PRONUNCIATION_CONFIG,
   DEFAULT_TTS_CONFIG,
   DEFAULT_UI_CONFIG,
-  ConfigValidator,
-  ConfigMerger,
 } from './pronunciation.config';
 
 export {
-  CACHE_CONSTANTS,
   UI_CONSTANTS,
   TIMER_CONSTANTS,
   CSS_CLASSES,
-  PROVIDER_CONSTANTS,
   API_CONSTANTS,
 } from './constants';

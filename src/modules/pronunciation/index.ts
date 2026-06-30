@@ -5,7 +5,6 @@
 
 // 核心服务
 export { PronunciationService } from './services/PronunciationService';
-export { TTSService } from './services/TTSService';
 
 // 配置
 export * from './config';
