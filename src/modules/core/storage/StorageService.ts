@@ -208,14 +208,28 @@ export class StorageService {
   // ==================== API配置管理 ====================
 
   /**
+   * 获取当前活跃的API配置项，保留 id 和协议族，避免调用链丢失配置身份。
+   */
+  public async getActiveApiConfigItem(): Promise<ApiConfigItem | null> {
+    try {
+      const settings = await this.getUserSettings();
+      return (
+        settings.apiConfigs.find(
+          (config) => config.id === settings.activeApiConfigId,
+        ) || null
+      );
+    } catch (error) {
+      console.error('获取活跃API配置项失败:', error);
+      return null;
+    }
+  }
+
+  /**
    * 获取当前活跃的API配置
    */
   public async getActiveApiConfig(): Promise<ApiConfig | null> {
     try {
-      const settings = await this.getUserSettings();
-      const activeConfig = settings.apiConfigs.find(
-        (config) => config.id === settings.activeApiConfigId,
-      );
+      const activeConfig = await this.getActiveApiConfigItem();
       return activeConfig?.config || null;
     } catch (error) {
       console.error('获取活跃API配置失败:', error);

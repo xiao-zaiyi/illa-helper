@@ -1,43 +1,23 @@
 /**
- * 悬浮框渲染器类
+ * 发音悬浮框渲染器。
  *
- * 负责创建、渲染和管理所有类型的悬浮框UI组件，包括单词音标悬浮框、
- * 短语单词列表悬浮框等。提供完整的HTML生成、样式应用、位置计算
- * 和动态更新功能。
- *
- * 主要功能：
- * - 生成标准化的悬浮框HTML结构
- * - 集成SVG图标和样式系统
- * - 支持音标、词义、翻译的动态显示
- * - 实现响应式位置计算和边界检测
- * - 提供异步内容更新机制
- *
- * 悬浮框类型：
- * - 主悬浮框：显示单词音标和AI翻译
- * - 短语悬浮框：显示可交互的单词列表
- * - 嵌套悬浮框：短语中单个单词的详细信息
- *
- * @author AI Assistant
- * @version 2.0.0
+ * 这个模块只负责创建 DOM 结构和更新已有 DOM。页面文本、AI 返回和远程错误
+ * 都必须通过 textContent 写入，避免把不可信内容拼进 HTML。
  */
 
 import { PronunciationElementData } from '../types';
-import { PronunciationUIConfig, SVG_ICONS } from '../config';
+import { PronunciationUIConfig } from '../config';
 import { DOMUtils } from '../utils';
 import { OriginalWordDisplayMode } from '../../shared/types/core';
 
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+const SPEAKER_PATH =
+  'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z';
+
 export class TooltipRenderer {
-  /** UI配置对象，控制悬浮框的显示选项和主题 */
   private uiConfig: PronunciationUIConfig;
-  /** 原文显示模式 */
   private originalWordDisplayMode: OriginalWordDisplayMode;
 
-  /**
-   * 构造函数
-   *
-   * @param uiConfig - UI配置对象，包含显示选项、主题设置等
-   * @param originalWordDisplayMode - 原文显示模式，控制是否在悬浮框中显示原文
-   */
   constructor(
     uiConfig: PronunciationUIConfig,
     originalWordDisplayMode: OriginalWordDisplayMode,
@@ -46,207 +26,153 @@ export class TooltipRenderer {
     this.originalWordDisplayMode = originalWordDisplayMode;
   }
 
-  /**
-   * 创建主悬浮框HTML内容
-   *
-   * 根据输入内容的类型（单词或短语）动态生成相应的悬浮框HTML。
-   * 为单词生成包含音标和翻译的悬浮框，为短语生成可交互的单词列表。
-   *
-   * @param elementData - 元素数据对象，包含单词/短语和相关音标信息
-   * @returns HTML字符串，包含完整的悬浮框结构
-   */
-  createMainTooltipHTML(elementData: PronunciationElementData): string {
+  createMainTooltipElement(elementData: PronunciationElementData): HTMLElement {
     const words = DOMUtils.extractWords(elementData.word);
-    const isPhrase = words.length > 1;
-
-    if (isPhrase) {
-      return this.createPhraseTooltipHTML(elementData);
-    } else {
-      return this.createWordTooltipHTML(elementData);
-    }
+    return words.length > 1
+      ? this.createPhraseTooltipElement(elementData, words)
+      : this.createWordTooltipElement(elementData);
   }
 
-  /**
-   * 创建短语悬浮框HTML
-   * @param elementData 元素数据
-   */
-  private createPhraseTooltipHTML(
+  private createPhraseTooltipElement(
     elementData: PronunciationElementData,
-  ): string {
-    const words = DOMUtils.extractWords(elementData.word);
-    const interactiveWordList = DOMUtils.createInteractiveWordList(words);
+    words: string[],
+  ): HTMLElement {
+    const card = this.createElement('div', 'wxt-tooltip-card');
+    const header = this.createElement(
+      'div',
+      'wxt-tooltip-header wxt-phrase-tooltip-header',
+    );
+    const infoCard = this.createElement('div', 'wxt-phrase-info-card');
 
-    // 原文显示逻辑：只有在原文显示模式为HIDDEN且存在原文时才显示
-    let originalTextSection = '';
+    infoCard.appendChild(
+      this.createElement('div', 'wxt-phrase-title', elementData.word),
+    );
+
     if (this.shouldShowOriginalText() && elementData.originalText) {
-      originalTextSection = `<div class="wxt-phrase-original">原文：${elementData.originalText}</div>`;
-    }
-
-    return `
-      <div class="wxt-tooltip-card">
-        <div class="wxt-tooltip-header wxt-phrase-tooltip-header">
-          <div class="wxt-phrase-info-card">
-            <div class="wxt-phrase-title">${elementData.word}</div>
-            ${originalTextSection}
-          </div>
-          ${
-            this.uiConfig.showPlayButton
-              ? `
-          <button class="wxt-audio-btn wxt-phrase-audio-btn" title="朗读短语">
-            ${SVG_ICONS.SPEAKER}
-          </button>
-        `
-              : ''
-          }
-        </div>
-        <div class="wxt-tooltip-body wxt-phrase-tooltip-body">
-          <div class="wxt-phrase-words">${interactiveWordList}</div>
-        </div>
-        <div class="wxt-tooltip-arrow"></div>
-      </div>
-    `;
-  }
-
-  /**
-   * 创建单词悬浮框HTML
-   * @param elementData 元素数据
-   */
-  private createWordTooltipHTML(elementData: PronunciationElementData): string {
-    const phonetic = elementData.phonetic;
-    const phoneticText = phonetic?.phonetics[0]?.text || '';
-    const aiTranslation = phonetic?.aiTranslation;
-    const hasPhoneticError = phonetic?.error?.hasPhoneticError;
-    const phoneticErrorMessage = phonetic?.error?.phoneticErrorMessage;
-
-    // 音标显示逻辑：正常音标 > 错误提示 > 加载状态
-    let phoneticDisplay = '';
-    if (phoneticText) {
-      phoneticDisplay = `<div class="wxt-phonetic-row"><div class="wxt-phonetic-text">${phoneticText}</div></div>`;
-    } else if (hasPhoneticError) {
-      phoneticDisplay = `<div class="wxt-phonetic-row"><div class="wxt-phonetic-error">${phoneticErrorMessage}</div></div>`;
-    } else {
-      // 显示音标加载状态
-      phoneticDisplay = `<div class="wxt-phonetic-row"><div class="wxt-phonetic-loading">获取音标中...</div></div>`;
-    }
-
-    // 原文显示逻辑：只有在原文显示模式为HIDDEN且存在原文时才显示
-    let originalTextDisplay = '';
-    if (this.shouldShowOriginalText() && elementData.originalText) {
-      originalTextDisplay = this.createOriginalTextHTML(
-        elementData.originalText,
+      infoCard.appendChild(
+        this.createOriginalTextElement(
+          elementData.originalText,
+          'wxt-phrase-original',
+          '原文：',
+        ),
       );
     }
 
-    return `
-      <div class="wxt-tooltip-card">
-        <div class="wxt-tooltip-header">
-          <div class="wxt-word-info">
-            <div class="wxt-word-main">${elementData.word}</div>
-            ${originalTextDisplay}
-            ${phoneticDisplay}
-            <div class="wxt-meaning-container">
-              ${
-                aiTranslation
-                  ? `<div class="wxt-meaning-text">${aiTranslation.explain}</div>`
-                  : `<div class="wxt-meaning-loading">获取词义中...</div>`
-              }
-            </div>
-          </div>
-          ${
-            this.uiConfig.showPlayButton
-              ? `
-            <button class="wxt-audio-btn" title="朗读单词">
-              ${SVG_ICONS.SPEAKER}
-            </button>
-          `
-              : ''
-          }
-        </div>
-        <div class="wxt-tooltip-arrow"></div>
-      </div>
-    `;
+    header.appendChild(infoCard);
+
+    if (this.uiConfig.showPlayButton) {
+      header.appendChild(
+        this.createAudioButton(
+          'wxt-audio-btn wxt-phrase-audio-btn',
+          '朗读短语',
+          16,
+        ),
+      );
+    }
+
+    const body = this.createElement(
+      'div',
+      'wxt-tooltip-body wxt-phrase-tooltip-body',
+    );
+    const wordsContainer = this.createElement('div', 'wxt-phrase-words');
+    for (const word of words) {
+      const wordElement = this.createElement(
+        'span',
+        'wxt-interactive-word',
+        word,
+      );
+      wordElement.setAttribute('data-word', word);
+      wordsContainer.appendChild(wordElement);
+      wordsContainer.appendChild(document.createTextNode(' '));
+    }
+    wordsContainer.lastChild?.remove();
+    body.appendChild(wordsContainer);
+
+    card.append(header, body, this.createElement('div', 'wxt-tooltip-arrow'));
+    return card;
   }
 
-  /**
-   * 创建嵌套单词悬浮框HTML（用于短语中的单词）
-   * @param word 单词
-   * @param phoneticText 音标文本
-   * @param hasError 是否有音标错误
-   * @param errorMessage 错误信息
-   */
-  createNestedWordTooltipHTML(
+  private createWordTooltipElement(
+    elementData: PronunciationElementData,
+  ): HTMLElement {
+    const card = this.createElement('div', 'wxt-tooltip-card');
+    const header = this.createElement('div', 'wxt-tooltip-header');
+    const wordInfo = this.createElement('div', 'wxt-word-info');
+    const phonetic = elementData.phonetic;
+
+    wordInfo.appendChild(
+      this.createElement('div', 'wxt-word-main', elementData.word),
+    );
+
+    if (this.shouldShowOriginalText() && elementData.originalText) {
+      wordInfo.appendChild(
+        this.createOriginalTextElement(elementData.originalText),
+      );
+    }
+
+    wordInfo.appendChild(
+      this.createPhoneticRow(
+        phonetic?.phonetics[0]?.text,
+        phonetic?.error?.hasPhoneticError,
+        phonetic?.error?.phoneticErrorMessage,
+      ),
+    );
+    wordInfo.appendChild(
+      this.createMeaningContainer(phonetic?.aiTranslation?.explain),
+    );
+    header.appendChild(wordInfo);
+
+    if (this.uiConfig.showPlayButton) {
+      header.appendChild(
+        this.createAudioButton('wxt-audio-btn', '朗读单词', 16),
+      );
+    }
+
+    card.append(header, this.createElement('div', 'wxt-tooltip-arrow'));
+    return card;
+  }
+
+  createNestedWordTooltipElement(
     word: string,
     phoneticText?: string,
     hasError?: boolean,
     errorMessage?: string,
-  ): string {
-    // 音标显示逻辑：正常音标 > 错误提示 > 加载状态
-    let phoneticDisplay = '';
-    if (phoneticText) {
-      phoneticDisplay = `<div class="wxt-phonetic-text">${phoneticText}</div>`;
-    } else if (hasError) {
-      phoneticDisplay = `<div class="wxt-phonetic-error">${errorMessage || '音标获取失败'}</div>`;
-    } else {
-      // 显示音标加载状态
-      phoneticDisplay = `<div class="wxt-phonetic-loading">获取音标中...</div>`;
-    }
+  ): HTMLElement {
+    const card = this.createElement('div', 'wxt-word-tooltip-card');
+    const header = this.createElement('div', 'wxt-word-tooltip-header');
+    const wordInfo = this.createElement('div', 'wxt-word-info');
+    const titleRow = this.createElement('div', 'wxt-word-title-row');
 
-    return `
-      <div class="wxt-word-tooltip-card">
-        <div class="wxt-word-tooltip-header">
-          <div class="wxt-word-info">
-            <div class="wxt-word-title-row">
-              <div class="wxt-word-main">${word}</div>
-              <div class="wxt-accent-buttons">
-                <div class="wxt-accent-group">
-                  <span class="wxt-accent-label">英</span>
-                  <button class="wxt-accent-audio-btn" data-accent="uk" title="英式发音">
-                    ${SVG_ICONS.SPEAKER_SMALL}
-                  </button>
-                </div>
-                <div class="wxt-accent-group">
-                  <span class="wxt-accent-label">美</span>
-                  <button class="wxt-accent-audio-btn" data-accent="us" title="美式发音">
-                    ${SVG_ICONS.SPEAKER_SMALL}
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="wxt-phonetic-row">${phoneticDisplay}</div>
-            <div class="wxt-meaning-container">
-              <div class="wxt-meaning-loading">获取词义中...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+    titleRow.appendChild(this.createElement('div', 'wxt-word-main', word));
+
+    const accentButtons = this.createElement('div', 'wxt-accent-buttons');
+    accentButtons.appendChild(this.createAccentGroup('英', 'uk', '英式发音'));
+    accentButtons.appendChild(this.createAccentGroup('美', 'us', '美式发音'));
+    titleRow.appendChild(accentButtons);
+
+    wordInfo.appendChild(titleRow);
+    wordInfo.appendChild(
+      this.createPhoneticRow(phoneticText, hasError, errorMessage),
+    );
+    wordInfo.appendChild(this.createMeaningContainer());
+    header.appendChild(wordInfo);
+    card.appendChild(header);
+
+    return card;
   }
 
-  /**
-   * 动态更新悬浮框的词义内容
-   *
-   * 异步更新已显示的悬浮框中的AI翻译内容，实现无缝的用户体验。
-   * 移除加载提示，显示实际的翻译结果，支持内容的动态刷新。
-   *
-   * @param tooltip - 悬浮框DOM元素
-   * @param meaning - AI翻译的词义字符串
-   */
   updateTooltipWithMeaning(tooltip: HTMLElement, meaning: string): void {
     const meaningContainer = tooltip.querySelector('.wxt-meaning-container');
     if (!meaningContainer) return;
 
-    // 隐藏加载提示
     const loadingElement = meaningContainer.querySelector(
       '.wxt-meaning-loading',
     );
-    if (loadingElement) {
-      loadingElement.remove();
-    }
+    loadingElement?.remove();
 
-    // 显示或更新词义内容
     let meaningElement = meaningContainer.querySelector(
       '.wxt-meaning-text',
-    ) as HTMLElement;
+    ) as HTMLElement | null;
     if (!meaningElement) {
       meaningElement = document.createElement('div');
       meaningElement.className = 'wxt-meaning-text';
@@ -257,86 +183,138 @@ export class TooltipRenderer {
     meaningElement.style.display = 'block';
   }
 
-  /**
-   * 动态更新悬浮框的音标内容
-   *
-   * 异步更新已显示的悬浮框中的音标内容，实现无缝的用户体验。
-   * 移除加载提示，显示实际的音标结果，支持错误状态的处理。
-   *
-   * @param tooltip - 悬浮框DOM元素
-   * @param phoneticInfo - 音标信息对象，包含音标数据或错误信息
-   */
   updateTooltipWithPhonetic(tooltip: HTMLElement, phoneticInfo: any): void {
     const phoneticRow = tooltip.querySelector('.wxt-phonetic-row');
     if (!phoneticRow) return;
 
-    // 移除加载提示
-    const loadingElement = phoneticRow.querySelector('.wxt-phonetic-loading');
-    if (loadingElement) {
-      loadingElement.remove();
-    }
-
-    // 处理音标数据或错误状态
-    let phoneticElement: HTMLElement;
-
-    if (phoneticInfo.error?.hasPhoneticError) {
-      // 显示错误状态
-      phoneticElement = document.createElement('div');
-      phoneticElement.className = 'wxt-phonetic-error';
-      phoneticElement.textContent =
-        phoneticInfo.error.phoneticErrorMessage || '音标获取失败';
-    } else if (phoneticInfo.phonetics && phoneticInfo.phonetics.length > 0) {
-      // 显示音标文本
-      const phoneticText = phoneticInfo.phonetics[0]?.text || '';
-      if (phoneticText) {
-        phoneticElement = document.createElement('div');
-        phoneticElement.className = 'wxt-phonetic-text';
-        phoneticElement.textContent = phoneticText;
-      } else {
-        // 没有音标文本，显示默认错误信息
-        phoneticElement = document.createElement('div');
-        phoneticElement.className = 'wxt-phonetic-error';
-        phoneticElement.textContent = '暂无音标信息';
-      }
-    } else {
-      // 没有音标数据，显示默认错误信息
-      phoneticElement = document.createElement('div');
-      phoneticElement.className = 'wxt-phonetic-error';
-      phoneticElement.textContent = '暂无音标信息';
-    }
-
-    phoneticRow.appendChild(phoneticElement);
+    phoneticRow.textContent = '';
+    phoneticRow.appendChild(
+      this.createPhoneticStatusElement(
+        phoneticInfo?.phonetics?.[0]?.text,
+        phoneticInfo?.error?.hasPhoneticError,
+        phoneticInfo?.error?.phoneticErrorMessage,
+      ),
+    );
   }
 
-  /**
-   * 判断是否应该显示原文
-   * 只有在原文显示模式为HIDDEN时才在悬浮框中显示原文
-   */
-  private shouldShowOriginalText(): boolean {
-    return this.originalWordDisplayMode === OriginalWordDisplayMode.HIDDEN;
-  }
-
-  /**
-   * 创建原文显示HTML
-   * @param originalText 原文文本
-   */
-  private createOriginalTextHTML(originalText: string): string {
-    return `<div class="wxt-original-text">原文: ${originalText}</div>`;
-  }
-
-  /**
-   * 更新UI配置
-   * @param uiConfig 新的UI配置
-   */
   updateConfig(uiConfig: PronunciationUIConfig): void {
     this.uiConfig = uiConfig;
   }
 
-  /**
-   * 更新原文显示模式
-   * @param mode 新的原文显示模式
-   */
   updateOriginalWordDisplayMode(mode: OriginalWordDisplayMode): void {
     this.originalWordDisplayMode = mode;
+  }
+
+  private createPhoneticRow(
+    phoneticText?: string,
+    hasError?: boolean,
+    errorMessage?: string,
+  ): HTMLElement {
+    const row = this.createElement('div', 'wxt-phonetic-row');
+    row.appendChild(
+      this.createPhoneticStatusElement(phoneticText, hasError, errorMessage),
+    );
+    return row;
+  }
+
+  private createPhoneticStatusElement(
+    phoneticText?: string,
+    hasError?: boolean,
+    errorMessage?: string,
+  ): HTMLElement {
+    if (phoneticText) {
+      return this.createElement('div', 'wxt-phonetic-text', phoneticText);
+    }
+
+    if (hasError) {
+      return this.createElement(
+        'div',
+        'wxt-phonetic-error',
+        errorMessage || '音标获取失败',
+      );
+    }
+
+    return this.createElement('div', 'wxt-phonetic-loading', '获取音标中...');
+  }
+
+  private createMeaningContainer(meaning?: string): HTMLElement {
+    const container = this.createElement('div', 'wxt-meaning-container');
+    container.appendChild(
+      meaning
+        ? this.createElement('div', 'wxt-meaning-text', meaning)
+        : this.createElement('div', 'wxt-meaning-loading', '获取词义中...'),
+    );
+    return container;
+  }
+
+  private createOriginalTextElement(
+    originalText: string,
+    className = 'wxt-original-text',
+    label = '原文: ',
+  ): HTMLElement {
+    return this.createElement('div', className, `${label}${originalText}`);
+  }
+
+  private createAccentGroup(
+    label: string,
+    accent: 'uk' | 'us',
+    title: string,
+  ): HTMLElement {
+    const group = this.createElement('div', 'wxt-accent-group');
+    group.appendChild(this.createElement('span', 'wxt-accent-label', label));
+
+    const button = this.createAudioButton('wxt-accent-audio-btn', title, 12);
+    button.setAttribute('data-accent', accent);
+    group.appendChild(button);
+
+    return group;
+  }
+
+  private createAudioButton(
+    className: string,
+    title: string,
+    iconSize: number,
+  ): HTMLButtonElement {
+    const button = this.createElement('button', className);
+    button.type = 'button';
+    button.title = title;
+    button.appendChild(this.createSpeakerIcon(iconSize));
+
+    return button;
+  }
+
+  private createSpeakerIcon(size: number): SVGSVGElement {
+    const svg = document.createElementNS(SVG_NAMESPACE, 'svg');
+    svg.setAttribute('width', String(size));
+    svg.setAttribute('height', String(size));
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'currentColor');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+
+    const path = document.createElementNS(SVG_NAMESPACE, 'path');
+    path.setAttribute('d', SPEAKER_PATH);
+    svg.appendChild(path);
+
+    return svg;
+  }
+
+  private createElement<K extends keyof HTMLElementTagNameMap>(
+    tagName: K,
+    className?: string,
+    text?: string,
+  ): HTMLElementTagNameMap[K] {
+    const element = document.createElement(tagName);
+    if (className) {
+      element.className = className;
+    }
+    if (text !== undefined) {
+      element.textContent = text;
+    }
+    return element;
+  }
+
+  private shouldShowOriginalText(): boolean {
+    return this.originalWordDisplayMode === OriginalWordDisplayMode.HIDDEN;
   }
 }

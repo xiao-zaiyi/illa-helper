@@ -25,7 +25,7 @@ import {
   AITranslationEntry,
   CacheEntry,
 } from '../types';
-import { ApiConfig } from '../../shared/types/api';
+import { ApiConfigItem } from '../../shared/types/api';
 import { API_CONSTANTS } from '../config';
 import { cleanMarkdownFromResponse } from '@/src/utils';
 import { UniversalApiService } from '../../api/services/UniversalApiService';
@@ -34,8 +34,8 @@ export class AITranslationProvider implements IPhoneticProvider {
   /** 提供者名称标识 */
   readonly name = 'ai-translation';
 
-  /** AI API配置信息 */
-  private apiConfig: ApiConfig;
+  /** AI API配置项，必须保留 id，确保请求使用明确配置。 */
+  private apiConfigItem: ApiConfigItem | null;
 
   /** API请求超时时间（毫秒） */
   private timeout: number = 0;
@@ -52,11 +52,11 @@ export class AITranslationProvider implements IPhoneticProvider {
   /**
    * 构造函数
    *
-   * @param apiConfig - AI API配置对象，包含端点URL、密钥等信息
+   * @param apiConfigItem - AI API配置项，包含配置ID、协议族和请求配置
    * @param timeout - API请求超时时间（毫秒），默认0（无限制）
    */
-  constructor(apiConfig: ApiConfig, timeout: number = 0) {
-    this.apiConfig = apiConfig;
+  constructor(apiConfigItem: ApiConfigItem | null, timeout: number = 0) {
+    this.apiConfigItem = apiConfigItem;
     this.timeout = timeout;
     this.universalApi = UniversalApiService.getInstance();
   }
@@ -98,8 +98,18 @@ export class AITranslationProvider implements IPhoneticProvider {
         };
       }
 
+      const apiConfig = this.apiConfigItem?.config;
+
+      // 发音翻译必须使用明确配置，不能隐式回退到全局活跃配置。
+      if (!this.apiConfigItem || !apiConfig) {
+        return {
+          success: false,
+          error: '未找到可用的AI API配置',
+        };
+      }
+
       // 验证API配置
-      if (!this.apiConfig.apiKey) {
+      if (!apiConfig.apiKey) {
         return {
           success: false,
           error: 'AI API配置不完整：缺少API Key',
@@ -125,10 +135,11 @@ export class AITranslationProvider implements IPhoneticProvider {
       // 使用UniversalApiService调用AI
       const result = await this.universalApi.call(cleanWord, {
         systemPrompt,
-        temperature: this.apiConfig.temperature || 0,
+        configId: this.apiConfigItem.id,
+        temperature: apiConfig.temperature || 0,
         maxTokens: 100,
         timeout: this.timeout,
-        customParams: this.apiConfig.customParams,
+        customParams: apiConfig.customParams,
       });
 
       if (!result.success) {
@@ -220,12 +231,11 @@ export class AITranslationProvider implements IPhoneticProvider {
   async isAvailable(): Promise<boolean> {
     try {
       // 检查API配置
-      if (!this.apiConfig.apiKey) {
+      if (!this.apiConfigItem?.config?.apiKey) {
         return false;
       }
 
-      // 使用UniversalApiService检查可用性
-      return await this.universalApi.isAvailable();
+      return await this.universalApi.isAvailable(this.apiConfigItem.id);
     } catch {
       return false;
     }
@@ -236,7 +246,7 @@ export class AITranslationProvider implements IPhoneticProvider {
    */
   getConfig() {
     return {
-      endpoint: this.apiConfig.apiEndpoint,
+      endpoint: this.apiConfigItem?.config.apiEndpoint,
       rateLimitPerMinute: 20, // AI API通常有较低的频率限制
       supportsBatch: false,
       supportsAudio: false,
@@ -247,11 +257,22 @@ export class AITranslationProvider implements IPhoneticProvider {
   /**
    * 更新API配置和超时时间
    */
-  updateApiConfig(apiConfig: ApiConfig, timeout?: number): void {
-    this.apiConfig = apiConfig;
+  updateApiConfig(apiConfigItem: ApiConfigItem | null, timeout?: number): void {
+    const previousKey = this.getCacheScopeKey();
+    this.apiConfigItem = apiConfigItem;
     if (timeout !== undefined) {
       this.timeout = timeout;
     }
+    if (previousKey !== this.getCacheScopeKey()) {
+      this.cache.clear();
+    }
+  }
+
+  private getCacheScopeKey(): string {
+    const config = this.apiConfigItem?.config;
+    return this.apiConfigItem
+      ? `${this.apiConfigItem.id}:${config?.apiEndpoint || ''}:${config?.model || ''}`
+      : 'none';
   }
 
   /**

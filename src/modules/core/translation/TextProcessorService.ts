@@ -7,7 +7,7 @@ import {
   OriginalWordDisplayMode,
   TranslationPosition,
 } from '../../shared/types/core';
-import { ApiConfig } from '../../shared/types/api';
+import { ApiConfigItem } from '../../shared/types/api';
 import { PronunciationService } from '../../pronunciation/services/PronunciationService';
 import { DEFAULT_PRONUNCIATION_CONFIG } from '../../pronunciation/config';
 import { ContentSegmenter } from '../../processing/ContentSegmenter';
@@ -30,7 +30,7 @@ export interface ProcessingStats {
 // 文本处理服务配置
 export interface TextProcessorConfig {
   enablePronunciationTooltip?: boolean;
-  apiConfig?: ApiConfig;
+  apiConfigItem?: ApiConfigItem | null;
   segmentConfig?: Partial<SegmentConfig>;
 }
 
@@ -96,7 +96,7 @@ export class TextProcessorService {
     // 初始化各个服务组件
     this.pronunciationService = new PronunciationService(
       pronunciationConfig,
-      this.config.apiConfig,
+      this.config.apiConfigItem ?? null,
     );
     this.contentSegmenter = new ContentSegmenter();
     this.processingCoordinator = new ProcessingCoordinator(
@@ -288,8 +288,8 @@ export class TextProcessorService {
     this.config = { ...this.config, ...config };
 
     // 如果API配置变更，需要更新发音服务
-    if (config.apiConfig) {
-      this.updateApiConfig(config.apiConfig);
+    if ('apiConfigItem' in config) {
+      this.updateApiConfig(config.apiConfigItem ?? null);
     }
   }
 
@@ -311,16 +311,16 @@ export class TextProcessorService {
   /**
    * 更新API配置
    * 支持运行时API配置更新，配置变更会立即生效
-   * @param apiConfig API配置
+   * @param apiConfigItem API配置项
    */
-  public updateApiConfig(apiConfig: ApiConfig): void {
+  public updateApiConfig(apiConfigItem: ApiConfigItem | null): void {
     try {
       if (this.pronunciationService) {
-        this.pronunciationService.updateApiConfig(apiConfig);
+        this.pronunciationService.updateApiConfig(apiConfigItem);
       }
 
       // 更新内部配置
-      this.config.apiConfig = apiConfig;
+      this.config.apiConfigItem = apiConfigItem;
     } catch (error) {
       console.warn('更新API配置时发生错误:', error);
     }

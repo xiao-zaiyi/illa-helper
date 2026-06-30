@@ -81,19 +81,6 @@ export class DOMUtils {
   }
 
   /**
-   * 创建可交互的单词列表HTML
-   * @param words 单词数组
-   */
-  static createInteractiveWordList(words: string[]): string {
-    return words
-      .map(
-        (word) =>
-          `<span class="${CSS_CLASSES.INTERACTIVE_WORD}" data-word="${word}">${word}</span>`,
-      )
-      .join(' ');
-  }
-
-  /**
    * 检查元素是否具有指定的CSS类
    * @param element 目标元素
    * @param className CSS类名

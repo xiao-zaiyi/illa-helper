@@ -22,7 +22,7 @@
 import { IPhoneticProvider } from './IPhoneticProvider';
 import { DictionaryApiProvider } from './DictionaryApiProvider';
 import { AITranslationProvider } from '../translation/AITranslationProvider';
-import { ApiConfig } from '../../shared/types/api';
+import { ApiConfigItem } from '../../shared/types/api';
 
 export class PhoneticProviderFactory {
   /** 提供者实例缓存，实现单例模式 */
@@ -35,24 +35,30 @@ export class PhoneticProviderFactory {
    * 对于需要配置的提供者（如AI翻译），可以传入相应的配置对象。
    *
    * @param providerName - 提供者名称标识符
-   * @param apiConfig - AI翻译提供者所需的API配置（可选）
+   * @param apiConfigItem - AI翻译提供者所需的API配置项（可选）
    * @returns IPhoneticProvider 提供者实例
    * @throws Error 当提供者名称不受支持时抛出错误
    */
   static createProvider(
     providerName: string,
-    apiConfig?: ApiConfig,
+    apiConfigItem?: ApiConfigItem | null,
   ): IPhoneticProvider {
+    const normalizedName = providerName.toLowerCase();
+    const cacheKey =
+      normalizedName === 'ai-translation' && apiConfigItem
+        ? `${normalizedName}:${apiConfigItem.id}`
+        : normalizedName;
+
     // 检查是否已存在实例（单例模式）
     // 避免重复创建，提升性能并保持状态一致性
-    if (this.instances.has(providerName)) {
-      return this.instances.get(providerName)!;
+    if (this.instances.has(cacheKey)) {
+      return this.instances.get(cacheKey)!;
     }
 
     let provider: IPhoneticProvider;
 
     // 根据提供者名称创建相应的实例
-    switch (providerName.toLowerCase()) {
+    switch (normalizedName) {
       case 'dictionary-api':
         // 传统词典API提供者，提供音标和基础词义
         provider = new DictionaryApiProvider();
@@ -60,10 +66,10 @@ export class PhoneticProviderFactory {
 
       case 'ai-translation':
         // AI翻译提供者，需要API配置才能工作
-        if (!apiConfig) {
+        if (!apiConfigItem) {
           throw new Error('AI翻译提供者需要API配置');
         }
-        provider = new AITranslationProvider(apiConfig);
+        provider = new AITranslationProvider(apiConfigItem);
         break;
 
       // 可以在这里添加更多提供者
@@ -76,7 +82,7 @@ export class PhoneticProviderFactory {
     }
 
     // 缓存实例以实现单例模式
-    this.instances.set(providerName, provider);
+    this.instances.set(cacheKey, provider);
     return provider;
   }
 
@@ -115,9 +121,19 @@ export class PhoneticProviderFactory {
   /**
    * 获取提供者实例（如果存在）
    * @param providerName 提供者名称
+   * @param configId AI翻译提供者的配置ID
    * @returns IPhoneticProvider | undefined 提供者实例或undefined
    */
-  static getInstance(providerName: string): IPhoneticProvider | undefined {
-    return this.instances.get(providerName);
+  static getInstance(
+    providerName: string,
+    configId?: string,
+  ): IPhoneticProvider | undefined {
+    const normalizedName = providerName.toLowerCase();
+    const cacheKey =
+      normalizedName === 'ai-translation' && configId
+        ? `${normalizedName}:${configId}`
+        : normalizedName;
+
+    return this.instances.get(cacheKey);
   }
 }

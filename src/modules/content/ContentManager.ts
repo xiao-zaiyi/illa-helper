@@ -332,7 +332,7 @@ export class ContentManager implements IContentManager {
     );
     const textProcessor = TextProcessorService.getInstance({
       enablePronunciationTooltip: this.settings.enablePronunciationTooltip,
-      apiConfig: activeConfig?.config,
+      apiConfigItem: activeConfig ?? null,
     });
 
     const textReplacer = TextReplacerService.getInstance(

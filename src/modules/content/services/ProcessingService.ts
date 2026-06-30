@@ -183,9 +183,7 @@ export class ProcessingService implements IProcessingService {
     const activeConfig = settings.apiConfigs.find(
       (config) => config.id === settings.activeApiConfigId,
     );
-    if (activeConfig) {
-      this.textProcessor.updateApiConfig(activeConfig.config);
-    }
+    this.textProcessor.updateApiConfig(activeConfig ?? null);
 
     if (this.lazyLoadingService) {
       this.lazyLoadingService.updateConfig(settings.lazyLoading);

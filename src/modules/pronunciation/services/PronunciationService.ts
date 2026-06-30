@@ -15,11 +15,9 @@ import {
   CSS_CLASSES,
   UI_CONSTANTS,
 } from '../config';
-import { ApiConfig } from '../../shared/types/api';
-import { DEFAULT_API_CONFIG } from '../../shared/constants/defaults';
+import { ApiConfigItem } from '../../shared/types/api';
 import { StorageService } from '../../core/storage';
 import { OriginalWordDisplayMode } from '../../shared/types/core';
-import { safeSetInnerHTML } from '@/src/utils';
 
 /**
  * 定时器管理器 - 统一管理所有定时器
@@ -189,7 +187,10 @@ export class PronunciationService {
   /** 当前鼠标悬停的元素数据 */
   private currentlyHoveredData: PronunciationElementData | null = null;
 
-  constructor(config?: Partial<PronunciationConfig>, apiConfig?: ApiConfig) {
+  constructor(
+    config?: Partial<PronunciationConfig>,
+    apiConfigItem?: ApiConfigItem | null,
+  ) {
     this.config = { ...DEFAULT_PRONUNCIATION_CONFIG, ...config };
     this.phoneticProvider = PhoneticProviderFactory.createProvider(
       this.config.provider,
@@ -198,9 +199,9 @@ export class PronunciationService {
       this.config.ttsConfig.provider,
       this.config.ttsConfig,
     );
-    // 创建AI翻译提供者，优先使用传入的API配置，否则使用默认配置
-    const effectiveApiConfig = apiConfig || DEFAULT_API_CONFIG;
-    this.aiTranslationProvider = new AITranslationProvider(effectiveApiConfig);
+    this.aiTranslationProvider = new AITranslationProvider(
+      apiConfigItem ?? null,
+    );
     // 创建TooltipRenderer实例，传入UI配置和默认的原文显示模式
     // 注意：实际的原文显示模式会在运行时从StorageService获取
     this.tooltipRenderer = new TooltipRenderer(
@@ -547,15 +548,16 @@ export class PronunciationService {
    * 更新API配置
    * 支持运行时API配置更新，配置变更会立即生效
    */
-  async updateApiConfig(apiConfig?: ApiConfig): Promise<void> {
+  async updateApiConfig(apiConfigItem?: ApiConfigItem | null): Promise<void> {
     try {
       // 如果提供了参数，直接使用；否则从存储获取
       const configToUse =
-        apiConfig || (await this.storageService.getActiveApiConfig());
+        apiConfigItem ?? (await this.storageService.getActiveApiConfigItem());
       if (configToUse) {
         this.aiTranslationProvider.updateApiConfig(configToUse);
         console.log('API配置已更新');
       } else {
+        this.aiTranslationProvider.updateApiConfig(null);
         console.warn('未找到活跃的API配置');
       }
     } catch (error) {
@@ -1018,10 +1020,8 @@ export class PronunciationService {
     const tooltip = document.createElement('div');
     tooltip.className = 'wxt-pronunciation-tooltip';
 
-    // 使用TooltipRenderer生成HTML内容
-    safeSetInnerHTML(
-      tooltip,
-      this.tooltipRenderer.createMainTooltipHTML(elementData),
+    tooltip.appendChild(
+      this.tooltipRenderer.createMainTooltipElement(elementData),
     );
 
     // 添加主悬浮框事件处理
@@ -1154,10 +1154,8 @@ export class PronunciationService {
       const wordTooltip = document.createElement('div');
       wordTooltip.className = 'wxt-word-tooltip';
 
-      // 使用TooltipRenderer生成嵌套单词悬浮框HTML（显示加载状态）
-      safeSetInnerHTML(
-        wordTooltip,
-        this.tooltipRenderer.createNestedWordTooltipHTML(word),
+      wordTooltip.appendChild(
+        this.tooltipRenderer.createNestedWordTooltipElement(word),
       );
 
       // 添加朗读功能
