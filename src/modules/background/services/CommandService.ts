@@ -151,7 +151,7 @@ export class CommandService {
         isValid: true,
         activeConfig: {
           id: activeConfig.id,
-          provider: activeConfig.provider,
+          protocolFamily: activeConfig.protocolFamily,
           hasApiKey: !!activeConfig.config.apiKey,
         },
         errors: [],

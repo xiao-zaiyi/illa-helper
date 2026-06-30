@@ -159,7 +159,7 @@ export interface ConfigValidationResult {
   isValid: boolean;
   activeConfig?: {
     id: string;
-    provider: string;
+    protocolFamily: string;
     hasApiKey: boolean;
   };
   errors: string[];

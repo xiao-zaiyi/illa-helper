@@ -413,7 +413,7 @@
     },
     "importSettings": {
       "title": "Importar Ajustes",
-      "description": "Importa ajustes desde un archivo JSON, incluyendo configuraciones de usuario y reglas de gestión de sitios web. Ten en cuenta: Esto sobrescribirá todos tus ajustes actuales. Se admiten formatos nuevos y antiguos; los formatos antiguos solo importarán los ajustes de usuario.",
+      "description": "Importa ajustes desde un archivo JSON, incluyendo configuraciones de usuario y reglas de gestión de sitios web. Ten en cuenta: Esto sobrescribirá todos tus ajustes actuales. Solo se admite el formato de exportación actual.",
       "button": "Confirmar Importación",
       "selectFile": "Por favor, selecciona un archivo primero.",
       "success": "¡Importación completada!",

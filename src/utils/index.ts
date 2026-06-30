@@ -7,8 +7,8 @@ import {
   UserLevel,
   USER_LEVEL_OPTIONS,
   ApiConfig,
-  TranslationProvider,
   ApiConfigItem,
+  ApiProtocolFamily,
 } from '@/src/modules/shared/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -148,7 +148,7 @@ export async function testGeminiConnection(
 
 /**
  * 统一的API连接测试入口函数
- * 根据provider类型自动选择合适的测试方法
+ * 根据协议族自动选择合适的测试方法
  * @param userConfig 用户API配置对象（包含provider信息）
  * @param baseTimeout 超时时间（毫秒）
  * @returns Promise<ApiTestResult> 测试结果
@@ -157,22 +157,12 @@ export async function testApiConnection(
   userConfig: ApiConfigItem,
   baseTimeout?: number,
 ): Promise<ApiTestResult> {
-  const { provider, config } = userConfig;
+  const { protocolFamily, config } = userConfig;
 
-  // 根据provider类型选择合适的测试方法
-  switch (provider) {
-    case TranslationProvider.GoogleGemini:
-    case TranslationProvider.ProxyGemini:
-    case 'GoogleGemini':
-    case 'ProxyGemini':
+  switch (protocolFamily) {
+    case ApiProtocolFamily.GEMINI:
       return testGeminiConnection(config, baseTimeout);
-
-    case TranslationProvider.OpenAI:
-    case TranslationProvider.DeepSeek:
-    case TranslationProvider.SiliconFlow:
-    case 'OpenAI':
-    case 'DeepSeek':
-    case 'SiliconFlow':
+    case ApiProtocolFamily.OPENAI_COMPATIBLE:
     default:
       return testOpenAICompatibleConnection(config, baseTimeout);
   }

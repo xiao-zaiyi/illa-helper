@@ -12,8 +12,16 @@
 
 import { browser } from 'wxt/browser';
 import { UserSettings } from '../../shared/types/storage';
-import { ApiConfig, ApiConfigItem } from '../../shared/types/api';
+import {
+  ApiConfig,
+  ApiConfigItem,
+  ApiProtocolFamily,
+} from '../../shared/types/api';
 import { DEFAULT_SETTINGS } from '../../shared/constants/defaults';
+import {
+  normalizeApiProtocolFamily,
+  sanitizeApiConfig,
+} from '../../shared/ApiConfigHelpers';
 import {
   StorageServiceConfig,
   StorageOperationResult,
@@ -133,7 +141,7 @@ export class StorageService {
   // ==================== 核心存储功能 ====================
 
   /**
-   * 获取用户设置 - 简化版本，强制重置旧格式
+   * 获取用户设置
    * @returns 用户设置
    */
   public async getUserSettings(): Promise<UserSettings> {
@@ -147,15 +155,6 @@ export class StorageService {
       }
 
       const userSettings: UserSettings = JSON.parse(serializedData);
-
-      // 检查是否为旧格式配置，如果是则强制重置
-      if (this.isOldFormatConfig(userSettings)) {
-        console.log('[StorageService] 检测到旧格式配置，强制重置为新格式');
-        await this.saveUserSettings(DEFAULT_SETTINGS);
-        this.emitEvent(StorageEventType.SETTINGS_LOADED, DEFAULT_SETTINGS);
-        return DEFAULT_SETTINGS;
-      }
-
       const validatedSettings = this.validateAndFixSettings(userSettings);
 
       if (this.hasConfigurationChanged(userSettings, validatedSettings)) {
@@ -262,20 +261,16 @@ export class StorageService {
    */
   public async addApiConfig(
     name: string,
-    provider: string,
+    protocolFamily: ApiProtocolFamily,
     config: ApiConfig,
   ): Promise<StorageOperationResult> {
     try {
       const settings = await this.getUserSettings();
-      const now = Date.now();
       const newConfig: ApiConfigItem = {
-        id: `config-${now}`,
+        id: `config-${Date.now()}`,
         name,
-        provider,
-        config,
-        isDefault: false,
-        createdAt: now,
-        updatedAt: now,
+        protocolFamily,
+        config: sanitizeApiConfig(config),
       };
 
       settings.apiConfigs.push(newConfig);
@@ -300,7 +295,7 @@ export class StorageService {
   public async updateApiConfig(
     configId: string,
     name: string,
-    provider: string,
+    protocolFamily: ApiProtocolFamily,
     config: ApiConfig,
   ): Promise<StorageOperationResult> {
     try {
@@ -318,9 +313,8 @@ export class StorageService {
       const updatedConfig = {
         ...settings.apiConfigs[configIndex],
         name,
-        provider,
-        config,
-        updatedAt: Date.now(),
+        protocolFamily,
+        config: sanitizeApiConfig(config),
       };
 
       settings.apiConfigs[configIndex] = updatedConfig;
@@ -348,10 +342,8 @@ export class StorageService {
     try {
       const settings = await this.getUserSettings();
 
-      // 不允许删除默认配置
-      const configToDelete = settings.apiConfigs.find((c) => c.id === configId);
-      if (configToDelete?.isDefault) {
-        const errorMessage = '不能删除默认配置';
+      if (settings.apiConfigs.length <= 1) {
+        const errorMessage = '至少保留一个API配置';
         console.error(errorMessage);
         return { success: false, error: errorMessage };
       }
@@ -426,25 +418,6 @@ export class StorageService {
   // ==================== 数据验证 ====================
 
   /**
-   * 检查是否为旧格式配置
-   * @param settings 用户设置
-   * @returns 是否为旧格式
-   */
-  private isOldFormatConfig(settings: UserSettings): boolean {
-    // 检查MultilingualConfig是否包含旧字段
-    const config = settings.multilingualConfig;
-    if (!config) return false;
-
-    // 如果包含旧字段，认为是旧格式
-    const hasOldFields =
-      'intelligentMode' in config ||
-      'enableNativeSwitch' in config ||
-      'sourceLanguageOverride' in config;
-
-    return hasOldFields;
-  }
-
-  /**
    * 验证和修复设置
    * @param settings 原始设置
    * @returns 修复后的设置
@@ -455,6 +428,14 @@ export class StorageService {
     try {
       // 确保必要字段存在
       if (!validatedSettings.apiConfigs) {
+        validatedSettings.apiConfigs = DEFAULT_SETTINGS.apiConfigs;
+      }
+
+      validatedSettings.apiConfigs = this.normalizeApiConfigs(
+        validatedSettings.apiConfigs,
+      );
+
+      if (validatedSettings.apiConfigs.length === 0) {
         validatedSettings.apiConfigs = DEFAULT_SETTINGS.apiConfigs;
       }
 
@@ -493,6 +474,48 @@ export class StorageService {
       console.error(`设置验证异常: ${error}`);
       return DEFAULT_SETTINGS;
     }
+  }
+
+  private normalizeApiConfigs(rawConfigs: unknown[]): ApiConfigItem[] {
+    return rawConfigs
+      .map((rawConfig, index) => this.normalizeApiConfigItem(rawConfig, index))
+      .filter((config): config is ApiConfigItem => config !== null);
+  }
+
+  private normalizeApiConfigItem(
+    rawConfig: unknown,
+    index: number,
+  ): ApiConfigItem | null {
+    if (!rawConfig || typeof rawConfig !== 'object') {
+      return null;
+    }
+
+    const candidate = rawConfig as Partial<ApiConfigItem> & {
+      provider?: string;
+      protocolFamily?: string;
+      config?: Partial<ApiConfig>;
+    };
+
+    const protocolFamily = normalizeApiProtocolFamily(
+      candidate.protocolFamily ?? candidate.provider,
+    );
+    if (!protocolFamily) {
+      // unsupported provider 在第一阶段直接丢弃，不做运行时兼容
+      return null;
+    }
+
+    return {
+      id: candidate.id?.trim() || `config-${Date.now()}-${index}`,
+      name: candidate.name?.trim() || this.getDefaultConfigName(protocolFamily),
+      protocolFamily,
+      config: sanitizeApiConfig(candidate.config),
+    };
+  }
+
+  private getDefaultConfigName(protocolFamily: ApiProtocolFamily): string {
+    return protocolFamily === ApiProtocolFamily.GEMINI
+      ? 'Gemini'
+      : 'OpenAI Compatible';
   }
 
   /**

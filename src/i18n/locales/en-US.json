@@ -413,7 +413,7 @@
     },
     "importSettings": {
       "title": "Import Settings",
-      "description": "Import settings from a JSON file, including user configurations and website management rules. Please note: This will overwrite all your current settings. Both new and old formats are supported; old formats will only import user settings.",
+      "description": "Import settings from a JSON file, including user configurations and website management rules. Please note: This will overwrite all your current settings. Only the current export format is supported.",
       "button": "Confirm Import",
       "selectFile": "Please select a file first.",
       "success": "Import complete!",

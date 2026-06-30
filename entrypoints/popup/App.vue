@@ -29,6 +29,7 @@ import {
   XCircle,
 } from 'lucide-vue-next';
 import { testApiConnection, ApiTestResult } from '@/src/utils';
+import { getProtocolFamilyLabel } from '@/src/modules/shared/ApiConfigHelpers';
 
 // 使用 i18n
 const { t } = useI18n();
@@ -544,7 +545,9 @@ const nativeLanguageOptions = computed(() =>
                     :key="config.id"
                     :value="config.id"
                   >
-                    {{ config.name }} ({{ config.provider }})
+                    {{ config.name }} ({{
+                      getProtocolFamilyLabel(config.protocolFamily)
+                    }})
                   </option>
                 </select>
               </div>
@@ -557,7 +560,9 @@ const nativeLanguageOptions = computed(() =>
                 </div>
                 <div class="config-info-item">
                   <span class="info-label">{{ $t('api.provider') }}:</span>
-                  <span class="info-value">{{ activeConfig.provider }}</span>
+                  <span class="info-value">
+                    {{ getProtocolFamilyLabel(activeConfig.protocolFamily) }}
+                  </span>
                 </div>
                 <div class="config-info-item">
                   <span class="info-label">{{ $t('api.model') }}:</span>

@@ -4,7 +4,7 @@
  */
 
 import { universalApi, callAI, quickAI } from '../services/UniversalApiService';
-import { TranslationProvider } from '../../shared/types/core';
+import { ApiProtocolFamily } from '../../shared/types/api';
 
 /**
  * 基础使用示例
@@ -114,7 +114,7 @@ export class UniversalApiUsageExamples {
   static async useSpecificProvider() {
     const result = await callAI('请用诗歌的形式描述春天的美好', {
       systemPrompt: '你是一位诗人，擅长创作优美的诗歌。',
-      forceProvider: TranslationProvider.GoogleGemini, // 强制使用Google Gemini
+      forceProvider: ApiProtocolFamily.GEMINI,
       temperature: 0.9,
     });
 

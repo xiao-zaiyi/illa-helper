@@ -3,6 +3,11 @@
  * 包含API配置、翻译请求响应等相关接口
  */
 
+export enum ApiProtocolFamily {
+  OPENAI_COMPATIBLE = 'openai-compatible',
+  GEMINI = 'gemini',
+}
+
 // 翻译替换结果接口
 export interface Replacement {
   original: string;
@@ -46,11 +51,8 @@ export interface ApiConfig {
 export interface ApiConfigItem {
   id: string;
   name: string;
-  provider: string; // 服务提供商：openai、deepseek、silicon-flow等
+  protocolFamily: ApiProtocolFamily;
   config: ApiConfig;
-  isDefault?: boolean;
-  createdAt: number;
-  updatedAt: number;
 }
 
 // 替换配置接口

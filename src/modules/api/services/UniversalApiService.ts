@@ -6,10 +6,17 @@
 import { StorageService } from '../../core/storage';
 import { sendApiRequest } from '../utils/requestUtils';
 import { mergeCustomParams } from '../utils/apiUtils';
-import { ApiConfigItem, ApiConfig } from '../../shared/types/api';
-import { TranslationProvider } from '../../shared/types/core';
+import {
+  ApiConfigItem,
+  ApiConfig,
+  ApiProtocolFamily,
+} from '../../shared/types/api';
 import { getApiTimeout } from '@/src/utils';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  getProtocolFamilyLabel,
+  isGeminiFamily,
+} from '../../shared/ApiConfigHelpers';
 
 /**
  * 通用API请求选项
@@ -23,8 +30,8 @@ export interface UniversalApiOptions {
   maxTokens?: number;
   /** 指定使用的API配置ID */
   configId?: string;
-  /** 强制使用特定的Provider */
-  forceProvider?: TranslationProvider;
+  /** 强制使用特定的协议族 */
+  forceProvider?: ApiProtocolFamily;
   /** 请求超时时间(毫秒，默认0无限制) */
   timeout?: number;
   /** 自定义请求参数 JSON字符串 */
@@ -115,11 +122,7 @@ export class UniversalApiService {
         };
       }
 
-      // 根据Provider类型选择不同的调用方式
-      if (
-        apiConfig.provider === 'GoogleGemini' ||
-        apiConfig.provider === 'ProxyGemini'
-      ) {
+      if (isGeminiFamily(apiConfig.protocolFamily)) {
         return await this.callGoogleGemini(prompt, apiConfig, options);
       } else {
         return await this.callHttpApi(prompt, apiConfig, options);
@@ -204,7 +207,7 @@ export class UniversalApiService {
         prompt,
         content,
         model: config.model,
-        provider: this.getProviderDisplayName(apiConfig.provider),
+        provider: getProtocolFamilyLabel(apiConfig.protocolFamily),
       };
 
       // 添加Token使用信息（如果有）
@@ -253,7 +256,7 @@ export class UniversalApiService {
       );
 
       console.log('HTTP API调用:', {
-        provider: apiConfig.provider,
+        protocolFamily: apiConfig.protocolFamily,
         endpoint: apiConfig.config.apiEndpoint,
         body: requestBody,
       });
@@ -404,7 +407,7 @@ export class UniversalApiService {
     try {
       const userSettings = await this.storageService.getUserSettings();
       return userSettings.apiConfigs.map((config) => ({
-        provider: config.provider, // 直接使用字符串，不需要转换
+        provider: getProtocolFamilyLabel(config.protocolFamily),
         model: config.config.model,
       }));
     } catch {
@@ -417,7 +420,7 @@ export class UniversalApiService {
    */
   private async getApiConfig(
     configId?: string,
-    forceProvider?: TranslationProvider,
+    forceProvider?: ApiProtocolFamily,
   ): Promise<ApiConfigItem | null> {
     const userSettings = await this.storageService.getUserSettings();
 
@@ -428,11 +431,9 @@ export class UniversalApiService {
     }
 
     if (forceProvider) {
-      // 将枚举值转换为字符串进行比较
-      const providerString = forceProvider.toString();
       return (
         userSettings.apiConfigs.find(
-          (config) => config.provider === providerString,
+          (config) => config.protocolFamily === forceProvider,
         ) || null
       );
     }
@@ -508,12 +509,7 @@ export class UniversalApiService {
       let content = '';
       let usage: any = undefined;
 
-      // 根据不同的Provider解析响应格式
-      if (
-        apiConfig.provider === 'GoogleGemini' ||
-        apiConfig.provider === 'ProxyGemini'
-      ) {
-        // Google Gemini格式 (包括ProxyGemini)
+      if (isGeminiFamily(apiConfig.protocolFamily)) {
         content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         if (data.usageMetadata) {
           usage = {
@@ -539,7 +535,7 @@ export class UniversalApiService {
         prompt,
         content,
         model: apiConfig.config.model,
-        provider: this.getProviderDisplayName(apiConfig.provider),
+        provider: getProtocolFamilyLabel(apiConfig.protocolFamily),
       };
 
       // 添加Token使用信息
@@ -561,20 +557,6 @@ export class UniversalApiService {
         error: '解析API响应失败',
       };
     }
-  }
-
-  /**
-   * 获取Provider显示名称
-   */
-  private getProviderDisplayName(provider: string): string {
-    const nameMap: Record<string, string> = {
-      OpenAI: 'OpenAI',
-      GoogleGemini: 'Google Gemini',
-      ProxyGemini: 'Proxy Gemini',
-      DeepSeek: 'DeepSeek',
-      SiliconFlow: 'SiliconFlow',
-    };
-    return nameMap[provider] || provider;
   }
 }
 

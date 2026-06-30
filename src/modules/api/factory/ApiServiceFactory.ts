@@ -3,7 +3,7 @@
  */
 
 import { ApiConfigItem } from '../../shared/types/api';
-import { TranslationProvider } from '../../shared/types/core';
+import { ApiProtocolFamily } from '../../shared/types/api';
 import { ITranslationProvider } from '../types';
 import { GoogleGeminiProvider, OpenAIProvider } from '../providers';
 
@@ -16,16 +16,11 @@ export class ApiServiceFactory {
    * 创建翻译提供者实例
    */
   static createProvider(activeConfig: ApiConfigItem): ITranslationProvider {
-    const { provider, config } = activeConfig;
+    const { protocolFamily, config } = activeConfig;
 
-    switch (provider) {
-      case TranslationProvider.GoogleGemini:
-      case TranslationProvider.ProxyGemini:
+    switch (protocolFamily) {
+      case ApiProtocolFamily.GEMINI:
         return new GoogleGeminiProvider(config);
-
-      case TranslationProvider.OpenAI:
-      case TranslationProvider.DeepSeek:
-      case TranslationProvider.SiliconFlow:
       default:
         return new OpenAIProvider(config);
     }
@@ -34,20 +29,14 @@ export class ApiServiceFactory {
   /**
    * 获取支持的提供者列表
    */
-  static getSupportedProviders(): TranslationProvider[] {
-    return [
-      TranslationProvider.OpenAI,
-      TranslationProvider.GoogleGemini,
-      TranslationProvider.ProxyGemini,
-      TranslationProvider.DeepSeek,
-      TranslationProvider.SiliconFlow,
-    ];
+  static getSupportedProviders(): ApiProtocolFamily[] {
+    return [ApiProtocolFamily.OPENAI_COMPATIBLE, ApiProtocolFamily.GEMINI];
   }
 
   /**
    * 检查提供者是否受支持
    */
-  static isProviderSupported(provider: TranslationProvider): boolean {
-    return this.getSupportedProviders().includes(provider);
+  static isProviderSupported(protocolFamily: ApiProtocolFamily): boolean {
+    return this.getSupportedProviders().includes(protocolFamily);
   }
 }

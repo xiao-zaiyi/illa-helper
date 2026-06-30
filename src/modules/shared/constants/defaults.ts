@@ -6,11 +6,13 @@
 import type {
   ApiConfig,
   ApiConfigItem,
+  ApiProtocolFamily,
   MultilingualConfig,
 } from '../types/api';
 import type { FloatingBallConfig, TooltipHotkey } from '../types/ui';
 import type { UserSettings } from '../types/storage';
 import type { LazyLoadingConfig } from '../types/core';
+import { createEmptyApiConfig } from '../ApiConfigHelpers';
 import {
   UserLevel,
   TranslationStyle,
@@ -22,18 +24,13 @@ import {
 
 // 默认API配置
 export const DEFAULT_API_CONFIG: ApiConfig = {
+  ...createEmptyApiConfig(),
   apiKey: import.meta.env.VITE_WXT_DEFAULT_API_KEY || '',
   apiEndpoint:
     import.meta.env.VITE_WXT_DEFAULT_API_ENDPOINT ||
     'https://api.openai.com/v1/chat/completions',
   model: import.meta.env.VITE_WXT_DEFAULT_MODEL || 'gpt-4o-mini',
   temperature: parseFloat(import.meta.env.VITE_WXT_DEFAULT_TEMPERATURE) || 0,
-  enable_thinking: false,
-  includeThinkingParam: false,
-  customParams: '',
-  phraseEnabled: true,
-  requestsPerSecond: 0, // 默认无限制，0表示不限制
-  useBackgroundProxy: false, // 默认不使用background代理，保持向后兼容
 };
 
 // 默认多语言配置 - 极简化版本
@@ -66,12 +63,9 @@ export const DEFAULT_LAZY_LOADING_CONFIG: LazyLoadingConfig = {
 function createDefaultApiConfigItem(): ApiConfigItem {
   return {
     id: 'default-config',
-    name: 'defaultConfig',
-    provider: 'openai',
+    name: 'OpenAI',
+    protocolFamily: 'openai-compatible' as ApiProtocolFamily,
     config: DEFAULT_API_CONFIG,
-    isDefault: true,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
   };
 }
 

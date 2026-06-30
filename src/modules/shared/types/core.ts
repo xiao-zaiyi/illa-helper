@@ -81,15 +81,6 @@ export enum TranslationMode {
   PARAGRAPH = 'paragraph', // 段落翻译模式（新增）
 }
 
-// 翻译服务提供商枚举
-export enum TranslationProvider {
-  OpenAI = 'OpenAI',
-  DeepSeek = 'DeepSeek',
-  SiliconFlow = 'SiliconFlow',
-  GoogleGemini = 'GoogleGemini',
-  ProxyGemini = 'ProxyGemini',
-}
-
 // 右键菜单操作类型
 export type ContextMenuActionType =
   | 'add-to-blacklist'

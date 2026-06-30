@@ -1,15 +1,9 @@
 import glob from './glob';
 import { WebsiteRule, WebsiteManagementSettings, WebsiteStatus } from './types';
 
-// 用于向后兼容的旧黑名单设置接口
-interface BlacklistSettings {
-  patterns: string[];
-}
-
 // 默认设置
 const DEFAULT_SETTINGS: WebsiteManagementSettings = { rules: [] };
 const STORAGE_KEY = 'website-management-settings';
-const LEGACY_BLACKLIST_KEY = 'blacklist-settings';
 
 export class WebsiteManager {
   private settingsCache: WebsiteManagementSettings | null = null;
@@ -60,7 +54,7 @@ export class WebsiteManager {
   }
 
   /**
-   * 检查是否被黑名单禁用（兼容原有接口）
+   * 检查是否被黑名单禁用
    */
   async isBlacklisted(url: string): Promise<boolean> {
     const status = await this.getWebsiteStatus(url);
@@ -201,7 +195,7 @@ export class WebsiteManager {
   }
 
   /**
-   * 获取设置，包含兼容性处理
+   * 获取设置
    */
   private async getSettings(): Promise<WebsiteManagementSettings> {
     if (this.settingsCache) {
@@ -209,31 +203,14 @@ export class WebsiteManager {
     }
 
     try {
-      // 首先尝试获取新的设置
       const result = await browser.storage.sync.get(STORAGE_KEY);
       if (result && result[STORAGE_KEY]) {
-        const settings = JSON.parse(result[STORAGE_KEY]);
-        // 修复 Date 对象的反序列化
-        if (settings.rules) {
-          settings.rules = settings.rules.map((rule: any) => ({
-            ...rule,
-            createdAt: new Date(rule.createdAt),
-          }));
-        }
+        const settings = this.normalizeSettings(
+          JSON.parse(result[STORAGE_KEY]),
+        );
         this.settingsCache = settings;
         this.cacheTimestamp = Date.now();
         return settings;
-      }
-
-      // 如果没有新设置，尝试迁移旧的黑名单数据
-      const legacyResult = await browser.storage.sync.get(LEGACY_BLACKLIST_KEY);
-      if (legacyResult && legacyResult[LEGACY_BLACKLIST_KEY]) {
-        const legacySettings: BlacklistSettings = JSON.parse(
-          legacyResult[LEGACY_BLACKLIST_KEY],
-        );
-        const migratedSettings = await this.migrateLegacyData(legacySettings);
-        this.settingsCache = migratedSettings;
-        return migratedSettings;
       }
 
       this.settingsCache = DEFAULT_SETTINGS;
@@ -243,33 +220,6 @@ export class WebsiteManager {
       this.settingsCache = DEFAULT_SETTINGS;
       return DEFAULT_SETTINGS;
     }
-  }
-
-  /**
-   * 迁移旧的黑名单数据
-   */
-  private async migrateLegacyData(
-    legacySettings: BlacklistSettings,
-  ): Promise<WebsiteManagementSettings> {
-    const migratedRules: WebsiteRule[] = legacySettings.patterns.map(
-      (pattern) => ({
-        id: this.generateId(),
-        pattern,
-        type: 'blacklist' as const,
-        enabled: true,
-        createdAt: new Date(),
-        description: '从黑名单迁移',
-      }),
-    );
-
-    const newSettings: WebsiteManagementSettings = {
-      rules: migratedRules,
-    };
-
-    // 保存迁移后的数据
-    await this.saveSettings(newSettings);
-
-    return newSettings;
   }
 
   /**
@@ -286,6 +236,45 @@ export class WebsiteManager {
     } catch (error) {
       console.error('保存网站管理设置失败:', error);
     }
+  }
+
+  private normalizeSettings(rawSettings: unknown): WebsiteManagementSettings {
+    if (!rawSettings || typeof rawSettings !== 'object') {
+      return DEFAULT_SETTINGS;
+    }
+
+    const settings = rawSettings as Partial<WebsiteManagementSettings>;
+    const rawRules = Array.isArray(settings.rules) ? settings.rules : [];
+
+    return {
+      rules: rawRules
+        .map((rule) => this.normalizeRule(rule))
+        .filter((rule): rule is WebsiteRule => rule !== null),
+    };
+  }
+
+  private normalizeRule(rawRule: unknown): WebsiteRule | null {
+    if (!rawRule || typeof rawRule !== 'object') {
+      return null;
+    }
+
+    const rule = rawRule as Partial<WebsiteRule>;
+    if (
+      !rule.id ||
+      !rule.pattern ||
+      (rule.type !== 'blacklist' && rule.type !== 'whitelist')
+    ) {
+      return null;
+    }
+
+    return {
+      id: rule.id,
+      pattern: rule.pattern,
+      type: rule.type,
+      enabled: rule.enabled ?? true,
+      createdAt: new Date(rule.createdAt ?? Date.now()),
+      description: rule.description,
+    };
   }
 
   /**

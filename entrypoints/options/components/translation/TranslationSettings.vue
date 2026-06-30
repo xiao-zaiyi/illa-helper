@@ -118,7 +118,9 @@
                 :key="config.id"
                 :value="config.id"
               >
-                {{ config.name }} ({{ config.provider }})
+                {{ config.name }} ({{
+                  getProtocolFamilyLabel(config.protocolFamily)
+                }})
               </SelectItem>
             </SelectContent>
           </Select>
@@ -129,7 +131,7 @@
           <div class="text-sm space-y-1">
             <div>
               <strong>{{ $t('translationSettings.provider') }}：</strong>
-              {{ activeConfig.provider }}
+              {{ getProtocolFamilyLabel(activeConfig.protocolFamily) }}
             </div>
             <div>
               <strong>{{ $t('translationSettings.model') }}：</strong>
@@ -198,12 +200,8 @@
               <div class="flex items-center justify-between mb-1.5">
                 <div class="flex items-center gap-1.5 min-w-0">
                   <ServerIcon
-                    v-if="config.provider.toLowerCase().includes('openai')"
+                    v-if="!isGeminiFamily(config.protocolFamily)"
                     class="h-3.5 w-3.5 text-green-500"
-                  />
-                  <CloudIcon
-                    v-else-if="config.provider.toLowerCase().includes('cloud')"
-                    class="h-3.5 w-3.5 text-blue-500"
                   />
                   <GlobeIcon v-else class="h-3.5 w-3.5 text-primary" />
                   <h3
@@ -230,8 +228,11 @@
               <div class="text-xs text-muted-foreground space-y-0.5 mb-2">
                 <div class="flex items-center gap-1">
                   <HashIcon class="h-3 w-3" />
-                  <span class="truncate" :title="config.provider">
-                    {{ config.provider }}
+                  <span
+                    class="truncate"
+                    :title="getProtocolFamilyLabel(config.protocolFamily)"
+                  >
+                    {{ getProtocolFamilyLabel(config.protocolFamily) }}
                   </span>
                 </div>
                 <div class="flex items-center gap-1">
@@ -330,7 +331,7 @@
                     <PencilIcon class="h-3 w-3" />
                   </Button>
                   <Button
-                    v-if="!config.isDefault"
+                    v-if="settings.apiConfigs.length > 1"
                     @click="deleteConfig(config.id)"
                     size="sm"
                     variant="ghost"
@@ -396,8 +397,8 @@
           <div class="space-y-2">
             <Label>{{ $t('translationSettings.serviceProvider') }}</Label>
             <Select
-              v-model="configForm.provider"
-              @update:model-value="handleProviderChange"
+              v-model="configForm.presetKey"
+              @update:model-value="handlePresetChange"
             >
               <SelectTrigger>
                 <SelectValue
@@ -414,51 +415,21 @@
                 <SelectItem value="silicon-flow">
                   {{ $t('translationSettings.siliconFlow') }}
                 </SelectItem>
-                <SelectItem value="GoogleGemini">
+                <SelectItem value="gemini">
                   {{ $t('translationSettings.googleGemini') }}
                 </SelectItem>
-                <SelectItem value="ProxyGemini">
-                  {{ $t('translationSettings.proxyGemini') }}
-                </SelectItem>
-                <SelectItem value="anthropic">
-                  {{ $t('translationSettings.anthropic') }}
-                </SelectItem>
-                <SelectItem value="custom">
+                <SelectItem value="custom-openai">
                   {{ $t('translationSettings.custom') }}
                 </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <!-- 自定义服务商名称输入 -->
-          <div v-if="configForm.provider === 'custom'" class="space-y-2">
-            <Label>{{ $t('translationSettings.customProviderName') }}</Label>
-            <Input
-              v-model="configForm.customProviderName"
-              :placeholder="$t('translationSettings.inputCustomProviderName')"
-            />
-          </div>
-
-          <!-- API Endpoint for OpenAI/DeepSeek/Custom -->
-          <div
-            v-if="
-              !['GoogleGemini', 'ProxyGemini'].includes(configForm.provider)
-            "
-            class="space-y-2"
-          >
+          <div class="space-y-2">
             <Label>{{ $t('translationSettings.apiEndpoint') }}</Label>
             <Input
               v-model="configForm.config.apiEndpoint"
               :placeholder="$t('translationSettings.apiEndpointPlaceholder')"
-            />
-          </div>
-
-          <!-- API Endpoint for Proxy-Gemini -->
-          <div v-if="configForm.provider === 'ProxyGemini'" class="space-y-2">
-            <Label>{{ $t('translationSettings.proxyApiEndpoint') }}</Label>
-            <Input
-              v-model="configForm.config.apiEndpoint"
-              :placeholder="$t('translationSettings.inputProxyEndpoint')"
             />
           </div>
 
@@ -697,9 +668,12 @@
                 @click="testApiConnection"
                 :disabled="
                   isTestingConnection ||
-                  !configForm.config.apiKey ||
-                  (configForm.provider !== 'GoogleGemini' &&
-                    !configForm.config.apiEndpoint)
+                  !canTestConfig({
+                    id: 'preview',
+                    name: configForm.name,
+                    protocolFamily: configForm.protocolFamily,
+                    config: configForm.config,
+                  })
                 "
                 size="sm"
                 variant="default"
@@ -785,7 +759,16 @@ import {
   DEFAULT_SETTINGS,
   ApiConfigItem,
   ApiConfig,
+  ApiProtocolFamily,
 } from '@/src/modules/shared/types';
+import {
+  API_PRESETS,
+  ApiPresetKey,
+  createEmptyApiConfig,
+  getProtocolFamilyLabel,
+  isGeminiFamily,
+  supportsConnectionTest,
+} from '@/src/modules/shared/ApiConfigHelpers';
 import {
   Card,
   CardContent,
@@ -817,7 +800,6 @@ import {
   Trash2 as Trash2Icon,
   FolderOpen as FolderOpenIcon,
   Server as ServerIcon,
-  Cloud as CloudIcon,
   Globe as GlobeIcon,
   XCircle,
   Eye,
@@ -842,63 +824,25 @@ const showCustomParamsExample = ref<boolean>(false);
 // 密码可见性状态
 const showPassword = ref<boolean>(false);
 
-// 预定义的服务提供商配置
-const providerConfigs = {
-  openai: {
-    name: 'OpenAI',
-    apiEndpoint: 'https://api.openai.com/v1/chat/completions',
-    defaultModel: 'gpt-4o-mini',
+// 预设只负责填充默认值，真正持久化的数据只有协议族和连接参数
+const createConfigFormState = () => ({
+  name: API_PRESETS.openai.label,
+  presetKey: 'openai' as ApiPresetKey,
+  protocolFamily: ApiProtocolFamily.OPENAI_COMPATIBLE,
+  config: {
+    ...createEmptyApiConfig(),
+    apiEndpoint: API_PRESETS.openai.apiEndpoint,
+    model: API_PRESETS.openai.defaultModel,
   },
-  deepseek: {
-    name: 'DeepSeek',
-    apiEndpoint: 'https://api.deepseek.com/v1/chat/completions',
-    defaultModel: 'deepseek-chat',
-  },
-  'silicon-flow': {
-    name: 'Silicon Flow',
-    apiEndpoint: 'https://api.siliconflow.cn/v1/chat/completions',
-    defaultModel: 'qwen/Qwen2.5-7B-Instruct',
-  },
-  anthropic: {
-    name: 'Anthropic',
-    apiEndpoint: 'https://api.anthropic.com/v1/messages',
-    defaultModel: 'claude-3-5-sonnet-20241022',
-  },
-  GoogleGemini: {
-    name: 'Google Gemini',
-    apiEndpoint: '', // Not needed for native SDK
-    defaultModel: 'gemini-2.5-flash-lite-preview-06-17',
-  },
-  ProxyGemini: {
-    name: 'Proxy-Gemini',
-    apiEndpoint: 'https://api-proxy.me/gemini', // User-provided
-    defaultModel: 'gemini-2.5-flash-lite-preview-06-17',
-  },
-};
+});
 
 // 配置表单
 const configForm = ref<{
   name: string;
-  provider: string;
-  customProviderName?: string;
+  presetKey: ApiPresetKey;
+  protocolFamily: ApiProtocolFamily;
   config: ApiConfig;
-}>({
-  name: '',
-  provider: '',
-  customProviderName: '',
-  config: {
-    apiKey: '',
-    apiEndpoint: '',
-    model: '',
-    temperature: 0,
-    enable_thinking: false,
-    includeThinkingParam: false,
-    customParams: '',
-    phraseEnabled: true,
-    requestsPerSecond: 0,
-    useBackgroundProxy: false,
-  },
-});
+}>(createConfigFormState());
 
 const emit = defineEmits<{
   saveMessage: [message: string];
@@ -910,6 +854,9 @@ const activeConfig = computed(() => {
     (config) => config.id === settings.value.activeApiConfigId,
   );
 });
+
+const canTestConfig = (config: ApiConfigItem): boolean =>
+  supportsConnectionTest(config);
 
 const handleActiveConfigChange = async () => {
   try {
@@ -928,17 +875,10 @@ const handleActiveConfigChange = async () => {
 const editConfig = (config: ApiConfigItem) => {
   editingConfig.value = config;
 
-  // 检查是否是预定义的服务商
-  const predefinedProvider = Object.keys(providerConfigs).find(
-    (key) =>
-      providerConfigs[key as keyof typeof providerConfigs].name ===
-        config.provider || key === config.provider,
-  );
-
   configForm.value = {
     name: config.name,
-    provider: predefinedProvider || 'custom',
-    customProviderName: predefinedProvider ? '' : config.provider,
+    presetKey: inferPresetKey(config),
+    protocolFamily: config.protocolFamily,
     config: { ...config.config },
   };
 
@@ -946,6 +886,20 @@ const editConfig = (config: ApiConfigItem) => {
   if (configForm.value.config.customParams) {
     validateCustomParams();
   }
+};
+
+const inferPresetKey = (config: ApiConfigItem): ApiPresetKey => {
+  for (const preset of Object.values(API_PRESETS)) {
+    if (
+      preset.protocolFamily === config.protocolFamily &&
+      preset.apiEndpoint === config.config.apiEndpoint &&
+      preset.defaultModel === config.config.model
+    ) {
+      return preset.key;
+    }
+  }
+
+  return isGeminiFamily(config.protocolFamily) ? 'gemini' : 'custom-openai';
 };
 
 const deleteConfig = async (configId: string) => {
@@ -1009,21 +963,23 @@ const clearCustomParams = () => {
   customParamsValid.value = false;
 };
 
-const handleProviderChange = (provider: any) => {
-  const providerValue = provider as string;
-  if (
-    providerValue &&
-    providerValue !== 'custom' &&
-    providerConfigs[providerValue as keyof typeof providerConfigs]
-  ) {
-    const config =
-      providerConfigs[providerValue as keyof typeof providerConfigs];
-    configForm.value.config.apiEndpoint = config.apiEndpoint;
-    configForm.value.config.model = config.defaultModel;
-    // 如果配置名称为空，自动设置为服务商名称
-    if (!configForm.value.name) {
-      configForm.value.name = config.name;
-    }
+const handlePresetChange = (presetKey: unknown) => {
+  if (typeof presetKey !== 'string') {
+    return;
+  }
+
+  const preset = API_PRESETS[presetKey as ApiPresetKey];
+  if (!preset) {
+    return;
+  }
+
+  configForm.value.presetKey = preset.key;
+  configForm.value.protocolFamily = preset.protocolFamily;
+  configForm.value.config.apiEndpoint = preset.apiEndpoint;
+  configForm.value.config.model = preset.defaultModel;
+
+  if (!configForm.value.name) {
+    configForm.value.name = preset.label;
   }
 };
 
@@ -1034,24 +990,18 @@ const saveConfig = async () => {
   }
 
   try {
-    // 确定最终的provider值
-    const finalProvider =
-      configForm.value.provider === 'custom'
-        ? configForm.value.customProviderName || 'custom'
-        : configForm.value.provider;
-
     if (editingConfig.value) {
       await storageService.updateApiConfig(
         editingConfig.value.id,
         configForm.value.name,
-        finalProvider,
+        configForm.value.protocolFamily,
         configForm.value.config,
       );
       emit('saveMessage', '配置已更新');
     } else {
       await storageService.addApiConfig(
         configForm.value.name,
-        finalProvider,
+        configForm.value.protocolFamily,
         configForm.value.config,
       );
       emit('saveMessage', '配置已添加');
@@ -1079,30 +1029,23 @@ const cardTestTimers = ref<Record<string, NodeJS.Timeout>>({});
 
 // 测试配置对话框中的API连接
 const testApiConnection = async () => {
-  const provider = configForm.value.provider;
-  const config = configForm.value.config;
+  const previewConfig: ApiConfigItem = {
+    id: 'preview',
+    name: configForm.value.name || 'preview',
+    protocolFamily: configForm.value.protocolFamily,
+    config: configForm.value.config,
+  };
 
-  if (!config.apiKey) return;
-  if (provider !== 'GoogleGemini' && !config.apiEndpoint) return;
+  if (!canTestConfig(previewConfig)) return;
 
   isTestingConnection.value = true;
   testResult.value = null;
-  // 获取ApiConfigItem
-  const apiConfigItem = {
-    id: 'temp',
-    name: configForm.value.name,
-    provider: configForm.value.provider,
-    config: config,
-    isDefault: false,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  } as ApiConfigItem;
   try {
-    if (provider === 'GoogleGemini' || provider === 'ProxyGemini') {
-      testResult.value = await testGeminiConnection(config);
+    if (isGeminiFamily(previewConfig.protocolFamily)) {
+      testResult.value = await testGeminiConnection(previewConfig.config);
     } else {
       testResult.value = await performApiTest(
-        apiConfigItem,
+        previewConfig,
         settings.value.apiRequestTimeout,
       );
     }
@@ -1113,10 +1056,9 @@ const testApiConnection = async () => {
 
 // 测试卡片配置的API连接
 const testCardApiConnection = async (configItem: ApiConfigItem) => {
-  const { provider, config, id } = configItem;
+  const { id } = configItem;
 
-  if (!config.apiKey) return;
-  if (provider !== 'GoogleGemini' && !config.apiEndpoint) return;
+  if (!canTestConfig(configItem)) return;
 
   // 清除之前的定时器
   if (cardTestTimers.value[id]) {
@@ -1128,8 +1070,8 @@ const testCardApiConnection = async (configItem: ApiConfigItem) => {
   delete cardTestResults.value[id];
 
   try {
-    if (provider === 'GoogleGemini' || provider === 'ProxyGemini') {
-      cardTestResults.value[id] = await testGeminiConnection(config);
+    if (isGeminiFamily(configItem.protocolFamily)) {
+      cardTestResults.value[id] = await testGeminiConnection(configItem.config);
     } else {
       cardTestResults.value[id] = await performApiTest(
         configItem,
@@ -1161,23 +1103,7 @@ const cancelEdit = () => {
   customParamsValid.value = false;
   showCustomParamsExample.value = false;
 
-  configForm.value = {
-    name: '',
-    provider: '',
-    customProviderName: '',
-    config: {
-      apiKey: '',
-      apiEndpoint: '',
-      model: '',
-      temperature: 0,
-      enable_thinking: false,
-      includeThinkingParam: false,
-      customParams: '',
-      phraseEnabled: true,
-      requestsPerSecond: 0,
-      useBackgroundProxy: false,
-    },
-  };
+  configForm.value = createConfigFormState();
 };
 
 const loadSettings = async () => {

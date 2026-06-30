@@ -75,7 +75,7 @@ const exportSettings = async () => {
 
     const exportData = {
       exportTime: new Date().toISOString(),
-      version: '2.0', // 增加版本号以区分包含网站管理数据的新格式
+      version: '3.0',
       userSettings: settings,
       websiteManagement: {
         rules: websiteRules,
@@ -131,9 +131,7 @@ const importSettings = async () => {
       const importedData = JSON.parse(result);
       let importStats = { settings: false, websiteRules: 0 };
 
-      // 检查数据格式并导入
-      if (importedData.version === '2.0' && importedData.userSettings) {
-        // 新格式：包含完整数据
+      if (importedData.version === '3.0' && importedData.userSettings) {
         await storageService.saveUserSettings(importedData.userSettings);
         importStats.settings = true;
 
@@ -157,19 +155,6 @@ const importSettings = async () => {
 
         const message = t('dataManagement.importSettings.success');
         emit('saveMessage', message, 'success');
-      } else if (
-        importedData.isEnabled !== undefined ||
-        importedData.apiConfigs !== undefined
-      ) {
-        // 旧格式：只有用户设置
-        await storageService.saveUserSettings(importedData);
-        importStats.settings = true;
-
-        emit(
-          'saveMessage',
-          t('dataManagement.importSettings.userSettingsSuccess'),
-          'success',
-        );
       } else {
         throw new Error(t('dataManagement.importSettings.unrecognizedFormat'));
       }
