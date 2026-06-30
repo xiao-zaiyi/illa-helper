@@ -20,7 +20,7 @@ import {
   DEFAULT_FLOATING_BALL_CONFIG,
 } from '@/src/modules/shared/types';
 import { StorageService } from '@/src/modules/core/storage';
-import { notifySettingsChanged } from '@/src/modules/core/messaging';
+import { messagingService } from '@/src/modules/core/messaging';
 import { languageService } from '@/src/modules/core/translation/LanguageService';
 import {
   ExternalLink,
@@ -148,7 +148,7 @@ const saveAndNotifySettings = async () => {
     }
 
     await storageService.saveUserSettings(settings.value);
-    await notifySettingsChanged(settings.value);
+    await messagingService.notifySettingsChanged(settings.value);
     showSavedMessage(t('settings.save'));
   } catch (error) {
     console.error(t('settings.saveFailed'), error);
@@ -225,7 +225,7 @@ const handleActiveConfigChange = async () => {
     Object.assign(settings.value, updatedSettings);
 
     // 通知content script配置已更新
-    await notifySettingsChanged(settings.value);
+    await messagingService.notifySettingsChanged(settings.value);
   } catch (error) {
     console.error(t('settings.switchConfigFailed'), error);
     showSavedMessage(t('settings.switchConfigFailed'));

@@ -7,9 +7,6 @@
 export {
   default as MessagingService,
   messagingService,
-  notifySettingsChanged,
-  sendContextMenuAction,
-  notifyWebsiteManagementChanged,
 } from './MessagingService';
 
 // 类型定义导出

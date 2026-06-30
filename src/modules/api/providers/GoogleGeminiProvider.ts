@@ -64,7 +64,6 @@ export class GoogleGeminiProvider extends BaseProvider {
       targetLanguage: settings.multilingualConfig.targetLanguage,
       userLevel: settings.userLevel,
       replacementRate: settings.replacementRate,
-      provider: 'gemini', // 指定为gemini获取特定prompt
     });
 
     const prompt = `${systemPrompt}\n\nTranslate to ${languageService.getTargetLanguageDisplayName(settings.multilingualConfig.targetLanguage)} (original||translation): ${text}`;

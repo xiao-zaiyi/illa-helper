@@ -24,11 +24,15 @@ export interface IContentManager {
  */
 export interface IConfigurationService {
   getUserSettings(): Promise<UserSettings>;
-  createReplacementConfig(settings: UserSettings): ReplacementConfig;
+  createReplacementConfig(
+    settings: UserSettings,
+    pageLanguage?: string,
+  ): ReplacementConfig;
   updateConfiguration(
     settings: UserSettings,
     styleManager: StyleManager,
     textReplacer: TextReplacerService,
+    pageLanguage?: string,
   ): void;
 }
 

@@ -7,7 +7,7 @@
 
 import { callAI } from '../../api/services/UniversalApiService';
 import { StorageService } from '../storage';
-import { UserSettings } from '../../shared/types/storage';
+import { languageService } from './LanguageService';
 
 /**
  * 段落翻译prompt模板
@@ -65,9 +65,13 @@ export class ParagraphTranslationApi {
       // 获取用户设置
       const settings = await this.storageService.getUserSettings();
 
-      // 智能确定目标语言（复用TextReplacerService的逻辑）
+      const detectedPageLanguage = await languageService.detectPageLanguage();
       const finalTargetLanguage =
-        targetLanguage || this.determineOptimalTargetLanguage(settings);
+        targetLanguage ||
+        languageService.resolveTargetLanguage(
+          settings.multilingualConfig,
+          detectedPageLanguage,
+        );
 
       // 构建段落翻译prompt
       const prompt = this.buildParagraphTranslationPrompt(
@@ -132,116 +136,6 @@ export class ParagraphTranslationApi {
       '{{targetLang}}',
       finalLanguageName,
     ).replace('{{input}}', sourceText);
-  }
-
-  /**
-   * 智能确定目标语言（复用TextReplacerService的逻辑）
-   */
-  private determineOptimalTargetLanguage(settings: UserSettings): string {
-    try {
-      // 检测当前页面语言
-      const detectedPageLanguage = this.detectCurrentPageLanguage();
-
-      if (!detectedPageLanguage) {
-        return settings.multilingualConfig.targetLanguage;
-      }
-
-      const config = settings.multilingualConfig;
-
-      // 标准化语言代码
-      const normalizedPageLang =
-        this.normalizeLanguageCode(detectedPageLanguage);
-      const normalizedTargetLang = this.normalizeLanguageCode(
-        config.targetLanguage,
-      );
-      const normalizedNativeLang = this.normalizeLanguageCode(
-        config.nativeLanguage,
-      );
-
-      // 页面语言 = 目标语言 → 翻译到母语
-      if (normalizedPageLang === normalizedTargetLang) {
-        console.log(
-          `[ParagraphTranslationApi] 页面语言(${detectedPageLanguage})与目标语言(${config.targetLanguage})一致，切换到母语(${config.nativeLanguage})`,
-        );
-        return config.nativeLanguage;
-      }
-
-      // 页面语言 = 母语 → 翻译到目标语言
-      if (normalizedPageLang === normalizedNativeLang) {
-        console.log(
-          `[ParagraphTranslationApi] 页面语言(${detectedPageLanguage})与母语(${config.nativeLanguage})一致，切换到目标语言(${config.targetLanguage})`,
-        );
-        return config.targetLanguage;
-      }
-
-      // 其他情况 → 翻译到目标语言
-      return config.targetLanguage;
-    } catch (error) {
-      console.warn(
-        '[ParagraphTranslationApi] 语言检测失败，使用默认目标语言:',
-        error,
-      );
-      return settings.multilingualConfig.targetLanguage;
-    }
-  }
-
-  /**
-   * 检测当前页面语言
-   */
-  private detectCurrentPageLanguage(): string | null {
-    try {
-      // 方法1：从HTML标签获取
-      const htmlLang = document.documentElement.lang;
-      if (htmlLang) {
-        return htmlLang;
-      }
-
-      // 方法2：从meta标签获取
-      const metaLang = document.querySelector(
-        'meta[http-equiv="Content-Language"]',
-      );
-      if (metaLang) {
-        return metaLang.getAttribute('content') || null;
-      }
-
-      // 方法3：简单的文本检测（作为后备）
-      const textSample = document.body.innerText.substring(0, 100);
-      if (/[\u4e00-\u9fff]/.test(textSample)) {
-        return 'zh';
-      } else if (/^[a-zA-Z\s\d\.,!?;:'"()-]*$/.test(textSample)) {
-        return 'en';
-      }
-
-      return null;
-    } catch (error) {
-      console.warn('[ParagraphTranslationApi] 页面语言检测失败:', error);
-      return null;
-    }
-  }
-
-  /**
-   * 标准化语言代码
-   */
-  private normalizeLanguageCode(langCode: string): string {
-    if (!langCode) return '';
-
-    // 移除地区代码，只保留主要语言代码
-    const mainLang = langCode.toLowerCase().split('-')[0];
-
-    // 标准化映射
-    const normalizedMapping: { [key: string]: string } = {
-      zh: 'zh',
-      'zh-cn': 'zh',
-      'zh-tw': 'zh',
-      'zh-hk': 'zh',
-      chinese: 'zh',
-      en: 'en',
-      'en-us': 'en',
-      'en-gb': 'en',
-      english: 'en',
-    };
-
-    return normalizedMapping[mainLang] || mainLang;
   }
 
   /**

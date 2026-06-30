@@ -112,7 +112,7 @@ export class WebsiteManager {
       if (existingRule.type === type) {
         return; // 完全相同的规则已存在，不重复添加
       } else {
-        // 相同pattern但不同type的规则存在，先移除旧规则
+        // 同一 pattern 只能保留一种规则类型。
         const ruleIndex = settings.rules.findIndex(
           (rule) => rule.id === existingRule.id,
         );
@@ -178,6 +178,16 @@ export class WebsiteManager {
     settings.rules = settings.rules.filter((rule) => !ids.includes(rule.id));
     await this.saveSettings(settings);
     this.clearCache(); // 清除缓存确保数据是最新的
+  }
+
+  /**
+   * 使用当前格式规则替换网站规则列表。
+   */
+  async replaceRules(rules: WebsiteRule[]): Promise<number> {
+    const normalizedSettings = this.normalizeSettings({ rules });
+    await this.saveSettings(normalizedSettings);
+    this.clearCache();
+    return normalizedSettings.rules.length;
   }
 
   /**
@@ -262,8 +272,15 @@ export class WebsiteManager {
     if (
       !rule.id ||
       !rule.pattern ||
+      typeof rule.enabled !== 'boolean' ||
+      !rule.createdAt ||
       (rule.type !== 'blacklist' && rule.type !== 'whitelist')
     ) {
+      return null;
+    }
+
+    const createdAt = new Date(rule.createdAt);
+    if (Number.isNaN(createdAt.getTime())) {
       return null;
     }
 
@@ -271,8 +288,8 @@ export class WebsiteManager {
       id: rule.id,
       pattern: rule.pattern,
       type: rule.type,
-      enabled: rule.enabled ?? true,
-      createdAt: new Date(rule.createdAt ?? Date.now()),
+      enabled: rule.enabled,
+      createdAt,
       description: rule.description,
     };
   }

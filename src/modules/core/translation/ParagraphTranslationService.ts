@@ -18,6 +18,7 @@ import {
   walkAndCollectParagraphs,
   collectTextNodes,
 } from '../../processing/DomWalker';
+import { languageService } from './LanguageService';
 
 /**
  * 段落翻译服务类
@@ -33,6 +34,7 @@ export class ParagraphTranslationService {
   private isActive: boolean = false;
   private translatedElements = new WeakSet<HTMLElement>();
   private translatingElements = new WeakSet<HTMLElement>(); // 正在翻译的元素
+  private targetLanguage?: string;
 
   // 并发配置
   private readonly BATCH_SIZE = 5; // 每批处理5个元素
@@ -98,6 +100,12 @@ export class ParagraphTranslationService {
 
     // 获取用户设置
     const settings = await this.storageService.getUserSettings();
+    const pageLanguage = await languageService.detectPageLanguage();
+    this.targetLanguage = languageService.resolveTargetLanguage(
+      settings.multilingualConfig,
+      pageLanguage,
+    );
+
     const isLazyLoadingEnabled =
       settings?.lazyLoading?.enabled && this.lazyLoadingService?.isEnabled();
 
@@ -113,21 +121,13 @@ export class ParagraphTranslationService {
   }
 
   /**
-   * 向后兼容的方法 - 启动段落翻译
-   * @deprecated 使用 start() 方法替代
-   */
-  public async translatePage(lazy: boolean = true): Promise<number> {
-    console.warn('[段落翻译] translatePage() 方法已废弃，请使用 start() 方法');
-    return this.start();
-  }
-
-  /**
    * 停止段落翻译
    */
   public stop(): void {
     this.isActive = false;
     this.translatedElements = new WeakSet();
     this.translatingElements = new WeakSet(); // 重置
+    this.targetLanguage = undefined;
     this.clearAllLoadingIndicators(); // 清除
 
     // 停止懒加载观察
@@ -147,6 +147,7 @@ export class ParagraphTranslationService {
       .forEach((el) => el.remove());
     this.translatedElements = new WeakSet();
     this.translatingElements = new WeakSet(); // 重置
+    this.targetLanguage = undefined;
     this.clearAllLoadingIndicators(); // 清除
 
     // 停止懒加载观察
@@ -257,8 +258,10 @@ export class ParagraphTranslationService {
         textContent.substring(0, 50),
       );
 
-      const translatedText =
-        await this.paragraphApi.translateParagraph(textContent);
+      const translatedText = await this.paragraphApi.translateParagraph(
+        textContent,
+        this.targetLanguage,
+      );
 
       if (translatedText && translatedText.trim()) {
         // 先移除加载指示器，再显示翻译结果

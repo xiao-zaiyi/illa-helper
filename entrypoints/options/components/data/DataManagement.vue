@@ -137,20 +137,9 @@ const importSettings = async () => {
 
         // 导入网站管理数据
         if (importedData.websiteManagement?.rules) {
-          // 清除现有缓存
-          websiteManager.clearCache();
-
-          // 导入网站规则
-          for (const rule of importedData.websiteManagement.rules) {
-            if (rule.pattern && rule.type) {
-              await websiteManager.addRule(
-                rule.pattern,
-                rule.type,
-                rule.description,
-              );
-              importStats.websiteRules++;
-            }
-          }
+          importStats.websiteRules = await websiteManager.replaceRules(
+            importedData.websiteManagement.rules,
+          );
         }
 
         const message = t('dataManagement.importSettings.success');

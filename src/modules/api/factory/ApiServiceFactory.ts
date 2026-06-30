@@ -19,24 +19,12 @@ export class ApiServiceFactory {
     const { protocolFamily, config } = activeConfig;
 
     switch (protocolFamily) {
+      case ApiProtocolFamily.OPENAI_COMPATIBLE:
+        return new OpenAIProvider(config);
       case ApiProtocolFamily.GEMINI:
         return new GoogleGeminiProvider(config);
       default:
-        return new OpenAIProvider(config);
+        throw new Error(`Unsupported API protocol family: ${protocolFamily}`);
     }
-  }
-
-  /**
-   * 获取支持的提供者列表
-   */
-  static getSupportedProviders(): ApiProtocolFamily[] {
-    return [ApiProtocolFamily.OPENAI_COMPATIBLE, ApiProtocolFamily.GEMINI];
-  }
-
-  /**
-   * 检查提供者是否受支持
-   */
-  static isProviderSupported(protocolFamily: ApiProtocolFamily): boolean {
-    return this.getSupportedProviders().includes(protocolFamily);
   }
 }

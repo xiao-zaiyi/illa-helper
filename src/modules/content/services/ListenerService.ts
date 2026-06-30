@@ -21,6 +21,7 @@ export class ListenerService implements IListenerService {
   private paragraphService: ParagraphTranslationService;
   private floatingBallManager: FloatingBallManager;
   private translationStateManager: TranslationStateManager;
+  private pageLanguage?: string;
   private domObserver?: MutationObserver;
   private debounceTimer?: number;
 
@@ -30,17 +31,20 @@ export class ListenerService implements IListenerService {
     configurationService: ConfigurationService,
     styleManager: StyleManager,
     textReplacer: TextReplacerService,
+    paragraphService: ParagraphTranslationService,
     floatingBallManager: FloatingBallManager,
     translationStateManager: TranslationStateManager,
+    pageLanguage?: string,
   ) {
     this.settings = settings;
     this.processingService = processingService;
     this.configurationService = configurationService;
     this.styleManager = styleManager;
     this.textReplacer = textReplacer;
-    this.paragraphService = ParagraphTranslationService.getInstance();
+    this.paragraphService = paragraphService;
     this.floatingBallManager = floatingBallManager;
     this.translationStateManager = translationStateManager;
+    this.pageLanguage = pageLanguage;
   }
 
   /**
@@ -153,6 +157,7 @@ export class ListenerService implements IListenerService {
       this.settings,
       this.styleManager,
       this.textReplacer,
+      this.pageLanguage,
     );
     this.processingService.updateSettings(this.settings);
     this.floatingBallManager.updateConfig(this.settings.floatingBall);

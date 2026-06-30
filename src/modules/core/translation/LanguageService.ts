@@ -8,7 +8,9 @@
  * - 性能优化缓存
  */
 
+import { browser } from 'wxt/browser';
 import { LanguageOption } from '../../shared/types/api';
+import { MultilingualConfig } from '../../shared/types/api';
 import { Language } from './types';
 
 // ==================== 语言数据定义 ====================
@@ -144,12 +146,6 @@ const LANGUAGE_CODE_NORMALIZATION: { [key: string]: string } = {
   nb: 'no', // 挪威语变体
   nn: 'no', // 挪威语变体
   fil: 'tl', // 菲律宾语变体
-  iw: 'he', // 希伯来语旧代码
-  ji: 'he', // 意第绪语映射到希伯来语
-  jw: 'ms', // 爪哇语映射到马来语
-  in: 'id', // 印尼语旧代码
-  mo: 'ro', // 摩尔多瓦语映射到罗马尼亚语
-  sh: 'hr', // 塞尔维亚-克罗地亚语映射到克罗地亚语
 };
 
 // ==================== 语言管理服务类 ====================
@@ -220,6 +216,61 @@ export class LanguageService {
   public normalizeLanguageCode(code: string): string {
     const lowerCode = code.toLowerCase();
     return LANGUAGE_CODE_NORMALIZATION[lowerCode] || lowerCode;
+  }
+
+  /**
+   * 检测当前页面主要语言
+   * 统一页面语言检测入口，避免各模块自行实现不同版本的检测逻辑。
+   */
+  public async detectPageLanguage(): Promise<string> {
+    try {
+      const textSample = document.body.innerText.substring(0, 1000);
+      if (!textSample.trim()) {
+        return 'zh';
+      }
+
+      const result = await browser.i18n.detectLanguage(textSample);
+      const detectedLang = result?.languages?.[0]?.language;
+      if (!detectedLang) {
+        return 'zh';
+      }
+
+      return this.normalizeLanguageCode(detectedLang);
+    } catch (error) {
+      console.warn('[LanguageService] 页面语言检测失败:', error);
+      return 'zh';
+    }
+  }
+
+  /**
+   * 根据页面语言和多语言配置，解析当前应使用的翻译目标语言。
+   * 这是翻译方向判定的唯一来源，避免多个模块各自维护同一套规则。
+   */
+  public resolveTargetLanguage(
+    multilingualConfig: MultilingualConfig,
+    pageLanguage?: string | null,
+  ): string {
+    if (!pageLanguage) {
+      return multilingualConfig.targetLanguage;
+    }
+
+    const normalizedPageLang = this.normalizeLanguageCode(pageLanguage);
+    const normalizedTargetLang = this.normalizeLanguageCode(
+      multilingualConfig.targetLanguage,
+    );
+    const normalizedNativeLang = this.normalizeLanguageCode(
+      multilingualConfig.nativeLanguage,
+    );
+
+    if (normalizedPageLang === normalizedTargetLang) {
+      return multilingualConfig.nativeLanguage;
+    }
+
+    if (normalizedPageLang === normalizedNativeLang) {
+      return multilingualConfig.targetLanguage;
+    }
+
+    return multilingualConfig.targetLanguage;
   }
 
   // ==================== 语言选项生成 ====================

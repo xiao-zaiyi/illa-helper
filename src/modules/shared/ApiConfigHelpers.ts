@@ -64,7 +64,6 @@ export function createEmptyApiConfig(): ApiConfig {
     customParams: '',
     phraseEnabled: true,
     requestsPerSecond: 0,
-    useBackgroundProxy: true,
   };
 }
 
@@ -77,16 +76,8 @@ export function normalizeApiProtocolFamily(
 
   switch (value.trim().toLowerCase()) {
     case ApiProtocolFamily.OPENAI_COMPATIBLE:
-    case 'openai':
-    case 'deepseek':
-    case 'silicon-flow':
-    case 'siliconflow':
-    case 'custom':
       return ApiProtocolFamily.OPENAI_COMPATIBLE;
     case ApiProtocolFamily.GEMINI:
-    case 'googlegemini':
-    case 'proxygemini':
-    case 'google-gemini':
       return ApiProtocolFamily.GEMINI;
     default:
       return null;
@@ -118,7 +109,6 @@ export function sanitizeApiConfig(rawConfig?: Partial<ApiConfig>): ApiConfig {
     requestsPerSecond: rawConfig?.requestsPerSecond ?? 0,
     includeThinkingParam: rawConfig?.includeThinkingParam ?? false,
     enable_thinking: rawConfig?.enable_thinking ?? false,
-    useBackgroundProxy: true,
   };
 }
 

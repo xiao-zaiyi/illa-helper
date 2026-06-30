@@ -1,5 +1,5 @@
 /**
- * 右键菜单管理器 (V3兼容版本)
+ * 右键菜单管理器
  * 负责管理浏览器右键菜单状态更新，不再动态创建删除菜单项
  */
 
@@ -26,7 +26,7 @@ export class ContextMenuManager {
   }
 
   /**
-   * 初始化菜单管理器（V3兼容版本）
+   * 初始化菜单管理器
    */
   async init(): Promise<void> {
     try {
@@ -58,7 +58,7 @@ export class ContextMenuManager {
   }
 
   /**
-   * 更新菜单状态（恢复原来的逻辑）
+   * 更新菜单状态
    */
   private async updateMenuState(tabId: number, url: string): Promise<void> {
     console.log(`[ContextMenu] 更新菜单状态 - TabID: ${tabId}, URL: ${url}`);
@@ -333,18 +333,9 @@ export class ContextMenuManager {
         const domain = extractDomain(url);
         const domainPattern = generateDomainPattern(domain);
 
-        // 查找匹配的规则：可能是域名模式或者其他匹配当前URL的模式
+        // 查找匹配的当前规则：域名菜单只移除当前域名规则。
         const matchingRules = rules.filter((rule) => {
-          // 直接匹配
-          if (rule.pattern === pattern || rule.pattern === domainPattern) {
-            return true;
-          }
-          // 兼容旧格式的模式（如果数据库中还有旧格式）
-          const oldDomainPattern = `*.${domain}`;
-          if (rule.pattern === oldDomainPattern) {
-            return true;
-          }
-          return false;
+          return rule.pattern === pattern || rule.pattern === domainPattern;
         });
 
         console.log(

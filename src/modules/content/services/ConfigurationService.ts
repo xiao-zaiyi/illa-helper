@@ -6,6 +6,7 @@ import {
 import { StorageService } from '@/src/modules/core/storage';
 import { StyleManager } from '@/src/modules/styles';
 import { TextReplacerService } from '@/src/modules/core/translation/TextReplacerService';
+import { languageService } from '@/src/modules/core/translation/LanguageService';
 import { IConfigurationService } from '../types';
 
 /**
@@ -28,16 +29,26 @@ export class ConfigurationService implements IConfigurationService {
   /**
    * 创建替换配置对象
    */
-  createReplacementConfig(settings: UserSettings): ReplacementConfig {
+  createReplacementConfig(
+    settings: UserSettings,
+    pageLanguage?: string,
+  ): ReplacementConfig {
+    const effectiveSettings = this.resolveSettingsForPage(
+      settings,
+      pageLanguage,
+    );
+
     // 获取当前活跃的API配置
-    const activeConfig = settings.apiConfigs.find(
-      (config) => config.id === settings.activeApiConfigId,
+    const activeConfig = effectiveSettings.apiConfigs.find(
+      (config) => config.id === effectiveSettings.activeApiConfigId,
     );
 
     return {
-      userLevel: settings.userLevel,
-      replacementRate: settings.replacementRate,
-      useGptApi: settings.useGptApi,
+      userLevel: effectiveSettings.userLevel,
+      replacementRate: effectiveSettings.replacementRate,
+      useGptApi: effectiveSettings.useGptApi,
+      userSettings: effectiveSettings,
+      activeApiConfig: activeConfig || null,
       apiConfig: activeConfig?.config || {
         apiKey: '',
         apiEndpoint: '',
@@ -47,7 +58,7 @@ export class ConfigurationService implements IConfigurationService {
         phraseEnabled: true,
       },
       inlineTranslation: true,
-      translationStyle: settings.translationStyle,
+      translationStyle: effectiveSettings.translationStyle,
     };
   }
 
@@ -58,6 +69,7 @@ export class ConfigurationService implements IConfigurationService {
     settings: UserSettings,
     styleManager: StyleManager,
     textReplacer: TextReplacerService,
+    pageLanguage?: string,
   ): void {
     styleManager.setTranslationStyle(settings.translationStyle);
 
@@ -66,7 +78,9 @@ export class ConfigurationService implements IConfigurationService {
       styleManager.setCustomCSS(settings.customTranslationCSS);
     }
 
-    textReplacer.updateConfig(this.createReplacementConfig(settings));
+    textReplacer.updateConfig(
+      this.createReplacementConfig(settings, pageLanguage),
+    );
   }
 
   /**
@@ -76,5 +90,25 @@ export class ConfigurationService implements IConfigurationService {
     return settings.apiConfigs.find(
       (config) => config.id === settings.activeApiConfigId,
     );
+  }
+
+  private resolveSettingsForPage(
+    settings: UserSettings,
+    pageLanguage?: string,
+  ): UserSettings {
+    if (!pageLanguage) {
+      return settings;
+    }
+
+    return {
+      ...settings,
+      multilingualConfig: {
+        ...settings.multilingualConfig,
+        targetLanguage: languageService.resolveTargetLanguage(
+          settings.multilingualConfig,
+          pageLanguage,
+        ),
+      },
+    };
   }
 }

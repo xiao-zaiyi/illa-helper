@@ -83,7 +83,6 @@ export interface PromptConfig {
   targetLanguage: string;
   userLevel: UserLevel;
   replacementRate: number;
-  provider?: 'gemini' | string;
 }
 
 /**

@@ -84,11 +84,11 @@ We firmly believe that the best way to learn a language is through extensive exp
 - **Paragraph Length Control**: Customize maximum text length for AI single processing
 - **Pronunciation Feature Toggle**: Independent control of pronunciation tooltip functionality activation status
 - **Multiple API Configurations**: Supports configuring multiple API services, allowing for flexible switching between different translation providers
-- **Data Import/Export**: Added functionality to import and export configuration data for easy backup and migration
+- **Data Import/Export**: Supports backup and restore for the current configuration format
 - **Interface Language**: Support 5 interface languages (Chinese, English, Japanese, Korean, Spanish)
 
 ### 🔌 Open API Integration
-- **OpenAI API Compatible**: Supports any AI service compatible with OpenAI format (ChatGPT, Claude, domestic large models like Doubao, etc.)
+- **OpenAI API Compatible**: Supports OpenAI, DeepSeek, SiliconFlow, and other OpenAI-compatible services
 - **Google Gemini Support**: Added Google Gemini API integration, providing more AI service options
 - **Flexible Configuration**: Customize API Key, Endpoint, model name, Temperature parameters
 - **Smart Prompts**: Dynamically generate optimal prompts based on translation direction and user level
@@ -444,7 +444,7 @@ We warmly welcome contributions of all kinds! Whether it's submitting a bug, pro
 - **Coding Standards**: TypeScript strict mode, ESLint + Prettier formatting, complete type definitions
 - **Testing Requirements**: Ensure new features work correctly on multiple browsers and websites, especially in multi-language environments
 - **Performance Considerations**: Pay attention to DOM manipulation efficiency, memory management, and multi-language caching strategies
-- **API Compatibility**: Maintain backward compatibility with existing API interfaces and support configuration version migration
+- **API Configuration**: Model only the current protocol families; old configuration migration does not live in the runtime path
 - **Multi-language Support**: When adding a new language, register it in languageManager.ts and test the translation effect
 - **Pronunciation Feature**: When extending TTS services, implement the ITTSProvider interface and register it in the factory
 - **Browser Compatibility**: New features need to be tested in Chrome, Edge, and Firefox

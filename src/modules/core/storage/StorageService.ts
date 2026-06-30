@@ -491,16 +491,13 @@ export class StorageService {
     }
 
     const candidate = rawConfig as Partial<ApiConfigItem> & {
-      provider?: string;
       protocolFamily?: string;
       config?: Partial<ApiConfig>;
     };
 
-    const protocolFamily = normalizeApiProtocolFamily(
-      candidate.protocolFamily ?? candidate.provider,
-    );
+    const protocolFamily = normalizeApiProtocolFamily(candidate.protocolFamily);
     if (!protocolFamily) {
-      // unsupported provider 在第一阶段直接丢弃，不做运行时兼容
+      // 只接受当前协议族；旧 provider 名称和未知配置直接丢弃。
       return null;
     }
 

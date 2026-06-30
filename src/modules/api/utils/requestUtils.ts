@@ -6,42 +6,15 @@ import { ApiConfig } from '../../shared/types/api';
 import { BackgroundProxyResponse } from '../types';
 
 /**
- * 发送API请求（支持后台代理）
+ * 发送 API 请求。
+ * 扩展页面可能运行在 HTTPS 页面上下文中，统一走 background 避免 Mixed Content 和 CORS 分叉。
  */
 export async function sendApiRequest(
   requestBody: any,
   apiConfig: ApiConfig,
   timeout: number = 0,
 ): Promise<Response> {
-  if (apiConfig.useBackgroundProxy) {
-    return sendViaBackground(requestBody, apiConfig, timeout);
-  } else {
-    return sendDirectRequest(requestBody, apiConfig, timeout);
-  }
-}
-
-/**
- * 直接发送API请求
- */
-async function sendDirectRequest(
-  requestBody: any,
-  apiConfig: ApiConfig,
-  timeout: number,
-): Promise<Response> {
-  const fetchOptions: RequestInit = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiConfig.apiKey}`,
-    },
-    body: JSON.stringify(requestBody),
-  };
-
-  if (timeout !== undefined && timeout > 0) {
-    fetchOptions.signal = AbortSignal.timeout(timeout);
-  }
-
-  return fetch(apiConfig.apiEndpoint, fetchOptions);
+  return sendViaBackground(requestBody, apiConfig, timeout);
 }
 
 /**

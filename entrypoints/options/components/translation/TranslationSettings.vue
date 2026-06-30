@@ -532,22 +532,6 @@
             <Switch v-model="configForm.config.includeThinkingParam" />
           </div>
 
-          <div class="flex items-center justify-between">
-            <div class="space-y-1">
-              <Label>
-                {{ $t('translationSettings.sendRequestThroughBackground') }}
-              </Label>
-              <p class="text-xs text-muted-foreground">
-                {{
-                  $t(
-                    'translationSettings.sendRequestThroughBackgroundDescription',
-                  )
-                }}
-              </p>
-            </div>
-            <Switch v-model="configForm.config.useBackgroundProxy" />
-          </div>
-
           <!-- 自定义API参数 -->
           <div class="space-y-3">
             <div class="space-y-1">

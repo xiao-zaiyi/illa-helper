@@ -12,7 +12,6 @@ import { WebsiteManager } from '@/src/modules/options/website-management/manager
 import { ConfigurationService } from './services/ConfigurationService';
 import { ProcessingService } from './services/ProcessingService';
 import { ListenerService } from './services/ListenerService';
-import { detectPageLanguage } from './utils/domUtils';
 import { IContentManager, ServiceContainer } from './types';
 import { LazyLoadingService } from './services/LazyLoadingService';
 import { ContentSegment } from '../processing/ProcessingStateManager';
@@ -197,11 +196,7 @@ export class ContentManager implements IContentManager {
   private services?: ServiceContainer;
   private settings?: UserSettings;
   private translationStateManager?: TranslationStateManager;
-  // 新增：存储检测到的页面语言
   private detectedPageLanguage?: string;
-  // 新增：最终确定的翻译目标语言
-  private finalTargetLanguage?: string;
-  private paragraphService = ParagraphTranslationService.getInstance();
   constructor() {
     this.configurationService = new ConfigurationService();
   }
@@ -279,6 +274,7 @@ export class ContentManager implements IContentManager {
         newSettings,
         this.services.styleManager,
         this.services.textReplacer,
+        this.detectedPageLanguage,
       );
     }
   }
@@ -309,50 +305,15 @@ export class ContentManager implements IContentManager {
     if (!this.settings) return;
 
     // 检测页面语言
-    this.detectedPageLanguage = await detectPageLanguage();
-
-    // 确定翻译目标语言
-    this.finalTargetLanguage = this.determineFinalTargetLanguage();
-
-    console.log(
-      `[ContentManager] 页面语言: ${this.detectedPageLanguage}, 翻译目标语言: ${this.finalTargetLanguage}`,
-    );
-  }
-
-  /**
-   * 确定翻译目标语言
-   * 根据页面语言和用户配置确定翻译方向
-   */
-  private determineFinalTargetLanguage(): string {
-    if (!this.settings || !this.detectedPageLanguage) {
-      return this.settings?.multilingualConfig.targetLanguage || 'en';
-    }
-
-    const config = this.settings.multilingualConfig;
-
-    // 标准化语言代码
-    const normalizedPageLang = languageService.normalizeLanguageCode(
+    this.detectedPageLanguage = await languageService.detectPageLanguage();
+    const targetLanguage = languageService.resolveTargetLanguage(
+      this.settings.multilingualConfig,
       this.detectedPageLanguage,
     );
-    const normalizedTargetLang = languageService.normalizeLanguageCode(
-      config.targetLanguage,
+
+    console.log(
+      `[ContentManager] 页面语言: ${this.detectedPageLanguage}, 翻译目标语言: ${targetLanguage}`,
     );
-    const normalizedNativeLang = languageService.normalizeLanguageCode(
-      config.nativeLanguage,
-    );
-
-    // 页面语言 = 目标语言 → 翻译到母语
-    if (normalizedPageLang === normalizedTargetLang) {
-      return config.nativeLanguage;
-    }
-
-    // 页面语言 = 母语 → 翻译到目标语言
-    if (normalizedPageLang === normalizedNativeLang) {
-      return config.targetLanguage;
-    }
-
-    // 其他情况 → 翻译到目标语言
-    return config.targetLanguage;
   }
 
   /**
@@ -374,10 +335,11 @@ export class ContentManager implements IContentManager {
       apiConfig: activeConfig?.config,
     });
 
-    // 创建优化的用户设置，使用预先确定的翻译目标语言
-    const optimizedSettings = this.createOptimizedSettings();
     const textReplacer = TextReplacerService.getInstance(
-      this.configurationService.createReplacementConfig(optimizedSettings),
+      this.configurationService.createReplacementConfig(
+        this.settings,
+        this.detectedPageLanguage,
+      ),
     );
 
     // 创建懒加载服务
@@ -405,7 +367,7 @@ export class ContentManager implements IContentManager {
     this.processingService = new ProcessingService(
       textProcessor,
       textReplacer,
-      optimizedSettings,
+      this.settings,
       lazyLoadingService,
     );
 
@@ -417,32 +379,16 @@ export class ContentManager implements IContentManager {
     );
 
     this.listenerService = new ListenerService(
-      optimizedSettings,
+      this.settings,
       this.processingService,
       this.configurationService,
       styleManager,
       textReplacer,
+      paragraphTranslationService,
       floatingBallManager,
       this.translationStateManager,
+      this.detectedPageLanguage,
     );
-  }
-
-  /**
-   * 创建优化的用户设置
-   * 使用预确定的翻译目标语言，提升性能
-   */
-  private createOptimizedSettings(): UserSettings {
-    if (!this.settings || !this.finalTargetLanguage) {
-      return this.settings!;
-    }
-
-    return {
-      ...this.settings,
-      multilingualConfig: {
-        ...this.settings.multilingualConfig,
-        targetLanguage: this.finalTargetLanguage,
-      },
-    };
   }
 
   /**
@@ -455,6 +401,7 @@ export class ContentManager implements IContentManager {
       this.settings,
       this.services.styleManager,
       this.services.textReplacer,
+      this.detectedPageLanguage,
     );
   }
 
@@ -500,8 +447,14 @@ export class ContentManager implements IContentManager {
       try {
         // 判断是单词模式还有还是段落翻译
         if (this.settings.translationMode === TranslationMode.PARAGRAPH) {
+          const paragraphTranslationService =
+            this.services?.paragraphTranslationService;
+          if (!paragraphTranslationService) {
+            return;
+          }
+
           // 段落翻译模式
-          await this.paragraphService.start();
+          await paragraphTranslationService.start();
         } else {
           // 单词翻译模式
           await this.processingService.processPage();

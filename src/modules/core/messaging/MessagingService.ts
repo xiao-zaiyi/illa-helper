@@ -400,33 +400,5 @@ export class MessagingService {
 // 单例实例导出
 export const messagingService = MessagingService.getInstance();
 
-// 向后兼容的函数导出
-export const notifySettingsChanged = async (
-  settings: UserSettings,
-): Promise<void> => {
-  await messagingService.notifySettingsChanged(settings);
-};
-
-export const sendContextMenuAction = async (
-  action: ContextMenuActionType,
-  url: string,
-  pattern: string,
-  patternType: UrlPatternType,
-  description?: string,
-): Promise<boolean> => {
-  const result = await messagingService.sendContextMenuAction(
-    action,
-    url,
-    pattern,
-    patternType,
-    description,
-  );
-  return (result.success && result.response?.success) || false;
-};
-
-export const notifyWebsiteManagementChanged = async (): Promise<void> => {
-  await messagingService.notifyWebsiteManagementChanged();
-};
-
 // 默认导出
 export default MessagingService;

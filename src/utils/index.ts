@@ -149,7 +149,7 @@ export async function testGeminiConnection(
 /**
  * 统一的API连接测试入口函数
  * 根据协议族自动选择合适的测试方法
- * @param userConfig 用户API配置对象（包含provider信息）
+ * @param userConfig 用户API配置对象
  * @param baseTimeout 超时时间（毫秒）
  * @returns Promise<ApiTestResult> 测试结果
  */
@@ -163,8 +163,12 @@ export async function testApiConnection(
     case ApiProtocolFamily.GEMINI:
       return testGeminiConnection(config, baseTimeout);
     case ApiProtocolFamily.OPENAI_COMPATIBLE:
-    default:
       return testOpenAICompatibleConnection(config, baseTimeout);
+    default:
+      return {
+        success: false,
+        message: `Unsupported API protocol family: ${protocolFamily}`,
+      };
   }
 }
 
@@ -207,67 +211,11 @@ export async function testOpenAICompatibleConnection(
     // 合并自定义参数
     requestBody = mergeCustomParams(requestBody, apiConfig.customParams);
 
-    let response: Response;
-
-    if (apiConfig.useBackgroundProxy) {
-      // 通过background代理发送请求
-      response = await new Promise<Response>((resolve, reject) => {
-        browser.runtime.sendMessage(
-          {
-            type: 'api-request',
-            data: {
-              url: apiConfig.apiEndpoint,
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${apiConfig.apiKey}`,
-              },
-              body: JSON.stringify(requestBody),
-              timeout: getApiTimeout(baseTimeout || 0) || 0,
-            },
-          },
-          (response) => {
-            if (response.success) {
-              // 创建模拟Response对象
-              const mockResponse = {
-                ok: true,
-                status: 200,
-                statusText: 'OK',
-                json: async () => response.data,
-              } as Response;
-              resolve(mockResponse);
-            } else {
-              const mockResponse = {
-                ok: false,
-                status: response.error?.status || 500,
-                statusText:
-                  response.error?.statusText || 'Internal Server Error',
-                json: async () => ({ error: response.error }),
-              } as Response;
-              resolve(mockResponse);
-            }
-          },
-        );
-      });
-    } else {
-      // 直接发送请求，处理超时设置
-      const timeout = getApiTimeout(baseTimeout || 0);
-      const fetchOptions: RequestInit = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiConfig.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      };
-
-      // 只有在timeout不为undefined时才设置AbortSignal
-      if (timeout !== undefined) {
-        fetchOptions.signal = AbortSignal.timeout(timeout);
-      }
-
-      response = await fetch(apiConfig.apiEndpoint, fetchOptions);
-    }
+    const response = await sendOpenAICompatibleTestRequest(
+      requestBody,
+      apiConfig,
+      getApiTimeout(baseTimeout || 0) || 0,
+    );
 
     if (response.ok) {
       const data = await response.json();
@@ -298,6 +246,48 @@ export async function testOpenAICompatibleConnection(
       message: error.message || '网络连接错误',
     };
   }
+}
+
+function sendOpenAICompatibleTestRequest(
+  requestBody: any,
+  apiConfig: ApiConfig,
+  timeout: number,
+): Promise<Response> {
+  return new Promise<Response>((resolve) => {
+    browser.runtime.sendMessage(
+      {
+        type: 'api-request',
+        data: {
+          url: apiConfig.apiEndpoint,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiConfig.apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
+          timeout,
+        },
+      },
+      (response) => {
+        if (response.success) {
+          resolve({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            json: async () => response.data,
+          } as Response);
+          return;
+        }
+
+        resolve({
+          ok: false,
+          status: response.error?.status || 500,
+          statusText: response.error?.statusText || 'Internal Server Error',
+          json: async () => ({ error: response.error }),
+        } as Response);
+      },
+    );
+  });
 }
 
 /**

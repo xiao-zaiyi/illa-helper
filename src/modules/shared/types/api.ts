@@ -44,7 +44,6 @@ export interface ApiConfig {
   customParams?: string;
   phraseEnabled?: boolean;
   requestsPerSecond?: number; // 每秒最大请求数
-  useBackgroundProxy?: boolean; // 是否通过background script发送请求以绕过CORS
 }
 
 // API配置项接口，包含配置的元数据
@@ -60,6 +59,8 @@ export interface ReplacementConfig {
   userLevel: import('./core').UserLevel;
   replacementRate: number;
   useGptApi: boolean;
+  userSettings: import('./storage').UserSettings;
+  activeApiConfig: ApiConfigItem | null;
   apiConfig: ApiConfig;
   inlineTranslation: boolean;
   translationStyle: import('./core').TranslationStyle;
