@@ -12,6 +12,8 @@ import { StorageService } from '../../core/storage';
 export class FloatingBallManager {
   private config: FloatingBallConfig;
   private state: FloatingBallState;
+  private rootHost: HTMLElement | null = null;
+  private uiRoot: ShadowRoot | null = null;
   private ballElement: HTMLElement | null = null;
   private menuContainer: HTMLElement | null = null;
   private dragStartY = 0;
@@ -139,6 +141,7 @@ export class FloatingBallManager {
       this.ballElement.remove();
     }
 
+    const uiRoot = this.ensureUiRoot();
     this.ballElement = document.createElement('div');
     this.ballElement.className = 'wxt-floating-ball';
     safeSetInnerHTML(this.ballElement, this.createBallIcon());
@@ -148,7 +151,79 @@ export class FloatingBallManager {
 
     this.updateBallStyle();
     this.createMenu();
-    document.body.appendChild(this.ballElement);
+    uiRoot.appendChild(this.ballElement);
+  }
+
+  private ensureUiRoot(): ShadowRoot {
+    if (this.rootHost?.isConnected && this.uiRoot) {
+      return this.uiRoot;
+    }
+
+    const existingHost = document.getElementById('illa-floating-root');
+    if (existingHost) {
+      existingHost.remove();
+    }
+
+    const host = document.createElement('illa-floating-root');
+    host.id = 'illa-floating-root';
+    host.style.cssText = `
+      all: initial !important;
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      max-width: none !important;
+      max-height: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      overflow: visible !important;
+      pointer-events: none !important;
+      z-index: 2147483647 !important;
+      background: transparent !important;
+    `;
+
+    const shadow = host.attachShadow({ mode: 'open' });
+    const resetStyle = document.createElement('style');
+    resetStyle.id = 'illa-floating-root-reset';
+    resetStyle.textContent = `
+      :host {
+        all: initial !important;
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        overflow: visible !important;
+        pointer-events: none !important;
+        z-index: 2147483647 !important;
+        background: transparent !important;
+      }
+
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+
+      .wxt-floating-ball,
+      .wxt-floating-panel {
+        pointer-events: auto;
+      }
+    `;
+    shadow.appendChild(resetStyle);
+
+    document.body.appendChild(host);
+    this.rootHost = host;
+    this.uiRoot = shadow;
+
+    return shadow;
   }
 
   /**
@@ -159,6 +234,7 @@ export class FloatingBallManager {
       this.menuContainer.remove();
     }
 
+    const uiRoot = this.ensureUiRoot();
     this.menuContainer = document.createElement('div');
     this.menuContainer.className = 'wxt-floating-panel';
     safeSetInnerHTML(this.menuContainer, this.createMenuItems());
@@ -166,7 +242,7 @@ export class FloatingBallManager {
     // 注入面板样式
     this.injectPanelStyles();
 
-    document.body.appendChild(this.menuContainer);
+    uiRoot.appendChild(this.menuContainer);
     // 初始隐藏
     this.updateMenuStyle();
   }
@@ -217,8 +293,9 @@ export class FloatingBallManager {
    * 注入面板样式
    */
   private injectPanelStyles(): void {
+    const uiRoot = this.ensureUiRoot();
     const styleId = 'wxt-floating-panel-styles';
-    if (document.getElementById(styleId)) return;
+    if (uiRoot.getElementById(styleId)) return;
 
     const style = document.createElement('style');
     style.id = styleId;
@@ -362,7 +439,7 @@ export class FloatingBallManager {
         }
       }
     `;
-    document.head.appendChild(style);
+    uiRoot.appendChild(style);
   }
 
   /**
@@ -429,8 +506,9 @@ export class FloatingBallManager {
    * 注入简洁动画样式
    */
   private injectPulseAnimation(): void {
+    const uiRoot = this.ensureUiRoot();
     const animationId = 'wxt-floating-ball-animation';
-    if (document.getElementById(animationId)) return;
+    if (uiRoot.getElementById(animationId)) return;
 
     const style = document.createElement('style');
     style.id = animationId;
@@ -444,7 +522,7 @@ export class FloatingBallManager {
         }
       }
     `;
-    document.head.appendChild(style);
+    uiRoot.appendChild(style);
   }
 
   /**
@@ -1505,6 +1583,12 @@ export class FloatingBallManager {
       this.menuContainer = null;
     }
 
+    if (this.rootHost) {
+      this.rootHost.remove();
+      this.rootHost = null;
+      this.uiRoot = null;
+    }
+
     // 清理所有事件监听器
     this.removeAllEventListeners();
 
@@ -1522,20 +1606,6 @@ export class FloatingBallManager {
     if (this.menuHoverTimer) {
       clearTimeout(this.menuHoverTimer);
       this.menuHoverTimer = null;
-    }
-
-    // 清理动画样式
-    const animationStyle = document.getElementById(
-      'wxt-floating-ball-animation',
-    );
-    if (animationStyle) {
-      animationStyle.remove();
-    }
-
-    // 清理面板样式
-    const panelStyle = document.getElementById('wxt-floating-panel-styles');
-    if (panelStyle) {
-      panelStyle.remove();
     }
 
     // 重置状态
