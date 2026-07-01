@@ -1,10 +1,10 @@
-import { UserSettings, TriggerMode } from '@/src/modules/shared/types';
+import { UserSettings, TriggerMode, TranslationMode } from '../../shared/types';
 import { ProcessingService } from './ProcessingService';
 import { ConfigurationService } from './ConfigurationService';
-import { StyleManager } from '@/src/modules/styles';
-import { TextReplacerService } from '@/src/modules/core/translation/TextReplacerService';
-import { ParagraphTranslationService } from '@/src/modules/core/translation/ParagraphTranslationService';
-import { FloatingBallManager } from '@/src/modules/floatingBall';
+import { StyleManager } from '../../styles';
+import { TextReplacerService } from '../../core/translation/TextReplacerService';
+import { ParagraphTranslationService } from '../../core/translation/ParagraphTranslationService';
+import { FloatingBallManager } from '../../floatingBall';
 import { IListenerService } from '../types';
 import { isProcessingResultNode, isDescendant } from '../utils/domUtils';
 import { TranslationStateManager } from '../ContentManager';
@@ -62,12 +62,13 @@ export class ListenerService implements IListenerService {
   }
 
   /**
-   * 设置DOM观察器（仅在自动模式下）
+   * 设置DOM观察器。
+   * 手动模式也需要观察：用户触发一次翻译后，异步加载出的正文应继续进入同一翻译管线。
    */
   setupDomObserver(): void {
-    if (this.settings.triggerMode === TriggerMode.AUTOMATIC) {
-      this.createDomObserver();
-    }
+    if (!this.settings.isEnabled) return;
+    if (this.settings.triggerMode !== TriggerMode.AUTOMATIC) return;
+    this.createDomObserver();
   }
 
   /**
@@ -104,7 +105,9 @@ export class ListenerService implements IListenerService {
           source: 'user_action',
         });
         if (isConfigValid) {
-          await this.processingService.processPage();
+          await this.startConfiguredTranslation();
+          this.translationStateManager.showTranslations();
+          this.ensureDomObserver();
         }
       }
     } else if (message.type === 'PARAGRAPH_TRANSLATE') {
@@ -114,6 +117,8 @@ export class ListenerService implements IListenerService {
       });
       if (isConfigValid) {
         await this.paragraphService.start();
+        this.translationStateManager.showTranslations();
+        this.ensureDomObserver();
       }
     }
   }
@@ -129,7 +134,23 @@ export class ListenerService implements IListenerService {
 
     if (isConfigValid) {
       await this.translationStateManager.toggleTranslationState();
+      this.ensureDomObserver();
     }
+  }
+
+  private ensureDomObserver(): void {
+    if (!this.domObserver && this.settings.isEnabled) {
+      this.createDomObserver();
+    }
+  }
+
+  private async startConfiguredTranslation(): Promise<void> {
+    if (this.settings.translationMode === TranslationMode.PARAGRAPH) {
+      await this.paragraphService.start();
+      return;
+    }
+
+    await this.processingService.processPage();
   }
 
   /**
@@ -233,7 +254,7 @@ export class ListenerService implements IListenerService {
 
       try {
         for (const node of topLevelNodes) {
-          await this.processingService.processNode(node);
+          await this.processDynamicNode(node);
         }
       } catch (error) {
         console.error('[ListenerService] DOM节点处理失败:', error);
@@ -249,5 +270,14 @@ export class ListenerService implements IListenerService {
         });
       }
     }, 150);
+  }
+
+  private async processDynamicNode(node: Node): Promise<void> {
+    if (this.settings.translationMode === TranslationMode.PARAGRAPH) {
+      await this.paragraphService.start();
+      return;
+    }
+
+    await this.processingService.processNode(node);
   }
 }

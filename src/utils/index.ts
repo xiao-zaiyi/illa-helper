@@ -9,7 +9,7 @@ import {
   ApiConfig,
   ApiConfigItem,
   ApiProtocolFamily,
-} from '@/src/modules/shared/types';
+} from '../modules/shared/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**

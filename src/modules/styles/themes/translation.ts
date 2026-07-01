@@ -31,9 +31,10 @@ export const TRANSLATION_STYLES = `
 /* 下划线样式 */
 .wxt-style-underlined {
   color: var(--wxt-primary-color);
-  text-decoration: none;
-  padding-bottom: 1px;
-  border-bottom: 2px solid var(--wxt-accent-color);
+  text-decoration-line: underline;
+  text-decoration-color: var(--wxt-accent-color);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 /* 高亮样式 */

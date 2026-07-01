@@ -11,7 +11,7 @@ import {
   ApiConfig,
   ApiProtocolFamily,
 } from '../../shared/types/api';
-import { getApiTimeout } from '@/src/utils';
+import { getApiTimeout } from '../../../utils';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   getProtocolFamilyLabel,

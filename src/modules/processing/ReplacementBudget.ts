@@ -59,6 +59,24 @@ export class ReplacementBudget {
     return this.fromText(text, replacementRate);
   }
 
+  addSegments(segments: ContentSegment[], replacementRate?: number): void {
+    const text = segments.map((segment) => segment.textContent).join('');
+    this.addText(text, replacementRate);
+  }
+
+  addText(text: string, replacementRate?: number): void {
+    if (this.remainingCount === undefined) {
+      return;
+    }
+
+    const additionalLimit = calculateReplacementLimit(text, replacementRate);
+    if (additionalLimit === undefined || additionalLimit <= 0) {
+      return;
+    }
+
+    this.remainingCount += additionalLimit;
+  }
+
   take<T extends Replacement>(replacements: T[]): T[] {
     if (this.remainingCount === undefined) {
       return replacements;

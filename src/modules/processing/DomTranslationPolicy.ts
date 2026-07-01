@@ -21,25 +21,6 @@ const EXTENSION_RESULT_SELECTOR = [
   '.illa-paragraph-loading',
 ].join(',');
 
-const SKIP_ROLES = new Set([
-  'button',
-  'checkbox',
-  'combobox',
-  'listbox',
-  'menu',
-  'menuitem',
-  'navigation',
-  'option',
-  'radio',
-  'searchbox',
-  'slider',
-  'switch',
-  'tab',
-  'tablist',
-  'textbox',
-  'toolbar',
-]);
-
 const PROCESSED_ATTRIBUTES = [
   'data-wxt-text-processed',
   'data-wxt-word-processed',
@@ -76,11 +57,6 @@ export function shouldSkipSubtree(element: Element): boolean {
   }
 
   if ((element as HTMLElement).isContentEditable) {
-    return true;
-  }
-
-  const role = element.getAttribute('role')?.toLowerCase();
-  if (role && SKIP_ROLES.has(role)) {
     return true;
   }
 

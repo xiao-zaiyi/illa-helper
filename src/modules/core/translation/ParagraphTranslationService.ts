@@ -19,6 +19,8 @@ import {
   collectTextNodes,
 } from '../../processing/DomWalker';
 import { languageService } from './LanguageService';
+import { selectParagraphTranslationElements } from './ParagraphTranslationSelection';
+import { renderParagraphTranslation } from './ParagraphTranslationRenderer';
 
 /**
  * 段落翻译服务类
@@ -31,7 +33,7 @@ export class ParagraphTranslationService {
   private lazyLoadingService?: LazyLoadingService; // 懒加载服务
 
   // 翻译状态管理
-  private isActive: boolean = false;
+  private isStarting: boolean = false;
   private translatedElements = new WeakSet<HTMLElement>();
   private translatingElements = new WeakSet<HTMLElement>(); // 正在翻译的元素
   private targetLanguage?: string;
@@ -91,32 +93,35 @@ export class ParagraphTranslationService {
   public async start(): Promise<number> {
     console.log('[段落翻译] 开始启动翻译服务...');
 
-    if (this.isActive) {
+    if (this.isStarting) {
       console.warn('[段落翻译] 翻译服务已在运行');
       return 0;
     }
 
-    this.isActive = true;
+    this.isStarting = true;
 
-    // 获取用户设置
-    const settings = await this.storageService.getUserSettings();
-    const pageLanguage = await languageService.detectPageLanguage();
-    this.targetLanguage = languageService.resolveTargetLanguage(
-      settings.multilingualConfig,
-      pageLanguage,
-    );
+    try {
+      // 每次手动触发都重新读取当前页面和设置。SPA 切路由不会重建 content script。
+      const settings = await this.storageService.getUserSettings();
+      const pageLanguage = await languageService.detectPageLanguage();
+      this.targetLanguage = languageService.resolveTargetLanguage(
+        settings.multilingualConfig,
+        pageLanguage,
+      );
 
-    const isLazyLoadingEnabled =
-      settings?.lazyLoading?.enabled && this.lazyLoadingService?.isEnabled();
+      const isLazyLoadingEnabled =
+        settings?.lazyLoading?.enabled && this.lazyLoadingService?.isEnabled();
 
-    if (isLazyLoadingEnabled) {
-      // 懒加载模式
-      console.log('[段落翻译] 使用懒加载模式');
-      return this.startLazyLoading();
-    } else {
-      // 全量翻译模式
+      if (isLazyLoadingEnabled) {
+        // 懒加载模式只负责注册当前 DOM；可见元素由 LazyLoadingService 后续触发。
+        console.log('[段落翻译] 使用懒加载模式');
+        return this.startLazyLoading();
+      }
+
       console.log('[段落翻译] 使用全量翻译模式');
       return this.startFullTranslation();
+    } finally {
+      this.isStarting = false;
     }
   }
 
@@ -124,7 +129,7 @@ export class ParagraphTranslationService {
    * 停止段落翻译
    */
   public stop(): void {
-    this.isActive = false;
+    this.isStarting = false;
     this.translatedElements = new WeakSet();
     this.translatingElements = new WeakSet(); // 重置
     this.targetLanguage = undefined;
@@ -163,23 +168,22 @@ export class ParagraphTranslationService {
    */
   private findParagraphElements(): HTMLElement[] {
     const paragraphs = walkAndCollectParagraphs(document.body);
+    const paragraphElements = selectParagraphTranslationElements(paragraphs);
 
     // 过滤掉已翻译、正在翻译、文本过短的元素
-    const elements = paragraphs
-      .map((p) => p.element)
-      .filter((element) => {
-        if (this.translatedElements.has(element)) return false;
-        if (this.translatingElements.has(element)) return false;
+    const elements = paragraphElements.filter((element) => {
+      if (this.translatedElements.has(element)) return false;
+      if (this.translatingElements.has(element)) return false;
 
-        const text = element.textContent?.trim();
-        if (!text || text.length < 3) return false;
-        if (text.length > 3000) return false;
+      const text = element.textContent?.trim();
+      if (!text || text.length < 3) return false;
+      if (text.length > 3000) return false;
 
-        // 跳过纯数字或简单符号
-        if (/^[\d\s.,!?\-+=()[\]{}]*$/.test(text)) return false;
+      // 跳过纯数字或简单符号
+      if (/^[\d\s.,!?\-+=()[\]{}]*$/.test(text)) return false;
 
-        return true;
-      });
+      return true;
+    });
 
     console.log('[段落翻译] 找到段落元素数量:', elements.length);
     return elements;
@@ -238,7 +242,10 @@ export class ParagraphTranslationService {
    * 翻译单个元素
    */
   private async translateElement(element: HTMLElement): Promise<boolean> {
-    if (this.translatedElements.has(element)) {
+    if (
+      this.translatedElements.has(element) ||
+      this.translatingElements.has(element)
+    ) {
       return false;
     }
 
@@ -294,71 +301,25 @@ export class ParagraphTranslationService {
    * 显示翻译结果
    */
   private showTranslation(element: HTMLElement, translatedText: string): void {
-    // 清理已存在的翻译，但不清理加载指示器
+    // 同一段可能被重复触发，写入前先移除旧结果，保证 DOM 幂等。
+    this.removeAdjacentTranslation(element);
     element
       .querySelectorAll(`.${PARAGRAPH_TRANSLATION.WRAPPER_CLASS}`)
       .forEach((el) => el.remove());
 
-    const tagName = element.tagName.toLowerCase();
     const styleClass = this.styleManager.getCurrentStyleClass();
+    renderParagraphTranslation(element, translatedText, styleClass);
+  }
 
-    // 为了防止显示异常，需要正确处理不同类型的元素
-    let translationElement: HTMLElement;
+  private removeAdjacentTranslation(element: HTMLElement): void {
+    const nextSibling = element.nextSibling;
+    if (nextSibling?.nodeType !== Node.ELEMENT_NODE) {
+      return;
+    }
 
-    if (['table', 'td', 'th', 'li'].includes(tagName)) {
-      // 内联插入
-      const span = document.createElement('span');
-      span.classList.add(PARAGRAPH_TRANSLATION.WRAPPER_CLASS, styleClass);
-      span.style.cssText = 'margin-left: 8px; display: inline-block;';
-      span.textContent = translatedText;
-      element.appendChild(span);
-    } else if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
-      // 标题元素：创建同级标题
-      translationElement = document.createElement(tagName);
-      translationElement.classList.add(
-        PARAGRAPH_TRANSLATION.WRAPPER_CLASS,
-        styleClass,
-      );
-      translationElement.textContent = translatedText;
-
-      // 复制原标题的一些样式属性，避免显示异常
-      const computedStyle = window.getComputedStyle(element);
-      translationElement.style.cssText = `
-        margin-top: ${computedStyle.marginTop};
-        margin-bottom: ${computedStyle.marginBottom};
-        font-size: ${computedStyle.fontSize};
-        font-weight: ${computedStyle.fontWeight};
-        line-height: ${computedStyle.lineHeight};
-      `;
-
-      element.parentNode?.insertBefore(translationElement, element.nextSibling);
-    } else if (
-      ['p', 'div', 'blockquote', 'section', 'article'].includes(tagName)
-    ) {
-      // 块级元素：继承原元素类型
-      translationElement = document.createElement(tagName);
-      translationElement.classList.add(
-        PARAGRAPH_TRANSLATION.WRAPPER_CLASS,
-        styleClass,
-      );
-      translationElement.textContent = translatedText;
-
-      // 保持基本的布局属性
-      const computedStyle = window.getComputedStyle(element);
-      translationElement.style.cssText = `
-        margin-top: ${computedStyle.marginTop};
-        margin-bottom: ${computedStyle.marginBottom};
-        padding: ${computedStyle.padding};
-      `;
-
-      element.parentNode?.insertBefore(translationElement, element.nextSibling);
-    } else {
-      // 其他元素：使用div包装
-      const div = document.createElement('div');
-      div.classList.add(PARAGRAPH_TRANSLATION.WRAPPER_CLASS, styleClass);
-      div.textContent = translatedText;
-      div.style.cssText = 'margin-top: 0.5em; margin-bottom: 0.5em;';
-      element.parentNode?.insertBefore(div, element.nextSibling);
+    const nextElement = nextSibling as HTMLElement;
+    if (nextElement.classList.contains(PARAGRAPH_TRANSLATION.WRAPPER_CLASS)) {
+      nextElement.remove();
     }
   }
 

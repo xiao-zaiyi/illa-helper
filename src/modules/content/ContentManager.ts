@@ -124,6 +124,16 @@ export class TranslationStateManager {
   }
 
   /**
+   * 用户显式触发翻译后，结果必须进入可见态。
+   * 动态内容处理不要调用这里，否则用户切到原文模式后会被异步内容强行翻回译文模式。
+   */
+  public showTranslations(): void {
+    this.isTranslationVisible = true;
+    document.body.classList.remove(this.HIDDEN_CLASS);
+    this.syncFloatingBallState();
+  }
+
+  /**
    * 同步悬浮球状态
    * @private
    */

@@ -110,6 +110,7 @@ export class SegmentObserver {
     try {
       this.segmentMap.set(targetElement, segment);
       this.observer.observe(targetElement);
+      this.emitIfInitiallyVisible(segment);
     } catch (error) {
       console.error('[SegmentObserver] 观察段落失败:', error);
     }
@@ -137,6 +138,24 @@ export class SegmentObserver {
    */
   observeMultiple(segments: ContentSegment[]): void {
     segments.forEach((segment) => this.observe(segment));
+  }
+
+  private emitIfInitiallyVisible(segment: ContentSegment): void {
+    const targetElement = segment.element;
+    if (!targetElement || !(targetElement instanceof Element)) return;
+
+    const rect = targetElement.getBoundingClientRect();
+    const preloadDistance = this.options.preloadDistance || 0.5;
+    const viewportHeight =
+      window.innerHeight || document.documentElement.clientHeight;
+    const preloadPx = viewportHeight * preloadDistance;
+
+    const isVisible =
+      rect.bottom >= -preloadPx && rect.top <= viewportHeight + preloadPx;
+
+    if (isVisible) {
+      this.callback([segment], []);
+    }
   }
 
   /**

@@ -37,7 +37,6 @@ export const SKIP_TAGS = new Set([
   'PRE',
   'CODE',
   'KBD',
-  'NAV',
 ]);
 
 /**

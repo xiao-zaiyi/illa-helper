@@ -8,6 +8,7 @@
 import { callAI } from '../../api/services/UniversalApiService';
 import { StorageService } from '../storage';
 import { languageService } from './LanguageService';
+import { cleanParagraphTranslationResult } from './ParagraphTranslationResult';
 
 /**
  * 段落翻译prompt模板
@@ -88,7 +89,7 @@ export class ParagraphTranslationApi {
       }
 
       // 处理翻译结果
-      const processedResult = this.processTranslationResult(
+      const processedResult = cleanParagraphTranslationResult(
         result.content,
         cleanSourceText,
       );
@@ -136,45 +137,6 @@ export class ParagraphTranslationApi {
       '{{targetLang}}',
       finalLanguageName,
     ).replace('{{input}}', sourceText);
-  }
-
-  /**
-   * 处理翻译结果
-   */
-  private processTranslationResult(
-    translatedText: string,
-    originalText: string,
-  ): string {
-    if (!translatedText || !translatedText.trim()) {
-      return '';
-    }
-
-    let cleanedResult = translatedText.trim();
-
-    // 移除思考标签（如deepseek等模型可能返回）
-    const thinkMatch = cleanedResult.match(/<\/think>([\s\S]*)/);
-    if (thinkMatch) {
-      cleanedResult = thinkMatch[1].trim();
-    }
-
-    // 修复：放宽判断条件，避免误判
-    // 只有当翻译结果完全相同且长度较短时才认为无需翻译
-    if (cleanedResult === originalText && originalText.length < 50) {
-      console.log(
-        `[ParagraphTranslationApi] 翻译结果与原文相同，可能无需翻译: "${originalText}"`,
-      );
-      return '';
-    }
-
-    // 如果翻译结果太短，可能是翻译失败
-    if (cleanedResult.length < 3) {
-      console.warn(
-        `[ParagraphTranslationApi] 翻译结果过短: "${cleanedResult}"`,
-      );
-      return '';
-    }
-
-    return cleanedResult;
   }
 
   /**

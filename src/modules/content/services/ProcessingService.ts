@@ -56,7 +56,7 @@ export class ProcessingService implements IProcessingService {
    * 立即处理整个页面
    */
   private async processPageImmediate(): Promise<void> {
-    const segments = await this.getPageSegments();
+    const segments = await this.getSegments(document.body);
     if (segments.length === 0) return;
 
     this.pageReplacementBudget = ReplacementBudget.fromSegments(
@@ -71,7 +71,7 @@ export class ProcessingService implements IProcessingService {
    * 懒加载模式处理页面
    */
   private async processPageWithLazyLoading(): Promise<void> {
-    const segments = await this.getPageSegments();
+    const segments = await this.getSegments(document.body);
     if (segments.length === 0) return;
 
     this.pageReplacementBudget = ReplacementBudget.fromSegments(
@@ -88,7 +88,7 @@ export class ProcessingService implements IProcessingService {
   /**
    * 获取页面段落
    */
-  private async getPageSegments(): Promise<ContentSegment[]> {
+  private async getSegments(root: Node): Promise<ContentSegment[]> {
     try {
       const { ContentSegmenter } = await import(
         '../../processing/ContentSegmenter'
@@ -99,9 +99,9 @@ export class ProcessingService implements IProcessingService {
         mergeSmallSegments: true,
       });
 
-      return contentSegmenter.segmentContent(document.body);
+      return contentSegmenter.segmentContent(root);
     } catch (error) {
-      console.error('[ProcessingService] 获取页面段落失败:', error);
+      console.error('[ProcessingService] 获取内容段落失败:', error);
       return [];
     }
   }
@@ -146,15 +146,25 @@ export class ProcessingService implements IProcessingService {
    */
   async processNode(node: Node): Promise<void> {
     try {
-      await this.textProcessor.processRoot(
-        node,
-        this.textReplacer,
-        this.processingParams.originalWordDisplayMode,
-        this.processingParams.maxLength,
-        this.processingParams.translationPosition,
-        this.processingParams.showParentheses,
-        this.pageReplacementBudget,
-      );
+      const segments = await this.getSegments(node);
+      if (segments.length === 0) return;
+
+      const replacementRate = this.textReplacer.getConfig().replacementRate;
+      if (this.pageReplacementBudget) {
+        this.pageReplacementBudget.addSegments(segments, replacementRate);
+      } else {
+        this.pageReplacementBudget = ReplacementBudget.fromSegments(
+          segments,
+          replacementRate,
+        );
+      }
+
+      if (this.lazyLoadingService?.isEnabled()) {
+        this.lazyLoadingService.observeSegments(segments);
+        return;
+      }
+
+      await this.processSegments(segments, false);
     } catch (error) {
       console.error('[ProcessingService] 节点处理失败:', error);
     }

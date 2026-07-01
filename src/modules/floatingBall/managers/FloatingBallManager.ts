@@ -176,9 +176,7 @@ export class FloatingBallManager {
    */
   private createMenuItems(): string {
     // 获取翻译状态
-    const hasTranslatedContent =
-      document.querySelector('.wxt-translation-term') !== null ||
-      document.querySelector('.illa-paragraph-translation') !== null;
+    const hasTranslatedContent = this.hasTranslatedContent();
     const isTranslationHidden = document.body.classList.contains(
       'wxt-translation-hidden',
     );
@@ -381,8 +379,7 @@ export class FloatingBallManager {
     const { iconSize } = FLOATING_BALL_STYLES;
 
     // 检查翻译状态
-    const hasTranslatedContent =
-      document.querySelector('.wxt-translation-term') !== null;
+    const hasTranslatedContent = this.hasTranslatedContent();
     const isTranslationHidden = document.body.classList.contains(
       'wxt-translation-hidden',
     );
@@ -575,9 +572,7 @@ export class FloatingBallManager {
     // 面板模式下不需要逐项定位，只需更新状态显示
     if (!this.menuContainer) return;
 
-    const hasTranslatedContent =
-      document.querySelector('.wxt-translation-term') !== null ||
-      document.querySelector('.illa-paragraph-translation') !== null;
+    const hasTranslatedContent = this.hasTranslatedContent();
     const isTranslationHidden = document.body.classList.contains(
       'wxt-translation-hidden',
     );
@@ -1428,8 +1423,7 @@ export class FloatingBallManager {
     if (!this.ballElement) return;
 
     // 检查翻译状态
-    const hasTranslatedContent =
-      document.querySelector('.wxt-translation-term') !== null;
+    const hasTranslatedContent = this.hasTranslatedContent();
     const isTranslationHidden = document.body.classList.contains(
       'wxt-translation-hidden',
     );
@@ -1445,6 +1439,13 @@ export class FloatingBallManager {
     }
 
     this.ballElement.title = `${modeText}`;
+  }
+
+  private hasTranslatedContent(): boolean {
+    return (
+      document.querySelector('.wxt-translation-term') !== null ||
+      document.querySelector('.illa-paragraph-translation') !== null
+    );
   }
 
   /**

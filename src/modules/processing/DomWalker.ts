@@ -236,9 +236,12 @@ export function walkAndCollectParagraphs(root: HTMLElement): ParagraphInfo[] {
   walkAndLabel(root, walkId);
 
   // 第二步：收集所有段落节点
-  const paragraphElements = root.querySelectorAll<HTMLElement>(
-    `[${DOM_LABELS.PARAGRAPH}]`,
-  );
+  const paragraphElements = [
+    ...(root.hasAttribute(DOM_LABELS.PARAGRAPH) ? [root] : []),
+    ...Array.from(
+      root.querySelectorAll<HTMLElement>(`[${DOM_LABELS.PARAGRAPH}]`),
+    ),
+  ];
 
   const paragraphs: ParagraphInfo[] = [];
 

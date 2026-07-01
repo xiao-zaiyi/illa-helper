@@ -123,7 +123,10 @@ export class LazyLoadingService {
       this.state.segmentCache.set(segment.fingerprint, segment);
     });
 
-    // 如果已有定时器在运行，不清除它，让它继续处理
+    this.scheduleQueueDrain();
+  }
+
+  private scheduleQueueDrain(): void {
     if (this.processingTimer) {
       return;
     }
@@ -160,14 +163,7 @@ export class LazyLoadingService {
     }
 
     try {
-      // 使用 RequestIdleCallback 优化性能（如果支持）
-      if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(async () => {
-          await this.processingCallback!(segmentsToProcess);
-        });
-      } else {
-        await this.processingCallback(segmentsToProcess);
-      }
+      await this.runProcessingCallbackWhenIdle(segmentsToProcess);
 
       // 标记为已处理并从缓存中移除
       segmentsToProcess.forEach((segment) => {
@@ -183,7 +179,28 @@ export class LazyLoadingService {
       });
     } finally {
       this.processingTimer = null;
+      if (this.state.processingQueue.size > 0 && !this.isDestroyed) {
+        // 处理过程中进入视口的新段落留在队列里，当前批次结束后继续 drain。
+        this.scheduleQueueDrain();
+      }
     }
+  }
+
+  private async runProcessingCallbackWhenIdle(
+    segments: ContentSegment[],
+  ): Promise<void> {
+    if (!this.processingCallback) return;
+
+    if ('requestIdleCallback' in window) {
+      await new Promise<void>((resolve, reject) => {
+        window.requestIdleCallback(() => {
+          this.processingCallback!(segments).then(resolve).catch(reject);
+        });
+      });
+      return;
+    }
+
+    await this.processingCallback(segments);
   }
 
   /**

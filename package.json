@@ -18,7 +18,7 @@
     "zip:all": "wxt zip -b chrome --mode production && wxt zip -b safari --mode production && wxt zip -b firefox --mode production",
     "release": "node scripts/release.js",
     "compile": "vue-tsc --noEmit",
-    "test:regression": "node scripts/run-regressions.mjs",
+    "test:regression": "node node_modules/vite-node/vite-node.mjs scripts/regression-main.mjs",
     "postinstall": "wxt prepare",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
