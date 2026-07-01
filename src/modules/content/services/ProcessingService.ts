@@ -5,6 +5,7 @@ import { LazyLoadingService } from './LazyLoadingService';
 import { IProcessingService, ProcessingParams } from '../types';
 import { ContentSegment } from '../../processing/ProcessingStateManager';
 import { ProcessingCoordinator } from '../../processing/ProcessingCoordinator';
+import { ReplacementBudget } from '../../processing/ReplacementBudget';
 
 /**
  * 页面处理服务
@@ -15,6 +16,7 @@ export class ProcessingService implements IProcessingService {
   private textReplacer: TextReplacerService;
   private lazyLoadingService?: LazyLoadingService;
   private processingParams!: ProcessingParams;
+  private pageReplacementBudget?: ReplacementBudget;
 
   constructor(
     textProcessor: TextProcessorService,
@@ -54,6 +56,7 @@ export class ProcessingService implements IProcessingService {
    * 立即处理整个页面
    */
   private async processPageImmediate(): Promise<void> {
+    this.pageReplacementBudget = undefined;
     await this.textProcessor.processRoot(
       document.body,
       this.textReplacer,
@@ -70,6 +73,11 @@ export class ProcessingService implements IProcessingService {
   private async processPageWithLazyLoading(): Promise<void> {
     const segments = await this.getPageSegments();
     if (segments.length === 0) return;
+
+    this.pageReplacementBudget = ReplacementBudget.fromSegments(
+      segments,
+      this.textReplacer.getConfig().replacementRate,
+    );
 
     this.lazyLoadingService!.setProcessingCallback(
       this.processSegmentsLazy.bind(this),
@@ -116,44 +124,20 @@ export class ProcessingService implements IProcessingService {
   private async processBatchSegments(
     segments: ContentSegment[],
   ): Promise<void> {
-    try {
-      // 获取发音服务实例以支持懒加载模式下的发音功能
-      const pronunciationService = this.textProcessor.getPronunciationService();
-      const coordinator = new ProcessingCoordinator(pronunciationService);
+    // 懒加载批次必须共用页面预算，不能失败后降级到单段 processRoot。
+    // 否则每个批次都会重新按比例领取额度，低替换率会失效。
+    const pronunciationService = this.textProcessor.getPronunciationService();
+    const coordinator = new ProcessingCoordinator(pronunciationService);
 
-      await coordinator.processSegments(
-        segments,
-        this.textReplacer,
-        this.processingParams.originalWordDisplayMode,
-        this.processingParams.translationPosition,
-        this.processingParams.showParentheses,
-        true, // 懒加载模式
-      );
-    } catch (error) {
-      console.error('[ProcessingService] 批量处理段落失败:', error);
-      // 降级到单个处理
-      for (const segment of segments) {
-        await this.processSegment(segment);
-      }
-    }
-  }
-
-  /**
-   * 处理单个段落
-   */
-  private async processSegment(segment: ContentSegment): Promise<void> {
-    try {
-      await this.textProcessor.processRoot(
-        segment.element,
-        this.textReplacer,
-        this.processingParams.originalWordDisplayMode,
-        this.processingParams.maxLength,
-        this.processingParams.translationPosition,
-        this.processingParams.showParentheses,
-      );
-    } catch (error) {
-      console.error('[ProcessingService] 处理段落失败:', error, segment);
-    }
+    await coordinator.processSegments(
+      segments,
+      this.textReplacer,
+      this.processingParams.originalWordDisplayMode,
+      this.processingParams.translationPosition,
+      this.processingParams.showParentheses,
+      true, // 懒加载模式
+      this.pageReplacementBudget,
+    );
   }
 
   /**

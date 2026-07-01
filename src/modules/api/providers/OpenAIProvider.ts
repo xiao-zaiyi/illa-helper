@@ -72,7 +72,7 @@ export class OpenAIProvider extends BaseProvider {
     }
 
     const data = await response.json();
-    return this.extractReplacements(data, text);
+    return this.extractReplacements(data, text, settings.replacementRate);
   }
 
   /**
@@ -81,6 +81,7 @@ export class OpenAIProvider extends BaseProvider {
   private extractReplacements(
     data: any,
     originalText: string,
+    replacementRate: number,
   ): FullTextAnalysisResponse {
     try {
       if (!data?.choices?.[0]?.message?.content) {
@@ -100,6 +101,7 @@ export class OpenAIProvider extends BaseProvider {
       const replacements = addPositionsToReplacements(
         originalText,
         parseResult.replacements,
+        { replacementRate },
       );
 
       return {

@@ -11,6 +11,8 @@ import {
   OriginalWordDisplayMode,
   TranslationPosition,
 } from '../shared/types/core';
+import type { Replacement } from '../shared/types/api';
+import { ReplacementBudget } from './ReplacementBudget';
 
 /**
  * 处理结果接口
@@ -37,6 +39,13 @@ interface SegmentProcessingResult {
   segment: ContentSegment;
   success: boolean;
   replacementCount: number;
+  error?: string;
+}
+
+interface SegmentTranslationResult {
+  segment: ContentSegment;
+  success: boolean;
+  replacements: Replacement[];
   error?: string;
 }
 
@@ -79,6 +88,7 @@ export class ProcessingCoordinator {
     translationPosition: TranslationPosition,
     showParentheses: boolean,
     isLazyLoading: boolean = false,
+    replacementBudget?: ReplacementBudget,
   ): Promise<ProcessingResult> {
     const startTime = Date.now();
 
@@ -92,6 +102,7 @@ export class ProcessingCoordinator {
         showParentheses,
         startTime,
         isLazyLoading,
+        replacementBudget,
       );
     }));
   }
@@ -107,6 +118,7 @@ export class ProcessingCoordinator {
     showParentheses: boolean,
     startTime: number,
     isLazyLoading: boolean = false,
+    replacementBudget?: ReplacementBudget,
   ): Promise<ProcessingResult> {
     let processedCount = 0;
     let skippedCount = 0;
@@ -140,33 +152,51 @@ export class ProcessingCoordinator {
       // 并行处理段落（但要控制并发数）
       const batchSize = 8; // 控制并发数，避免过载
       const results: SegmentProcessingResult[] = [];
+      const activeBudget =
+        replacementBudget ??
+        ReplacementBudget.fromSegments(
+          successfullyMarked,
+          textReplacer.getConfig?.().replacementRate,
+        );
 
       for (let i = 0; i < successfullyMarked.length; i += batchSize) {
         const batch = successfullyMarked.slice(i, i + batchSize);
         const batchPromises = batch.map((segment) =>
-          this.processSingleSegment(
-            segment,
-            textReplacer,
-            originalWordDisplayMode,
-            translationPosition,
-            showParentheses,
-          ),
+          this.collectSegmentReplacements(segment, textReplacer),
         );
         const batchResults = await Promise.allSettled(batchPromises);
 
-        // 处理批次结果
+        // API 请求可以并发，预算消耗和 DOM 写入必须按段落顺序执行。
         batchResults.forEach((result, index) => {
           const segment = batch[index];
           if (result.status === 'fulfilled') {
-            results.push(result.value);
+            results.push(
+              this.applySegmentTranslation(
+                result.value,
+                textReplacer,
+                originalWordDisplayMode,
+                translationPosition,
+                showParentheses,
+                activeBudget,
+              ),
+            );
           } else {
             const error = result.reason;
-            results.push({
-              segment,
-              success: false,
-              replacementCount: 0,
-              error: error instanceof Error ? error.message : String(error),
-            });
+            results.push(
+              this.applySegmentTranslation(
+                {
+                  segment,
+                  success: false,
+                  replacements: [],
+                  error: error instanceof Error ? error.message : String(error),
+                },
+                textReplacer,
+                originalWordDisplayMode,
+                translationPosition,
+                showParentheses,
+                activeBudget,
+              ),
+            );
           }
         });
       }
@@ -234,60 +264,93 @@ export class ProcessingCoordinator {
   }
 
   /**
-   * 处理单个段落
+   * 并发获取候选替换项，不在这里消耗页面预算。
    */
-  private async processSingleSegment(
+  private async collectSegmentReplacements(
     segment: ContentSegment,
     textReplacer: any,
-    originalWordDisplayMode: OriginalWordDisplayMode,
-    translationPosition: TranslationPosition,
-    showParentheses: boolean,
-  ): Promise<SegmentProcessingResult> {
+  ): Promise<SegmentTranslationResult> {
     try {
-      // 为所有相关元素添加处理中的视觉反馈
       segment.elements.forEach((element) => {
         this.addProcessingFeedback(element);
       });
 
-      // 调用文本替换器进行处理
       const result = await textReplacer.replaceText(segment.textContent);
 
-      if (result && result.replacements && result.replacements.length > 0) {
-        // 应用替换到DOM
+      return {
+        segment,
+        success: true,
+        replacements: result?.replacements ?? [],
+      };
+    } catch (error) {
+      return {
+        segment,
+        success: false,
+        replacements: [],
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * 按 DOM 顺序应用候选替换项，并在这里消耗页面级预算。
+   */
+  private applySegmentTranslation(
+    translationResult: SegmentTranslationResult,
+    textReplacer: any,
+    originalWordDisplayMode: OriginalWordDisplayMode,
+    translationPosition: TranslationPosition,
+    showParentheses: boolean,
+    replacementBudget: ReplacementBudget,
+  ): SegmentProcessingResult {
+    const { segment } = translationResult;
+
+    try {
+      if (!translationResult.success) {
+        return {
+          segment,
+          success: false,
+          replacementCount: 0,
+          error: translationResult.error,
+        };
+      }
+
+      const replacements = replacementBudget.take(
+        translationResult.replacements,
+      );
+
+      if (replacements.length > 0) {
         this.applyReplacements(
           segment,
-          result.replacements,
+          replacements,
           textReplacer.styleManager,
           originalWordDisplayMode,
           translationPosition,
           showParentheses,
         );
 
-        // 立即为该段落的翻译内容添加发音功能
         if (this.pronunciationService) {
           setTimeout(() => {
             this.addPronunciationToSegment(segment);
           }, 0);
         }
 
-        // 标记文本节点为已处理
         this.markTextNodesProcessed(segment.textNodes);
 
         return {
           segment,
           success: true,
-          replacementCount: result.replacements.length,
-        };
-      } else {
-        // 没有替换但处理成功
-        this.markTextNodesProcessed(segment.textNodes);
-
-        return {
-          segment,
-          success: true,
-          replacementCount: 0,
+          replacementCount: replacements.length,
         };
       }
+
+      this.markTextNodesProcessed(segment.textNodes);
+
+      return {
+        segment,
+        success: true,
+        replacementCount: 0,
+      };
     } catch (error) {
       return {
         segment,
@@ -296,7 +359,6 @@ export class ProcessingCoordinator {
         error: error instanceof Error ? error.message : String(error),
       };
     } finally {
-      // 为所有相关元素移除处理中的视觉反馈
       segment.elements.forEach((element) => {
         this.removeProcessingFeedback(element);
       });

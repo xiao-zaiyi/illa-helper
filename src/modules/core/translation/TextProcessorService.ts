@@ -13,6 +13,7 @@ import { DEFAULT_PRONUNCIATION_CONFIG } from '../../pronunciation/config';
 import { ContentSegmenter } from '../../processing/ContentSegmenter';
 import { ProcessingCoordinator } from '../../processing/ProcessingCoordinator';
 import { globalProcessingState } from '../../processing/ProcessingStateManager';
+import { ReplacementBudget } from '../../processing/ReplacementBudget';
 
 // 内容分段配置
 export interface SegmentConfig {
@@ -261,6 +262,11 @@ export class TextProcessorService {
         return;
       }
 
+      const replacementBudget = ReplacementBudget.fromSegments(
+        segments,
+        textReplacer.getConfig?.().replacementRate,
+      );
+
       // 使用处理协调器进行统一处理
       await this.processingCoordinator.processSegments(
         segments,
@@ -269,6 +275,7 @@ export class TextProcessorService {
         translationPosition,
         showParentheses,
         false, // isLazyLoading
+        replacementBudget,
       );
     } catch (error) {
       console.warn('文本处理过程中发生错误:', error);

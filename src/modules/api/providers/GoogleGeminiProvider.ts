@@ -90,6 +90,7 @@ export class GoogleGeminiProvider extends BaseProvider {
     const replacements = addPositionsToReplacements(
       text,
       parseResult.replacements,
+      { replacementRate: settings.replacementRate },
     );
 
     return {

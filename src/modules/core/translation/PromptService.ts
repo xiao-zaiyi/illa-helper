@@ -28,7 +28,7 @@ export class PromptService {
       this.generateTaskAndRules(targetLanguage), // 新合并：任务+规则
       this.generateUserConfig(userLevel, replacementRate), // 新合并：水平+比例
       this.generateFormatRequirements(), // 强化强调
-      this.generateExamples(targetLanguage), // 增加示例
+      this.generateExamples(targetLanguage, replacementRate),
     ].filter((component) => component.trim() !== '');
 
     return components.join('\n\n');
@@ -80,7 +80,7 @@ export class PromptService {
       const percentage = Math.round(replacementRate * 100);
       const lower = Math.max(0, percentage - 3); // 缩小波动范围，提升一致性
       const upper = Math.min(100, percentage + 3);
-      ratioPart = `Select ~${percentage}% of text (${lower}%-${upper}% range) for translation. Focus on quality over quota; choose natural whole words/phrases.`;
+      ratioPart = `Select at most ~${percentage}% of the eligible words/phrases (${lower}%-${upper}% range). This is a hard upper bound: if unsure, output fewer items, not more. Focus on quality over quota; choose natural whole words/phrases.`;
     }
 
     return `User Level: ${levelGuidance[userLevel] || levelGuidance[UserLevel.B1]}
@@ -97,18 +97,23 @@ ${ratioPart}`.trim();
   /**
    * 示例 - 增加2个，覆盖场景
    */
-  private generateExamples(targetLanguage: string): string {
+  private generateExamples(
+    targetLanguage: string,
+    replacementRate: number,
+  ): string {
     const langName =
       languageService.getTargetLanguageDisplayName(targetLanguage);
+    const countHint =
+      replacementRate > 0 && replacementRate <= 0.2
+        ? 'For low replacement rates, output only one or two high-value items.'
+        : 'Adjust the number of output lines to the configured replacement rate.';
     return `Examples (Target: ${langName}):
         Input: "The quick brown fox jumps over the lazy dog."
         Output:
-        quick||translation_text
-        brown||translation_text
         fox||translation_text
         jumps||translation_text
-        lazy||translation_text
-        dog||translation_text`;
+
+        ${countHint}`;
   }
 }
 
