@@ -56,15 +56,15 @@ export class ProcessingService implements IProcessingService {
    * 立即处理整个页面
    */
   private async processPageImmediate(): Promise<void> {
-    this.pageReplacementBudget = undefined;
-    await this.textProcessor.processRoot(
-      document.body,
-      this.textReplacer,
-      this.processingParams.originalWordDisplayMode,
-      this.processingParams.maxLength,
-      this.processingParams.translationPosition,
-      this.processingParams.showParentheses,
+    const segments = await this.getPageSegments();
+    if (segments.length === 0) return;
+
+    this.pageReplacementBudget = ReplacementBudget.fromSegments(
+      segments,
+      this.textReplacer.getConfig().replacementRate,
     );
+
+    await this.processSegments(segments, false);
   }
 
   /**
@@ -111,7 +111,7 @@ export class ProcessingService implements IProcessingService {
    */
   async processSegmentsLazy(segments: ContentSegment[]): Promise<void> {
     try {
-      await this.processBatchSegments(segments);
+      await this.processSegments(segments, true);
     } catch (error) {
       console.error('[ProcessingService] 懒加载段落处理失败:', error);
       throw error;
@@ -119,13 +119,14 @@ export class ProcessingService implements IProcessingService {
   }
 
   /**
-   * 批量处理段落
+   * 处理段落列表。整页处理、懒加载批次和动态节点都必须消耗同一个页面预算。
    */
-  private async processBatchSegments(
+  private async processSegments(
     segments: ContentSegment[],
+    isLazyLoading: boolean,
   ): Promise<void> {
-    // 懒加载批次必须共用页面预算，不能失败后降级到单段 processRoot。
-    // 否则每个批次都会重新按比例领取额度，低替换率会失效。
+    // 批次必须共用页面预算，不能失败后降级到单段 processRoot。
+    // 否则每个入口都会重新按比例领取额度，低替换率会失效。
     const pronunciationService = this.textProcessor.getPronunciationService();
     const coordinator = new ProcessingCoordinator(pronunciationService);
 
@@ -135,7 +136,7 @@ export class ProcessingService implements IProcessingService {
       this.processingParams.originalWordDisplayMode,
       this.processingParams.translationPosition,
       this.processingParams.showParentheses,
-      true, // 懒加载模式
+      isLazyLoading,
       this.pageReplacementBudget,
     );
   }
@@ -152,6 +153,7 @@ export class ProcessingService implements IProcessingService {
         this.processingParams.maxLength,
         this.processingParams.translationPosition,
         this.processingParams.showParentheses,
+        this.pageReplacementBudget,
       );
     } catch (error) {
       console.error('[ProcessingService] 节点处理失败:', error);

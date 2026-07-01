@@ -20,7 +20,10 @@ export const SKIP_TAGS = new Set([
   'TITLE',
   'HEAD',
   'HR',
+  'BUTTON',
   'INPUT',
+  'LABEL',
+  'FORM',
   'TEXTAREA',
   'SELECT',
   'OPTION',
@@ -32,13 +35,16 @@ export const SKIP_TAGS = new Set([
   'IFRAME',
   'MATH',
   'PRE',
+  'CODE',
+  'KBD',
+  'NAV',
 ]);
 
 /**
  * 不深入遍历但保留文本的标签
  * 父元素翻译时会包含这些元素的文本内容
  */
-export const ATOMIC_INLINE_TAGS = new Set(['CODE', 'TIME', 'ABBR', 'KBD']);
+export const ATOMIC_INLINE_TAGS = new Set(['TIME', 'ABBR']);
 
 /**
  * 强制视为块级的标签 - 无论 CSS display 如何

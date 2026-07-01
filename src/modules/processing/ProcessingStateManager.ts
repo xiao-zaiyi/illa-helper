@@ -64,19 +64,13 @@ export class ProcessingStateManager {
   }
 
   /**
-   * 生成内容指纹
-   * 基于文本内容和DOM上下文生成唯一标识
-   * 对动态内容增加时间戳因子避免冲突
+   * 生成内容指纹。
+   * 指纹必须是确定性的：同一段文本在同一 DOM 位置，任何时间都应该得到同一个值。
+   * 动态内容靠 DOM 路径和文本区分，不能把时间塞进指纹，否则会导致重复处理。
    */
   generateContentFingerprint(textContent: string, domPath: string): string {
     const normalizedText = textContent.trim().replace(/\s+/g, ' ');
-
-    // 对于较短的内容或动态加载的内容，添加时间戳避免冲突
-    const isDynamic =
-      domPath.includes(':nth-child') || normalizedText.length < 100;
-    const timeComponent = isDynamic ? Math.floor(Date.now() / 30000) : 0; // 30秒时间窗口
-
-    const combinedString = `${normalizedText}|${domPath}|${timeComponent}`;
+    const combinedString = `${normalizedText}|${domPath}`;
 
     // 使用简单但有效的哈希算法
     let hash = 0;

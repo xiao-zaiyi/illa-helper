@@ -11,11 +11,15 @@
  */
 
 import {
-  SKIP_TAGS,
   ATOMIC_INLINE_TAGS,
   FORCE_BLOCK_TAGS,
   DOM_LABELS,
 } from '../shared/constants';
+import {
+  isHTMLElement,
+  isTranslatableTextNode,
+  shouldSkipSubtree,
+} from './DomTranslationPolicy';
 
 // ============================================================
 // 类型定义
@@ -41,45 +45,9 @@ export interface ParagraphInfo {
 // 元素分类判断
 // ============================================================
 
-function isHTMLElement(node: Node): node is HTMLElement {
-  return node.nodeType === Node.ELEMENT_NODE && 'tagName' in node;
-}
-
 /** 是否应该完全跳过（不遍历、不翻译） */
 function shouldSkipEntirely(element: HTMLElement): boolean {
-  if (SKIP_TAGS.has(element.tagName)) return true;
-
-  // 隐藏元素
-  const style = window.getComputedStyle(element);
-  if (style.display === 'none' || style.visibility === 'hidden') return true;
-
-  // aria-hidden
-  if (element.getAttribute('aria-hidden') === 'true') return true;
-
-  // 可编辑元素
-  if (element.isContentEditable) return true;
-
-  // 扩展自身注入的元素
-  if (
-    element.classList.contains('wxt-translation-term') ||
-    element.classList.contains('wxt-original-word') ||
-    element.classList.contains('wxt-pronunciation-tooltip') ||
-    element.classList.contains('illa-paragraph-translation') ||
-    element.id?.includes('wxt') ||
-    element.tagName.toLowerCase() === 'wxt-floating-menu'
-  ) {
-    return true;
-  }
-
-  // 已处理的元素
-  if (
-    element.hasAttribute('data-wxt-text-processed') ||
-    element.hasAttribute('data-wxt-word-processed')
-  ) {
-    return true;
-  }
-
-  return false;
+  return shouldSkipSubtree(element);
 }
 
 /** 是否为原子 inline 元素（不深入遍历，但文本参与父级翻译） */
@@ -150,16 +118,9 @@ function collectTextNodes(element: HTMLElement): Text[] {
   const textNodes: Text[] = [];
   const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) => {
-      if (!node.textContent?.trim()) return NodeFilter.FILTER_REJECT;
-
-      // 检查父元素是否应该跳过
-      let parent = node.parentElement;
-      while (parent && parent !== element) {
-        if (shouldSkipEntirely(parent)) return NodeFilter.FILTER_REJECT;
-        parent = parent.parentElement;
-      }
-
-      return NodeFilter.FILTER_ACCEPT;
+      return isTranslatableTextNode(node as Text, element)
+        ? NodeFilter.FILTER_ACCEPT
+        : NodeFilter.FILTER_REJECT;
     },
   });
 

@@ -8,6 +8,7 @@ import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { IListenerService } from '../types';
 import { isProcessingResultNode, isDescendant } from '../utils/domUtils';
 import { TranslationStateManager } from '../ContentManager';
+import { isTranslationCandidateNode } from '../../processing/DomTranslationPolicy';
 
 /**
  * 监听器服务 - 负责消息监听和DOM观察
@@ -177,20 +178,16 @@ export class ListenerService implements IListenerService {
           mutation.addedNodes.forEach((node) => {
             if (isProcessingResultNode(node)) return;
 
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              const element = node as Element;
-              const textContent = element.textContent?.trim();
-              if (textContent && textContent.length > 15) {
-                nodesToProcess.add(node);
-                hasValidChanges = true;
-              }
+            if (isTranslationCandidateNode(node, 16)) {
+              nodesToProcess.add(node);
+              hasValidChanges = true;
             }
           });
         } else if (
           mutation.type === 'characterData' &&
           mutation.target.parentElement
         ) {
-          if (!isProcessingResultNode(mutation.target.parentElement)) {
+          if (isTranslationCandidateNode(mutation.target.parentElement, 16)) {
             nodesToProcess.add(mutation.target.parentElement);
             hasValidChanges = true;
           }

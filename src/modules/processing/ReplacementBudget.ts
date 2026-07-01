@@ -73,6 +73,14 @@ export class ReplacementBudget {
     return accepted;
   }
 
+  restore(count: number): void {
+    if (this.remainingCount === undefined || count <= 0) {
+      return;
+    }
+
+    this.remainingCount += count;
+  }
+
   getRemainingCount(): number | undefined {
     return this.remainingCount;
   }

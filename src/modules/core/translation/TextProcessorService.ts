@@ -14,6 +14,7 @@ import { ContentSegmenter } from '../../processing/ContentSegmenter';
 import { ProcessingCoordinator } from '../../processing/ProcessingCoordinator';
 import { globalProcessingState } from '../../processing/ProcessingStateManager';
 import { ReplacementBudget } from '../../processing/ReplacementBudget';
+import type { TextReplacementEngine } from '../../processing/ProcessingContracts';
 
 // 内容分段配置
 export interface SegmentConfig {
@@ -242,11 +243,12 @@ export class TextProcessorService {
    */
   public async processRoot(
     root: Node,
-    textReplacer: any,
+    textReplacer: TextReplacementEngine,
     originalWordDisplayMode: OriginalWordDisplayMode,
     maxLength: number = 400,
     translationPosition: TranslationPosition,
     showParentheses: boolean,
+    replacementBudget?: ReplacementBudget,
   ): Promise<void> {
     try {
       // 更新内容分段器配置
@@ -262,10 +264,12 @@ export class TextProcessorService {
         return;
       }
 
-      const replacementBudget = ReplacementBudget.fromSegments(
-        segments,
-        textReplacer.getConfig?.().replacementRate,
-      );
+      const activeBudget =
+        replacementBudget ??
+        ReplacementBudget.fromSegments(
+          segments,
+          textReplacer.getConfig().replacementRate,
+        );
 
       // 使用处理协调器进行统一处理
       await this.processingCoordinator.processSegments(
@@ -275,7 +279,7 @@ export class TextProcessorService {
         translationPosition,
         showParentheses,
         false, // isLazyLoading
-        replacementBudget,
+        activeBudget,
       );
     } catch (error) {
       console.warn('文本处理过程中发生错误:', error);

@@ -13,6 +13,16 @@ import {
 } from '../shared/types/core';
 import type { Replacement } from '../shared/types/api';
 import { ReplacementBudget } from './ReplacementBudget';
+import {
+  buildTextFromNodes,
+  planStableReplacements,
+} from './ReplacementPlanner';
+import { applyReplacementToRange as writeReplacementToRange } from './RangeReplacementWriter';
+import type {
+  PronunciationRegistrar,
+  TextReplacementEngine,
+  TranslationStyleProvider,
+} from './ProcessingContracts';
 
 /**
  * 处理结果接口
@@ -60,10 +70,10 @@ interface SegmentTranslationResult {
  */
 export class ProcessingCoordinator {
   /** 处理队列，防止并发冲突 */
-  private processingQueue: Promise<any> = Promise.resolve();
+  private processingQueue: Promise<unknown> = Promise.resolve();
 
   /** 发音服务 */
-  private pronunciationService: any;
+  private pronunciationService?: PronunciationRegistrar;
 
   /** 统计信息 */
   private stats = {
@@ -73,7 +83,7 @@ export class ProcessingCoordinator {
     averageProcessingTime: 0,
   };
 
-  constructor(pronunciationService?: any) {
+  constructor(pronunciationService?: PronunciationRegistrar) {
     this.pronunciationService = pronunciationService;
   }
 
@@ -83,7 +93,7 @@ export class ProcessingCoordinator {
    */
   async processSegments(
     segments: ContentSegment[],
-    textReplacer: any,
+    textReplacer: TextReplacementEngine,
     originalWordDisplayMode: OriginalWordDisplayMode,
     translationPosition: TranslationPosition,
     showParentheses: boolean,
@@ -93,7 +103,7 @@ export class ProcessingCoordinator {
     const startTime = Date.now();
 
     // 将处理请求加入队列，确保串行处理
-    return (this.processingQueue = this.processingQueue.then(async () => {
+    const nextTask = this.processingQueue.then(async () => {
       return this.doProcessSegments(
         segments,
         textReplacer,
@@ -104,7 +114,9 @@ export class ProcessingCoordinator {
         isLazyLoading,
         replacementBudget,
       );
-    }));
+    });
+    this.processingQueue = nextTask;
+    return nextTask;
   }
 
   /**
@@ -112,7 +124,7 @@ export class ProcessingCoordinator {
    */
   private async doProcessSegments(
     segments: ContentSegment[],
-    textReplacer: any,
+    textReplacer: TextReplacementEngine,
     originalWordDisplayMode: OriginalWordDisplayMode,
     translationPosition: TranslationPosition,
     showParentheses: boolean,
@@ -156,7 +168,7 @@ export class ProcessingCoordinator {
         replacementBudget ??
         ReplacementBudget.fromSegments(
           successfullyMarked,
-          textReplacer.getConfig?.().replacementRate,
+          textReplacer.getConfig().replacementRate,
         );
 
       for (let i = 0; i < successfullyMarked.length; i += batchSize) {
@@ -268,7 +280,7 @@ export class ProcessingCoordinator {
    */
   private async collectSegmentReplacements(
     segment: ContentSegment,
-    textReplacer: any,
+    textReplacer: TextReplacementEngine,
   ): Promise<SegmentTranslationResult> {
     try {
       segment.elements.forEach((element) => {
@@ -297,7 +309,7 @@ export class ProcessingCoordinator {
    */
   private applySegmentTranslation(
     translationResult: SegmentTranslationResult,
-    textReplacer: any,
+    textReplacer: TextReplacementEngine,
     originalWordDisplayMode: OriginalWordDisplayMode,
     translationPosition: TranslationPosition,
     showParentheses: boolean,
@@ -320,7 +332,7 @@ export class ProcessingCoordinator {
       );
 
       if (replacements.length > 0) {
-        this.applyReplacements(
+        const appliedCount = this.applyReplacements(
           segment,
           replacements,
           textReplacer.styleManager,
@@ -328,6 +340,7 @@ export class ProcessingCoordinator {
           translationPosition,
           showParentheses,
         );
+        replacementBudget.restore(replacements.length - appliedCount);
 
         if (this.pronunciationService) {
           setTimeout(() => {
@@ -340,7 +353,7 @@ export class ProcessingCoordinator {
         return {
           segment,
           success: true,
-          replacementCount: replacements.length,
+          replacementCount: appliedCount,
         };
       }
 
@@ -370,47 +383,21 @@ export class ProcessingCoordinator {
    */
   private applyReplacements(
     segment: ContentSegment,
-    replacements: any[],
-    styleManager: any,
+    replacements: Replacement[],
+    styleManager: TranslationStyleProvider,
     originalWordDisplayMode: OriginalWordDisplayMode,
     translationPosition: TranslationPosition,
     showParentheses: boolean,
-  ): void {
-    // 重新构建文本内容以确保一致性
-    const reconstructedText = segment.textNodes
-      .map((node) => node.textContent || '')
-      .join('');
-
-    // 预验证：检查所有替换项的位置是否准确
-    const validReplacements = replacements.filter((replacement) => {
-      if (!replacement.position) {
-        return false;
-      }
-
-      // 验证位置与实际文本内容的匹配（使用重构的文本）
-      const { start, end } = replacement.position;
-      const expectedText = replacement.original;
-      const actualText = reconstructedText.substring(start, end);
-
-      if (expectedText !== actualText) {
-        // 尝试重新定位
-        const correctIndex = reconstructedText.indexOf(expectedText);
-        if (correctIndex !== -1) {
-          replacement.position = {
-            start: correctIndex,
-            end: correctIndex + expectedText.length,
-          };
-          return true;
-        }
-        return false;
-      }
-      return true;
-    });
-
-    // 对验证通过的替换项按位置倒序处理（避免位置偏移影响）
-    const sortedReplacements = validReplacements.sort(
+  ): number {
+    const reconstructedText = buildTextFromNodes(segment.textNodes);
+    const plannedReplacements = planStableReplacements(
+      reconstructedText,
+      replacements,
+    );
+    const sortedReplacements = plannedReplacements.sort(
       (a, b) => b.position.start - a.position.start,
     );
+    let appliedCount = 0;
 
     for (const replacement of sortedReplacements) {
       const range = this.findRangeInTextNodes(
@@ -420,7 +407,7 @@ export class ProcessingCoordinator {
       );
 
       if (range) {
-        this.applyReplacementToRange(
+        const applied = this.applyReplacementToRange(
           range,
           replacement,
           styleManager,
@@ -428,8 +415,13 @@ export class ProcessingCoordinator {
           translationPosition,
           showParentheses,
         );
+        if (applied) {
+          appliedCount++;
+        }
       }
     }
+
+    return appliedCount;
   }
 
   /**
@@ -495,56 +487,24 @@ export class ProcessingCoordinator {
    */
   private applyReplacementToRange(
     range: Range,
-    replacement: any,
-    styleManager: any,
+    replacement: Replacement,
+    styleManager: TranslationStyleProvider,
     originalWordDisplayMode: OriginalWordDisplayMode,
     translationPosition: TranslationPosition,
     showParentheses: boolean,
-  ): void {
-    try {
-      const originalWordWrapper = document.createElement('span');
-      originalWordWrapper.className = 'wxt-original-word';
-      originalWordWrapper.textContent = range.toString();
+  ): boolean {
+    const result = writeReplacementToRange(range, replacement, {
+      styleClass: styleManager.getCurrentStyleClass(),
+      originalWordDisplayMode,
+      translationPosition,
+      showParentheses,
+    });
 
-      const translationSpan = document.createElement('span');
-      translationSpan.className = `wxt-translation-term ${styleManager.getCurrentStyleClass()}`;
-
-      // 保存原文信息到DOM属性，供悬浮框系统使用
-      translationSpan.setAttribute('data-original-text', replacement.original);
-
-      // 根据新设置决定是否添加括号
-      if (showParentheses) {
-        translationSpan.textContent = ` (${replacement.translation}) `;
-      } else {
-        translationSpan.textContent = ` ${replacement.translation} `;
-      }
-
-      // 应用显示模式
-      switch (originalWordDisplayMode) {
-        case OriginalWordDisplayMode.HIDDEN:
-          originalWordWrapper.style.display = 'none';
-          break;
-        case OriginalWordDisplayMode.LEARNING:
-          originalWordWrapper.classList.add('wxt-original-word--learning');
-          break;
-      }
-
-      // 插入替换元素
-      range.surroundContents(originalWordWrapper);
-      if (translationPosition === TranslationPosition.BEFORE) {
-        originalWordWrapper.before(translationSpan);
-      } else {
-        originalWordWrapper.after(translationSpan);
-      }
-
-      // 添加视觉效果
-      this.addGlowEffect(translationSpan);
-
-      // 标记为已处理
-      originalWordWrapper.setAttribute('data-wxt-word-processed', 'true');
-    } catch (_) {
-      // 静默处理错误
+    if (result.translationElement) {
+      this.addGlowEffect(result.translationElement);
     }
+
+    return result.success;
   }
 
   /**
