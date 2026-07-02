@@ -20,6 +20,37 @@
 
 简体中文 | [English](./README.md)
 
+## 📸 功能展示
+
+### 🎬 动态演示
+<div align="center">
+  <img src="images/Demo.gif" alt="浸入式语言学习助手完整演示" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
+  <img src="images/demo1.gif" alt="浸入式语言学习助手完整演示" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
+  <p><i>🎯 完整演示: 从智能翻译到发音学习的一站式沉浸式体验</i></p>
+</div>
+
+### 🎨 主题适配展示
+<div style="width:100%" align="center">
+  <img src="images/home-dark.png" alt="深色主题翻译效果" style="width:30%; margin:5px; border-radius:6px"/>
+  <img src="images/home-dark1.png" alt="深色主题变体" style="width:30%; margin:5px; border-radius:6px"/>
+  <img src="images/home-light.png" alt="浅色主题翻译效果" style="width:30%; margin:5px; border-radius:6px"/>
+  <p><i>🌗 主题适配: 深色/浅色主题智能切换，现代化视觉体验</i></p>
+  <img src="images/set-base.png" alt="设置" style="width:100%; margin:5px; border-radius:6px;"/>
+  <img src="images/set-ai.png" alt="设置" style="width:100%; margin:5px; border-radius:6px;"/>
+  <p><i>👍 设置页支持多种配置</i></p>
+</div>
+
+
+### 🌍 多语言学习场景
+<div style="width:100%" align="center">
+  <img src="images/cn-test.png" alt="中文学习场景" style="width:45%; margin:5px; border-radius:6px"/>
+  <img src="images/en-test.png" alt="英文学习场景" style="width:45%; margin:5px; border-radius:6px"/>
+  <br/>
+  <img src="images/jp-test.png" alt="日文学习场景" style="width:45%; margin:5px; border-radius:6px"/>
+  <img src="images/k-test.png" alt="韩文学习场景" style="width:45%; margin:5px; border-radius:6px"/>
+  <p><i>🧠 智能多语言: 支持20+种语言的AI自动检测和翻译，涵盖中文、英语、日语、韩语等主流学习语言</i></p>
+</div>
+
 ## 🚀 快速安装
 
 ### 📥 官方商店安装（推荐）
@@ -141,37 +172,6 @@
 - **防抖优化**: 动态内容变化时的智能延迟处理
 - **Range API**: 精确DOM操作，保持页面结构完整性
 - **懒加载**: 滚动时按需翻译，优化性能
-
-## 📸 功能展示
-
-### 🎬 动态演示
-<div align="center">
-  <img src="images/Demo.gif" alt="浸入式语言学习助手完整演示" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
-  <img src="images/demo1.gif" alt="浸入式语言学习助手完整演示" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
-  <p><i>🎯 完整演示: 从智能翻译到发音学习的一站式沉浸式体验</i></p>
-</div>
-
-### 🎨 主题适配展示
-<div style="width:100%" align="center">
-  <img src="images/home-dark.png" alt="深色主题翻译效果" style="width:30%; margin:5px; border-radius:6px"/>
-  <img src="images/home-dark1.png" alt="深色主题变体" style="width:30%; margin:5px; border-radius:6px"/>
-  <img src="images/home-light.png" alt="浅色主题翻译效果" style="width:30%; margin:5px; border-radius:6px"/>
-  <p><i>🌗 主题适配: 深色/浅色主题智能切换，现代化视觉体验</i></p>
-  <img src="images/set-base.png" alt="设置" style="width:100%; margin:5px; border-radius:6px;"/>
-  <img src="images/set-ai.png" alt="设置" style="width:100%; margin:5px; border-radius:6px;"/>
-  <p><i>👍 设置页支持多种配置</i></p>
-</div>
-
-
-### 🌍 多语言学习场景
-<div style="width:100%" align="center">
-  <img src="images/cn-test.png" alt="中文学习场景" style="width:45%; margin:5px; border-radius:6px"/>
-  <img src="images/en-test.png" alt="英文学习场景" style="width:45%; margin:5px; border-radius:6px"/>
-  <br/>
-  <img src="images/jp-test.png" alt="日文学习场景" style="width:45%; margin:5px; border-radius:6px"/>
-  <img src="images/k-test.png" alt="韩文学习场景" style="width:45%; margin:5px; border-radius:6px"/>
-  <p><i>🧠 智能多语言: 支持20+种语言的AI自动检测和翻译，涵盖中文、英语、日语、韩语等主流学习语言</i></p>
-</div>
 
 ## 🛠️ 开发者安装
 

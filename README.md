@@ -20,6 +20,36 @@
 
 English | [简体中文](./README_ZH.md)
 
+## 📸 Feature Showcase
+
+### 🎬 Dynamic Demo
+<div align="center">
+  <img src="images/Demo.gif" alt="Complete demonstration of immersive language learning assistant" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
+ <img src="images/demo1.gif" alt="Complete demonstration of immersive language learning assistant" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
+  <p><i>🎯 Complete Demo: One-stop immersive experience from smart translation to pronunciation learning</i></p>
+</div>
+
+### 🎨 Theme Adaptation
+<div style="width:100%" align="center">
+  <img src="images/home-dark.png" alt="Dark theme translation effects" style="width:30%; margin:5px; border-radius:6px"/>
+  <img src="images/home-dark1.png" alt="Dark theme variant" style="width:30%; margin:5px; border-radius:6px"/>
+  <img src="images/home-light.png" alt="Light theme translation effects" style="width:30%; margin:5px; border-radius:6px"/>
+  <p><i>🌗 Theme Adaptation: Smart dark/light theme switching with modern visual experience</i></p>
+  <img src="images/set-base.png" alt="Settings" style="width:100%; margin:5px; border-radius:6px;"/>
+  <img src="images/set-ai.png" alt="Settings" style="width:100%; margin:5px; border-radius:6px;"/>
+  <p><i>👍 Settings page supports multiple configurations</i></p>
+</div>
+
+### 🌍 Multi-language Learning Scenarios
+<div style="width:100%" align="center">
+  <img src="images/cn-test.png" alt="Chinese learning scenario" style="width:45%; margin:5px; border-radius:6px"/>
+  <img src="images/en-test.png" alt="English learning scenario" style="width:45%; margin:5px; border-radius:6px"/>
+  <br/>
+  <img src="images/jp-test.png" alt="Japanese learning scenario" style="width:45%; margin:5px; border-radius:6px"/>
+  <img src="images/k-test.png" alt="Korean learning scenario" style="width:45%; margin:5px; border-radius:6px"/>
+  <p><i>🧠 Smart Multi-language: AI automatic detection and translation for 20+ languages, covering mainstream learning languages including Chinese, English, Japanese, Korean, etc.</i></p>
+</div>
+
 ## 🚀 Quick Install
 
 ### 📥 Official Store Installation (Recommended)
@@ -141,36 +171,6 @@ This extension is built with [Web Extension API](https://developer.mozilla.org/e
 - **Debounce Optimization**: Smart delayed processing for dynamic content changes
 - **Range API**: Precise DOM operations maintaining page structure integrity
 - **Lazy Loading**: On-demand translation when scrolling, optimizing performance
-
-## 📸 Feature Showcase
-
-### 🎬 Dynamic Demo
-<div align="center">
-  <img src="images/Demo.gif" alt="Complete demonstration of immersive language learning assistant" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
- <img src="images/demo1.gif" alt="Complete demonstration of immersive language learning assistant" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
-  <p><i>🎯 Complete Demo: One-stop immersive experience from smart translation to pronunciation learning</i></p>
-</div>
-
-### 🎨 Theme Adaptation
-<div style="width:100%" align="center">
-  <img src="images/home-dark.png" alt="Dark theme translation effects" style="width:30%; margin:5px; border-radius:6px"/>
-  <img src="images/home-dark1.png" alt="Dark theme variant" style="width:30%; margin:5px; border-radius:6px"/>
-  <img src="images/home-light.png" alt="Light theme translation effects" style="width:30%; margin:5px; border-radius:6px"/>
-  <p><i>🌗 Theme Adaptation: Smart dark/light theme switching with modern visual experience</i></p>
-  <img src="images/set-base.png" alt="Settings" style="width:100%; margin:5px; border-radius:6px;"/>
-  <img src="images/set-ai.png" alt="Settings" style="width:100%; margin:5px; border-radius:6px;"/>
-  <p><i>👍 Settings page supports multiple configurations</i></p>
-</div>
-
-### 🌍 Multi-language Learning Scenarios
-<div style="width:100%" align="center">
-  <img src="images/cn-test.png" alt="Chinese learning scenario" style="width:45%; margin:5px; border-radius:6px"/>
-  <img src="images/en-test.png" alt="English learning scenario" style="width:45%; margin:5px; border-radius:6px"/>
-  <br/>
-  <img src="images/jp-test.png" alt="Japanese learning scenario" style="width:45%; margin:5px; border-radius:6px"/>
-  <img src="images/k-test.png" alt="Korean learning scenario" style="width:45%; margin:5px; border-radius:6px"/>
-  <p><i>🧠 Smart Multi-language: AI automatic detection and translation for 20+ languages, covering mainstream learning languages including Chinese, English, Japanese, Korean, etc.</i></p>
-</div>
 
 ## 🛠️ Developer Installation
 
