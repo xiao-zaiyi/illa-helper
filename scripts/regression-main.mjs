@@ -63,6 +63,12 @@ globalThis.browser = {
   },
 };
 
+const originalCrypto = globalThis.crypto;
+Object.defineProperty(globalThis, 'crypto', {
+  configurable: true,
+  value: {},
+});
+
 const { isTranslationCandidateNode } = await import(
   '../src/modules/processing/DomTranslationPolicy.ts'
 );
@@ -100,6 +106,10 @@ assert.equal(
 const selected = selectParagraphTranslationElements(
   walkAndCollectParagraphs(document.body),
 );
+Object.defineProperty(globalThis, 'crypto', {
+  configurable: true,
+  value: originalCrypto,
+});
 
 assert.deepEqual(
   selected.map((element) => element.id),

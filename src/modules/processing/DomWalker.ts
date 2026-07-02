@@ -41,6 +41,18 @@ export interface ParagraphInfo {
   textNodes: Text[];
 }
 
+let fallbackWalkId = 0;
+
+function createWalkId(): string {
+  const randomUUID = globalThis.crypto?.randomUUID;
+  if (typeof randomUUID === 'function') {
+    return randomUUID.call(globalThis.crypto);
+  }
+
+  fallbackWalkId += 1;
+  return `fallback-${Date.now()}-${fallbackWalkId}`;
+}
+
 // ============================================================
 // 元素分类判断
 // ============================================================
@@ -230,7 +242,7 @@ function clearLabels(root: HTMLElement): void {
  * @returns 段落信息列表（按文档顺序）
  */
 export function walkAndCollectParagraphs(root: HTMLElement): ParagraphInfo[] {
-  const walkId = crypto.randomUUID();
+  const walkId = createWalkId();
 
   // 第一步：遍历并标记
   walkAndLabel(root, walkId);
